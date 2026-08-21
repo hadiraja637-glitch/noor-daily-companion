@@ -199,7 +199,7 @@ function Hero() {
 
   return (
     <section
-      className="relative h-[360px] sm:h-[390px] lg:h-[420px] flex items-center overflow-hidden pt-16"
+  className="relative min-h-[850px] lg:min-h-0 lg:h-[420px] flex items-start lg:items-center overflow-visible lg:overflow-hidden pt-16 pb-8 lg:pb-0"
       style={{ background: '#072018' }}
     >
       {/* Background image */}
@@ -222,7 +222,7 @@ function Hero() {
         style={{ background: 'linear-gradient(to top, rgba(6,24,18,0.85) 0%, transparent 60%)' }}
       />
 
-      <div className="relative max-w-[1400px] mx-auto px-4 lg:px-8 py-8 lg:py-10 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 lg:gap-12">
         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-10">
           {/* Left */}
           <div className="flex-1 max-w-2xl">
@@ -263,7 +263,7 @@ function Hero() {
           </div>
 
           {/* Right card */}
-          <FadeIn delay={0.3} className="w-full lg:w-auto">
+          <FadeIn delay={0.3} className="w-full sm:w-auto mt-4 lg:mt-0">
             <div
               className="hero-card-polish rounded-[22px] p-4 sm:p-5 w-full max-w-xs lg:max-w-[300px]"
               style={{
