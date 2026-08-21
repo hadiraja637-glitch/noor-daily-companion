@@ -1,0 +1,200 @@
+import { useEffect, useMemo, useState } from 'react';
+import { NavLink, Link, useNavigate } from 'react-router';
+import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House } from 'lucide-react';
+import NoorLogo from './NoorLogo';
+
+const navLinks = [
+  { to: '/', label: 'Home', end: true },
+  { to: '/quran', label: "Qur'an" },
+  { to: '/hadith', label: 'Hadith' },
+  { to: '/duas', label: 'Duas' },
+  { to: '/calendar', label: 'Islamic Calendar' },
+  { to: '/zakat', label: 'Zakat' },
+  { to: '/stories', label: 'Stories' },
+  { to: '/blog', label: 'Blog' },
+];
+
+const moreLinks = [
+  { to: '/qibla', label: 'Qibla Finder' },
+  { to: '/tasbeeh', label: 'Tasbeeh & Dhikr' },
+  { to: '/calendar', label: 'Islamic Calendar' },
+  { to: '/zakat', label: 'Zakat Calculator' },
+  { to: '/stories', label: 'Islamic Stories' },
+  { to: '/blog', label: 'Islamic Blog' },
+];
+
+const searchable = [
+  ...navLinks.map(({ to, label }) => ({ to, label, keywords: label.toLowerCase() })),
+  ...moreLinks.map(({ to, label }) => ({ to, label, keywords: label.toLowerCase() })),
+  { to: '/quran', label: 'Read Qur’an', keywords: 'quran qur an surah ayah verses' },
+  { to: '/hadith', label: 'Daily Hadith', keywords: 'hadith bukhari sunnah sayings' },
+  { to: '/duas', label: 'Daily Duas', keywords: 'dua duas supplication prayer' },
+];
+
+type Profile = { email: string; name: string };
+
+function readProfile(): Profile | null {
+  try {
+    const raw = localStorage.getItem('noorProfile');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export default function Navbar() {
+  const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [dark, setDark] = useState(true);
+  const [search, setSearch] = useState('');
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(readProfile);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    const sync = () => setProfile(readProfile());
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('noor-profile-updated', sync);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('noor-profile-updated', sync);
+    };
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return searchable.filter((item) => item.keywords.includes(q) || item.label.toLowerCase().includes(q)).slice(0, 5);
+  }, [search]);
+
+  const submitSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = search.trim().toLowerCase();
+    if (!q) return;
+    const result = searchable.find((item) => item.keywords.includes(q) || item.label.toLowerCase().includes(q));
+    if (result) {
+      navigate(result.to);
+      setSearch('');
+    }
+  };
+
+  const signOut = () => {
+    localStorage.removeItem('noorProfile');
+    setProfile(null);
+    setProfileOpen(false);
+    window.dispatchEvent(new Event('noor-profile-updated'));
+  };
+
+  return (
+    <>
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        style={{
+          background: scrolled ? 'rgba(6,24,18,0.97)' : 'rgba(6,24,18,0.90)',
+          backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(26,64,53,0.45)',
+          boxShadow: '0 1px 0 rgba(232,189,75,0.18)',
+        }}
+      >
+        <div className="max-w-[1400px] mx-auto px-4 lg:px-5 flex items-center h-[58px] gap-3">
+          <Link to="/" className="flex items-center gap-2.5 shrink-0">
+            <NoorLogo size={36} />
+            <div className="leading-none">
+              <div className="flex items-end gap-2 leading-none">
+                <div>
+                  <div className="text-[8px] text-noor-gold tracking-[0.22em] font-arabic leading-none mb-1" style={{ direction: 'rtl' }}>بِسْمِ اللَّهِ</div>
+                  <div className="font-display text-noor-ivory font-semibold text-[24px] tracking-wide leading-none">Noor</div>
+                </div>
+                <div className="hidden xl:block text-noor-muted text-[8px] leading-tight max-w-[155px] pb-0.5">Your daily companion for prayer, remembrance & giving</div>
+              </div>
+            </div>
+          </Link>
+
+          <div className="hidden lg:flex items-center gap-0.5 ml-2 xl:ml-4 flex-1">
+            {navLinks.map((link) => (
+              <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => `px-2.5 xl:px-3 py-1.5 rounded-md text-[11px] xl:text-xs transition-all whitespace-nowrap ${isActive ? 'text-noor-ivory bg-[#0f7658] shadow-[0_6px_18px_rgba(24,185,138,.12)]' : 'text-noor-muted hover:text-noor-ivory hover:bg-white/5'}`}>
+                <span className="inline-flex items-center gap-1.5">{link.to === '/' && <House size={12} strokeWidth={2.4} />} {link.label}</span>
+              </NavLink>
+            ))}
+            <div className="relative">
+              <button onClick={() => setMoreOpen((v) => !v)} className="px-2.5 xl:px-3 py-1.5 rounded-md text-[11px] xl:text-xs text-noor-muted hover:text-noor-ivory hover:bg-white/5 flex items-center gap-1 transition-colors">
+                More <ChevronDown size={12} className={moreOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+              </button>
+              {moreOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl p-2 shadow-2xl" style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}>
+                  {moreLinks.map((item) => (
+                    <Link key={item.label} to={item.to} onClick={() => setMoreOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5">
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 ml-auto">
+            <div className="relative hidden sm:block">
+              <form onSubmit={submitSearch} className="flex items-center gap-2 bg-[#102f27]/90 border border-[#2b4d43] rounded-full px-3 py-1.5">
+                <Search size={14} className="text-noor-muted shrink-0" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search anything..." aria-label="Search Noor" className="bg-transparent text-sm text-noor-ivory placeholder:text-noor-muted outline-none w-28 xl:w-40" />
+              </form>
+              {suggestions.length > 0 && (
+                <div className="absolute right-0 top-full mt-2 w-64 rounded-xl p-2 shadow-2xl" style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}>
+                  {suggestions.map((item) => (
+                    <button key={`${item.to}-${item.label}`} onMouseDown={(e) => e.preventDefault()} onClick={() => { navigate(item.to); setSearch(''); }} className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5">
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={() => setDark(!dark)} aria-label="Toggle theme" className="w-[54px] h-7 rounded-full border border-[#365249] bg-[#0b2a22] relative flex items-center justify-between px-1.5 text-noor-gold hover:border-noor-gold/40 transition-colors"><Sun size={12} /><span className="w-5 h-5 rounded-full bg-[#f5f1e5] shadow-md flex items-center justify-center">{dark ? <Moon size={10} className="text-[#0b2a22]" /> : <Sun size={10} className="text-[#0b2a22]" />}</span></button>
+            <div className="relative">
+              <button onClick={() => setProfileOpen((v) => !v)} aria-label="Profile" className="w-8 h-8 rounded-full flex items-center justify-center text-noor-gold bg-white/5 border border-noor-border hover:border-noor-gold/50 transition-colors overflow-hidden">{profile ? <span className="font-semibold text-xs">{profile.name.split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase()}</span> : <User size={16} />}</button>
+              {profileOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 rounded-xl p-4 shadow-2xl" style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}>
+                  {profile ? (
+                    <>
+                      <div className="flex items-center gap-3 mb-3"><div className="w-10 h-10 rounded-full flex items-center justify-center bg-noor-gold/15 text-noor-gold"><UserRound size={18} /></div><div className="min-w-0"><p className="text-noor-ivory font-medium truncate">{profile.name}</p><p className="text-noor-muted text-xs truncate">{profile.email}</p></div></div>
+                      <button onClick={signOut} className="w-full flex items-center justify-center gap-2 rounded-lg border border-noor-border py-2 text-xs text-noor-muted hover:text-noor-gold"><LogOut size={13} /> Sign out</button>
+                    </>
+                  ) : (
+                    <div>
+                      <p className="text-noor-ivory font-medium mb-1">Create your Noor profile</p>
+                      <p className="text-noor-muted text-xs leading-relaxed mb-3">Enter your email in the Stay Connected section below to save a profile on this device.</p>
+                      <button type="button" onClick={() => alert('Google sign-in needs a configured Google OAuth client ID. Email profile is ready to use now.')} className="w-full rounded-lg border border-noor-border py-2 text-xs text-noor-ivory hover:border-noor-gold/50 hover:text-noor-gold transition-colors">Continue with Google</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <button className="lg:hidden p-2 rounded-lg text-noor-muted hover:text-noor-ivory hover:bg-white/5 transition-colors" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X size={18} /> : <Menu size={18} />}</button>
+          </div>
+        </div>
+
+        {mobileOpen && (
+          <div className="lg:hidden border-t border-noor-border px-4 pb-4 pt-2" style={{ background: 'rgba(6,24,18,0.98)' }}>
+            <form onSubmit={submitSearch} className="flex items-center gap-2 bg-noor-card border border-noor-border rounded-lg px-3 py-2 mb-2"><Search size={14} className="text-noor-muted" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search Noor..." className="flex-1 bg-transparent outline-none text-sm text-noor-ivory" /></form>
+            <div className="flex flex-col gap-1">
+              {[...navLinks, ...moreLinks.filter((m) => !navLinks.some((n) => n.to === m.to))].map((link) => (
+                <NavLink key={link.label} to={link.to} onClick={() => setMobileOpen(false)} className={({ isActive }) => `px-3 py-2.5 rounded-lg text-sm ${isActive ? 'text-noor-gold bg-noor-gold/10' : 'text-noor-muted hover:text-noor-ivory hover:bg-white/5'}`}>{link.label}</NavLink>
+              ))}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      <div aria-label="Mobile navigation" className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-noor-border" style={{ background: 'rgba(6,24,18,0.97)', backdropFilter: 'blur(16px)' }}>
+        <div className="flex items-center justify-around py-2">
+          {[{ to: '/', label: 'Home', end: true }, { to: '/quran', label: "Qur'an" }, { to: '/duas', label: 'Duas' }, { to: '/qibla', label: 'Qibla' }, { to: '/blog', label: 'More' }].map((link) => (
+            <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => `flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-xs ${isActive ? 'text-noor-gold' : 'text-noor-muted'}`}>
+              <span className="text-base leading-none">{link.label === 'Home' ? '🏠' : link.label === "Qur'an" ? '📖' : link.label === 'Duas' ? '🤲' : link.label === 'Qibla' ? '🧭' : '⋯'}</span>{link.label}
+            </NavLink>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}

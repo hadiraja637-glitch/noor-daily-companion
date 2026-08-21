@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-noor-bg: #072018;
+  --color-noor-bg2: #0D2B22;
+  --color-noor-card: #10382B;
+  --color-noor-deep: #071F18;
+  --color-noor-gold: #E8BD4B;
+  --color-noor-gold2: #C99B32;
+  --color-noor-ivory: #F7F0DE;
+  --color-noor-muted: #A9B8B1;
+  --color-noor-accent: #18B98A;
+  --color-noor-border: #1A4035;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #072018;
+  color: #F7F0DE;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-arabic {
+  font-family: 'Amiri', serif;
+  direction: rtl;
+  line-height: 2.2;
+}
+
+.islamic-pattern {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(232,189,75,0.03) 0, rgba(232,189,75,0.03) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(-45deg, rgba(232,189,75,0.03) 0, rgba(232,189,75,0.03) 1px, transparent 0, transparent 50%);
+  background-size: 18px 18px;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #072018; }
+::-webkit-scrollbar-thumb { background: rgba(232,189,75,0.25); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(232,189,75,0.45); }
+
+
+/* Noor responsive polish */
+button, a, input { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid rgba(232,189,75,0.75);
+  outline-offset: 2px;
+}
+::selection {
+  background: rgba(232,189,75,0.25);
+  color: #F7F0DE;
+}
+
+/* Final Noor polish */
+.hero-card-polish { border-radius: 22px; box-shadow: 0 20px 50px rgba(0,0,0,.22); }
+@media (max-width: 1023px) {
+  body { padding-bottom: 0; }
+}
+
+/* Final professional polish */
+body {
+  background-image:
+    radial-gradient(circle at 15% -10%, rgba(24,185,138,0.08), transparent 32rem),
+    radial-gradient(circle at 90% 0%, rgba(232,189,75,0.07), transparent 28rem);
+  background-attachment: fixed;
+}
+a, button {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+button:active, a:active { transform: translateY(1px); }
+input::placeholder { opacity: 0.7; }
+select { color-scheme: dark; }
+img { max-width: 100%; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

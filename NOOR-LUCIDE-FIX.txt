@@ -1,0 +1,1 @@
+Pinned lucide-react to 0.468.0 because the newer 1.x package in the prior build was causing Rollup unresolved internal icon module errors during Vite dependency optimization. Clean reinstall recommended.

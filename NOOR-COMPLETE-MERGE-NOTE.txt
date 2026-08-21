@@ -1,0 +1,23 @@
+Noor Complete Merge
+====================
+
+Base: Noor-FINAL-v12-lucide-stable
+
+Merged functional edits restored from the earlier Noor builds:
+- Tasbeeh & Dhikr page + route + navigation links.
+- Dynamic prayer API service, saved city, city picker, current-location support,
+  Hijri/date data, timezone-aware prayer selection and countdown.
+- Preserved v12's compact hero and Lucide 0.468.0 repair.
+- Added final visual/accessibility polish.
+
+The legacy pnpm-lock.yaml was intentionally not copied into this final archive because
+it resolves lucide-react 1.33.0 while the final package intentionally pins lucide-react
+0.468.0. Keeping that stale lock would reintroduce the dependency mismatch that caused
+the earlier Rollup/Lucide problem. repair-noor.bat also removes stale lockfiles before
+installing the pinned dependencies.
+
+Validation:
+- All required merged source/assets are present.
+- Static merge checks passed.
+- A clean npm build could not be completed in this environment because registry access
+  timed out; the provided repair script performs a clean install on the target machine.

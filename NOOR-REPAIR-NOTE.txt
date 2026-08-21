@@ -1,0 +1,2 @@
+The previous error came from the lucide-react package installation/optimization, not your Noor page code.
+This final build pins lucide-react to the stable 0.468.0 release and the repair script removes old dependency folders/lockfiles before reinstalling.

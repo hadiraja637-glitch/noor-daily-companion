@@ -1,0 +1,10 @@
+{
+  "description": "Noor is a daily Islamic companion for Qur’an, prayer, remembrance, duas, hadith, Qibla, Islamic calendar, Zakat, stories and learning.",
+  "robots": {
+    "index": true
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
