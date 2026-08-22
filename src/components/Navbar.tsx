@@ -109,7 +109,6 @@ export default function Navbar() {
 
   useEffect(() => {
     document.documentElement.lang = selectedLanguage;
-    document.documentElement.dir = isRTL(selectedLanguage) ? 'rtl' : 'ltr';
     try {
       localStorage.setItem('noor-language', selectedLanguage);
     } catch {
