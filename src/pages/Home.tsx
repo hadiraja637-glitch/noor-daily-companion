@@ -678,20 +678,6 @@ function HadithDhikrCalendar() {
                   </Link>
                 </div>
               </div>
-
-              <div className="pt-4 border-t border-noor-border/40 text-center">
-                <p className="text-noor-muted text-xs mb-2">Newsletter Subscription</p>
-                <div className="flex gap-2">
-                  <input 
-                    type="email" 
-                    placeholder="Enter email" 
-                    className="bg-[#072018] text-xs text-noor-ivory border border-noor-border rounded-lg px-3 py-2 flex-1 outline-none"
-                  />
-                  <button className="px-3 py-2 bg-noor-gold text-noor-deep text-xs font-medium rounded-lg">
-                    Join
-                  </button>
-                </div>
-              </div>
             </div>
           </FadeIn>
         </div>
