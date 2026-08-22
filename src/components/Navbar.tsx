@@ -348,15 +348,6 @@ useEffect(() => {
                       <p className="text-noor-muted text-xs leading-relaxed mb-3">
                         Enter your email in the Stay Connected section below to save a profile on this device.
                       </p>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          alert('Google sign-in needs a configured Google OAuth client ID. Email profile is ready to use now.')
-                        }
-                        className="w-full rounded-lg border border-noor-border py-2 text-xs text-noor-ivory hover:border-noor-gold/50 hover:text-noor-gold transition-colors"
-                      >
-                        {t('continueWithGoogle')}
-                      </button>
                     </div>
                   )}
                 </div>
