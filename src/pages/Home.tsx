@@ -572,7 +572,6 @@ function PrayerTimesSection() {
                   src="https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=600&h=300&fit=crop&auto=format"
                   alt="Quran"
                   className="w-full h-full object-cover"
-                  loading="lazy"
                 />
                 <div
                   className="absolute inset-0"
@@ -868,7 +867,6 @@ function FeaturedStoriesSection() {
                     src={story.imageUrl}
                     alt={story.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
                   />
                   <span className="absolute top-3 left-3 text-[10px] px-2 py-0.5 rounded-full font-medium bg-black/60 text-noor-gold border border-noor-gold/30">
                     {story.category}
