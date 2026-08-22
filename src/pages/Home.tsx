@@ -107,10 +107,9 @@ function FadeIn({
       ref={ref}
       className={className}
       style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(24px)',
-        transition: `opacity 0.75s ease ${delay}s, transform 0.75s ease ${delay}s`,
-      }}
+  opacity: 1,
+  transform: 'translateY(0)',
+}}
     >
       {children}
     </div>
