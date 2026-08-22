@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router';
-import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House } from 'lucide-react';
+import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House, Languages, Check } from 'lucide-react';
 import NoorLogo from './NoorLogo';
 
 const navLinks = [
@@ -23,6 +23,23 @@ const moreLinks = [
   { to: '/blog', label: 'Islamic Blog' },
 ];
 
+const languages = [
+  { code: 'en', name: 'English' },
+  { code: 'ar', name: 'العربية' },
+  { code: 'ur', name: 'اردو' },
+  { code: 'id', name: 'Bahasa Indonesia' },
+  { code: 'ms', name: 'Bahasa Melayu' },
+  { code: 'tr', name: 'Türkçe' },
+  { code: 'bn', name: 'বাংলা' },
+  { code: 'fa', name: 'فارسی' },
+  { code: 'hi', name: 'हिन्दी' },
+  { code: 'fr', name: 'Français' },
+  { code: 'es', name: 'Español' },
+  { code: 'de', name: 'Deutsch' },
+];
+
+const RTL_LANGUAGES = new Set(['ar', 'ur', 'fa']);
+
 const searchable = [
   ...navLinks.map(({ to, label }) => ({ to, label, keywords: label.toLowerCase() })),
   ...moreLinks.map(({ to, label }) => ({ to, label, keywords: label.toLowerCase() })),
@@ -42,6 +59,18 @@ function readProfile(): Profile | null {
   }
 }
 
+function readInitialLanguage(): string {
+  try {
+    const saved = localStorage.getItem('noor-language');
+    if (saved && languages.some((l) => l.code === saved)) {
+      return saved;
+    }
+  } catch {
+    // Fallback to default
+  }
+  return 'en';
+}
+
 export default function Navbar() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
@@ -50,6 +79,8 @@ export default function Navbar() {
   const [search, setSearch] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(readInitialLanguage);
   const [profile, setProfile] = useState<Profile | null>(readProfile);
 
   useEffect(() => {
@@ -62,6 +93,16 @@ export default function Navbar() {
       window.removeEventListener('noor-profile-updated', sync);
     };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = selectedLanguage;
+    document.documentElement.dir = RTL_LANGUAGES.has(selectedLanguage) ? 'rtl' : 'ltr';
+    try {
+      localStorage.setItem('noor-language', selectedLanguage);
+    } catch {
+      // Ignore storage errors
+    }
+  }, [selectedLanguage]);
 
   const suggestions = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -87,6 +128,11 @@ export default function Navbar() {
     window.dispatchEvent(new Event('noor-profile-updated'));
   };
 
+  const handleSelectLanguage = (code: string) => {
+    setSelectedLanguage(code);
+    setLangOpen(false);
+  };
+
   return (
     <>
       <nav
@@ -104,27 +150,57 @@ export default function Navbar() {
             <div className="leading-none">
               <div className="flex items-end gap-2 leading-none">
                 <div>
-                  <div className="font-display text-noor-ivory font-semibold text-[24px] tracking-wide leading-none">Noor</div>
+                  <div className="font-display text-noor-ivory font-semibold text-[24px] tracking-wide leading-none">
+                    Noor
+                  </div>
                 </div>
-                <div className="hidden xl:block text-noor-muted text-[8px] leading-tight max-w-[155px] pb-0.5">Your daily companion for prayer, remembrance & giving</div>
+                <div className="hidden xl:block text-noor-muted text-[8px] leading-tight max-w-[155px] pb-0.5">
+                  Your daily companion for prayer, remembrance & giving
+                </div>
               </div>
             </div>
           </Link>
 
           <div className="hidden lg:flex items-center gap-0.5 ml-2 xl:ml-4 flex-1">
             {navLinks.map((link) => (
-              <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => `px-2.5 xl:px-3 py-1.5 rounded-md text-[11px] xl:text-xs transition-all whitespace-nowrap ${isActive ? 'text-noor-ivory bg-[#0f7658] shadow-[0_6px_18px_rgba(24,185,138,.12)]' : 'text-noor-muted hover:text-noor-ivory hover:bg-white/5'}`}>
-                <span className="inline-flex items-center gap-1.5">{link.to === '/' && <House size={12} strokeWidth={2.4} />} {link.label}</span>
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.end}
+                className={({ isActive }) =>
+                  `px-2.5 xl:px-3 py-1.5 rounded-md text-[11px] xl:text-xs transition-all whitespace-nowrap ${
+                    isActive
+                      ? 'text-noor-ivory bg-[#0f7658] shadow-[0_6px_18px_rgba(24,185,138,.12)]'
+                      : 'text-noor-muted hover:text-noor-ivory hover:bg-white/5'
+                  }`
+                }
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  {link.to === '/' && <House size={12} strokeWidth={2.4} />} {link.label}
+                </span>
               </NavLink>
             ))}
+
             <div className="relative">
-              <button onClick={() => setMoreOpen((v) => !v)} className="px-2.5 xl:px-3 py-1.5 rounded-md text-[11px] xl:text-xs text-noor-muted hover:text-noor-ivory hover:bg-white/5 flex items-center gap-1 transition-colors">
+              <button
+                onClick={() => setMoreOpen((v) => !v)}
+                className="px-2.5 xl:px-3 py-1.5 rounded-md text-[11px] xl:text-xs text-noor-muted hover:text-noor-ivory hover:bg-white/5 flex items-center gap-1 transition-colors"
+              >
                 More <ChevronDown size={12} className={moreOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
               </button>
+
               {moreOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl p-2 shadow-2xl" style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}>
+                <div
+                  className="absolute right-0 top-full mt-2 w-56 rounded-xl p-2 shadow-2xl"
+                  style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}
+                >
                   {moreLinks.map((item) => (
-                    <Link key={item.label} to={item.to} onClick={() => setMoreOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5">
+                    <Link
+                      key={item.label}
+                      to={item.to}
+                      onClick={() => setMoreOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5"
+                    >
                       {item.label}
                     </Link>
                   ))}
@@ -137,59 +213,233 @@ export default function Navbar() {
             <div className="relative hidden sm:block">
               <form onSubmit={submitSearch} className="flex items-center gap-2 bg-[#102f27]/90 border border-[#2b4d43] rounded-full px-3 py-1.5">
                 <Search size={14} className="text-noor-muted shrink-0" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search anything..." aria-label="Search Noor" className="bg-transparent text-sm text-noor-ivory placeholder:text-noor-muted outline-none w-28 xl:w-40" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search anything..."
+                  aria-label="Search Noor"
+                  className="bg-transparent text-sm text-noor-ivory placeholder:text-noor-muted outline-none w-28 xl:w-40"
+                />
               </form>
+
               {suggestions.length > 0 && (
-                <div className="absolute right-0 top-full mt-2 w-64 rounded-xl p-2 shadow-2xl" style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}>
+                <div
+                  className="absolute right-0 top-full mt-2 w-64 rounded-xl p-2 shadow-2xl"
+                  style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}
+                >
                   {suggestions.map((item) => (
-                    <button key={`${item.to}-${item.label}`} onMouseDown={(e) => e.preventDefault()} onClick={() => { navigate(item.to); setSearch(''); }} className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5">
+                    <button
+                      key={`${item.to}-${item.label}`}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        navigate(item.to);
+                        setSearch('');
+                      }}
+                      className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5"
+                    >
                       {item.label}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-            <button onClick={() => setDark(!dark)} aria-label="Toggle theme" className="w-[54px] h-7 rounded-full border border-[#365249] bg-[#0b2a22] relative flex items-center justify-between px-1.5 text-noor-gold hover:border-noor-gold/40 transition-colors"><Sun size={12} /><span className="w-5 h-5 rounded-full bg-[#f5f1e5] shadow-md flex items-center justify-center">{dark ? <Moon size={10} className="text-[#0b2a22]" /> : <Sun size={10} className="text-[#0b2a22]" />}</span></button>
+
+            {/* Language Selector Dropdown */}
             <div className="relative">
-              <button onClick={() => setProfileOpen((v) => !v)} aria-label="Profile" className="w-8 h-8 rounded-full flex items-center justify-center text-noor-gold bg-white/5 border border-noor-border hover:border-noor-gold/50 transition-colors overflow-hidden">{profile ? <span className="font-semibold text-xs">{profile.name.split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase()}</span> : <User size={16} />}</button>
+              <button
+                onClick={() => setLangOpen((v) => !v)}
+                aria-label="Select language"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-noor-gold bg-white/5 border border-noor-border hover:border-noor-gold/50 transition-colors"
+              >
+                <Languages size={15} />
+              </button>
+
+              {langOpen && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-48 rounded-xl p-1.5 shadow-2xl max-h-80 overflow-y-auto"
+                  style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}
+                >
+                  {languages.map((lang) => {
+                    const isSelected = selectedLanguage === lang.code;
+                    return (
+                      <button
+                        key={lang.code}
+                        onClick={() => handleSelectLanguage(lang.code)}
+                        className={`w-full flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                          isSelected
+                            ? 'text-noor-gold bg-noor-gold/10 font-medium'
+                            : 'text-noor-muted hover:text-noor-gold hover:bg-white/5'
+                        }`}
+                      >
+                        <span>{lang.name}</span>
+                        {isSelected && <Check size={14} className="text-noor-gold ml-2 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setDark(!dark)}
+              aria-label="Toggle theme"
+              className="w-[54px] h-7 rounded-full border border-[#365249] bg-[#0b2a22] relative flex items-center justify-between px-1.5 text-noor-gold hover:border-noor-gold/40 transition-colors"
+            >
+              <Sun size={12} />
+              <span className="w-5 h-5 rounded-full bg-[#f5f1e5] shadow-md flex items-center justify-center">
+                {dark ? <Moon size={10} className="text-[#0b2a22]" /> : <Sun size={10} className="text-[#0b2a22]" />}
+              </span>
+            </button>
+
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen((v) => !v)}
+                aria-label="Profile"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-noor-gold bg-white/5 border border-noor-border hover:border-noor-gold/50 transition-colors overflow-hidden"
+              >
+                {profile ? (
+                  <span className="font-semibold text-xs">
+                    {profile.name
+                      .split(/\s+/)
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()}
+                  </span>
+                ) : (
+                  <User size={16} />
+                )}
+              </button>
+
               {profileOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 rounded-xl p-4 shadow-2xl" style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}>
+                <div
+                  className="absolute right-0 top-full mt-2 w-72 rounded-xl p-4 shadow-2xl"
+                  style={{ background: '#0B2820', border: '1px solid rgba(232,189,75,0.22)' }}
+                >
                   {profile ? (
                     <>
-                      <div className="flex items-center gap-3 mb-3"><div className="w-10 h-10 rounded-full flex items-center justify-center bg-noor-gold/15 text-noor-gold"><UserRound size={18} /></div><div className="min-w-0"><p className="text-noor-ivory font-medium truncate">{profile.name}</p><p className="text-noor-muted text-xs truncate">{profile.email}</p></div></div>
-                      <button onClick={signOut} className="w-full flex items-center justify-center gap-2 rounded-lg border border-noor-border py-2 text-xs text-noor-muted hover:text-noor-gold"><LogOut size={13} /> Sign out</button>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-noor-gold/15 text-noor-gold">
+                          <UserRound size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-noor-ivory font-medium truncate">{profile.name}</p>
+                          <p className="text-noor-muted text-xs truncate">{profile.email}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={signOut}
+                        className="w-full flex items-center justify-center gap-2 rounded-lg border border-noor-border py-2 text-xs text-noor-muted hover:text-noor-gold"
+                      >
+                        <LogOut size={13} /> Sign out
+                      </button>
                     </>
                   ) : (
                     <div>
                       <p className="text-noor-ivory font-medium mb-1">Create your Noor profile</p>
-                      <p className="text-noor-muted text-xs leading-relaxed mb-3">Enter your email in the Stay Connected section below to save a profile on this device.</p>
-                      <button type="button" onClick={() => alert('Google sign-in needs a configured Google OAuth client ID. Email profile is ready to use now.')} className="w-full rounded-lg border border-noor-border py-2 text-xs text-noor-ivory hover:border-noor-gold/50 hover:text-noor-gold transition-colors">Continue with Google</button>
+                      <p className="text-noor-muted text-xs leading-relaxed mb-3">
+                        Enter your email in the Stay Connected section below to save a profile on this device.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          alert('Google sign-in needs a configured Google OAuth client ID. Email profile is ready to use now.')
+                        }
+                        className="w-full rounded-lg border border-noor-border py-2 text-xs text-noor-ivory hover:border-noor-gold/50 hover:text-noor-gold transition-colors"
+                      >
+                        Continue with Google
+                      </button>
                     </div>
                   )}
                 </div>
               )}
             </div>
-            <button className="lg:hidden p-2 rounded-lg text-noor-muted hover:text-noor-ivory hover:bg-white/5 transition-colors" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X size={18} /> : <Menu size={18} />}</button>
+
+            <button
+              className="lg:hidden p-2 rounded-lg text-noor-muted hover:text-noor-ivory hover:bg-white/5 transition-colors"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </div>
         </div>
 
         {mobileOpen && (
           <div className="lg:hidden border-t border-noor-border px-4 pb-4 pt-2" style={{ background: 'rgba(6,24,18,0.98)' }}>
-            <form onSubmit={submitSearch} className="flex items-center gap-2 bg-noor-card border border-noor-border rounded-lg px-3 py-2 mb-2"><Search size={14} className="text-noor-muted" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search Noor..." className="flex-1 bg-transparent outline-none text-sm text-noor-ivory" /></form>
+            <form onSubmit={submitSearch} className="flex items-center gap-2 bg-noor-card border border-noor-border rounded-lg px-3 py-2 mb-2">
+              <Search size={14} className="text-noor-muted" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search Noor..."
+                className="flex-1 bg-transparent outline-none text-sm text-noor-ivory"
+              />
+            </form>
+
+            <div className="mb-3 border-b border-noor-border pb-3 pt-1">
+              <label className="text-xs text-noor-muted mb-1.5 flex items-center gap-1.5 px-1">
+                <Languages size={14} className="text-noor-gold" /> Select Language
+              </label>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => handleSelectLanguage(e.target.value)}
+                className="w-full bg-[#0B2820] text-noor-ivory border border-noor-border rounded-lg px-3 py-2 text-sm outline-none focus:border-noor-gold/50"
+              >
+                {languages.map((lang) => (
+                  <option key={lang.code} value={lang.code} className="bg-[#0B2820] text-noor-ivory">
+                    {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex flex-col gap-1">
               {[...navLinks, ...moreLinks.filter((m) => !navLinks.some((n) => n.to === m.to))].map((link) => (
-                <NavLink key={link.label} to={link.to} onClick={() => setMobileOpen(false)} className={({ isActive }) => `px-3 py-2.5 rounded-lg text-sm ${isActive ? 'text-noor-gold bg-noor-gold/10' : 'text-noor-muted hover:text-noor-ivory hover:bg-white/5'}`}>{link.label}</NavLink>
+                <NavLink
+                  key={link.label}
+                  to={link.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `px-3 py-2.5 rounded-lg text-sm ${
+                      isActive ? 'text-noor-gold bg-noor-gold/10' : 'text-noor-muted hover:text-noor-ivory hover:bg-white/5'
+                    }`
+                  }
+                >
+                  {link.label}
+                </NavLink>
               ))}
             </div>
           </div>
         )}
       </nav>
 
-      <div aria-label="Mobile navigation" className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-noor-border" style={{ background: 'rgba(6,24,18,0.97)', backdropFilter: 'blur(16px)' }}>
+      <div
+        aria-label="Mobile navigation"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-noor-border"
+        style={{ background: 'rgba(6,24,18,0.97)', backdropFilter: 'blur(16px)' }}
+      >
         <div className="flex items-center justify-around py-2">
-          {[{ to: '/', label: 'Home', end: true }, { to: '/quran', label: "Qur'an" }, { to: '/duas', label: 'Duas' }, { to: '/qibla', label: 'Qibla' }, { to: '/blog', label: 'More' }].map((link) => (
-            <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => `flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-xs ${isActive ? 'text-noor-gold' : 'text-noor-muted'}`}>
-              <span className="text-base leading-none">{link.label === 'Home' ? '🏠' : link.label === "Qur'an" ? '📖' : link.label === 'Duas' ? '🤲' : link.label === 'Qibla' ? '🧭' : '⋯'}</span>{link.label}
+          {[
+            { to: '/', label: 'Home', end: true },
+            { to: '/quran', label: "Qur'an" },
+            { to: '/duas', label: 'Duas' },
+            { to: '/qibla', label: 'Qibla' },
+            { to: '/blog', label: 'More' },
+          ].map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.end}
+              className={({ isActive }) =>
+                `flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-xs ${
+                  isActive ? 'text-noor-gold' : 'text-noor-muted'
+                }`
+              }
+            >
+              <span className="text-base leading-none">
+                {link.label === 'Home' ? '🏠' : link.label === "Qur'an" ? '📖' : link.label === 'Duas' ? '🤲' : link.label === 'Qibla' ? '🧭' : '⋯'}
+              </span>
+              {link.label}
             </NavLink>
           ))}
         </div>
