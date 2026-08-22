@@ -86,7 +86,9 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(() => {
+  return localStorage.getItem('noor-theme') !== 'light';
+});
   const [search, setSearch] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -96,9 +98,11 @@ export default function Navbar() {
 
   const t = (key: keyof TranslationKeys) => getTranslation(selectedLanguage, key);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    const sync = () => setProfile(readProfile());
+ useEffect(() => {
+  document.documentElement.classList.toggle('dark', dark);
+  document.documentElement.classList.toggle('light', !dark);
+  localStorage.setItem('noor-theme', dark ? 'dark' : 'light');
+}, [dark]);
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('noor-profile-updated', sync);
     return () => {
