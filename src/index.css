@@ -93,3 +93,37 @@ img { max-width: 100%; }
     transition-duration: 0.01ms !important;
   }
 }
+/* Noor Light Theme */
+html.light body {
+  background-color: #F7F3E8;
+  color: #17352C;
+  background-image:
+    radial-gradient(circle at 15% -10%, rgba(24,185,138,0.06), transparent 32rem),
+    radial-gradient(circle at 90% 0%, rgba(232,189,75,0.10), transparent 28rem);
+}
+
+html.light {
+  --color-noor-bg: #F7F3E8;
+  --color-noor-bg2: #EFE9D9;
+  --color-noor-card: #FFFFFF;
+  --color-noor-deep: #E9E2D1;
+  --color-noor-gold: #A97912;
+  --color-noor-gold2: #8D650D;
+  --color-noor-ivory: #17352C;
+  --color-noor-muted: #60736B;
+  --color-noor-accent: #10966F;
+  --color-noor-border: #D5CCBA;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #F7F3E8;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(169,121,18,0.28);
+}
+
+html.light ::selection {
+  background: rgba(169,121,18,0.20);
+  color: #17352C;
+}
