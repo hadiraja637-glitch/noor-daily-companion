@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router';
 import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House, Languages, Check } from 'lucide-react';
 import NoorLogo from './NoorLogo';
-import { getTranslation, isRTL, LanguageCode, TranslationKeys } from '../locales/translations';
+import { getTranslation, LanguageCode, TranslationKeys } from '../locales/translations';
 
 interface NavItem {
   to: string;
