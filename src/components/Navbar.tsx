@@ -86,9 +86,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dark, setDark] = useState(() => {
-  return localStorage.getItem('noor-theme') !== 'light';
-});
   const [search, setSearch] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -110,12 +107,6 @@ useEffect(() => {
     window.removeEventListener('noor-profile-updated', sync);
   };
 }, []);
-
-useEffect(() => {
-  document.documentElement.classList.toggle('dark', dark);
-  document.documentElement.classList.toggle('light', !dark);
-  localStorage.setItem('noor-theme', dark ? 'dark' : 'light');
-}, [dark]);
 
   useEffect(() => {
     document.documentElement.lang = selectedLanguage;
@@ -307,17 +298,6 @@ useEffect(() => {
                 </div>
               )}
             </div>
-
-            <button
-              onClick={() => setDark(!dark)}
-              aria-label="Toggle theme"
-              className="w-[54px] h-7 rounded-full border border-[#365249] bg-[#0b2a22] relative flex items-center justify-between px-1.5 text-noor-gold hover:border-noor-gold/40 transition-colors"
-            >
-              <Sun size={12} />
-              <span className="w-5 h-5 rounded-full bg-[#f5f1e5] shadow-md flex items-center justify-center">
-                {dark ? <Moon size={10} className="text-[#0b2a22]" /> : <Sun size={10} className="text-[#0b2a22]" />}
-              </span>
-            </button>
 
             <div className="relative">
               <button
