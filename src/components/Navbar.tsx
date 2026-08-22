@@ -98,18 +98,24 @@ export default function Navbar() {
 
   const t = (key: keyof TranslationKeys) => getTranslation(selectedLanguage, key);
 
- useEffect(() => {
+useEffect(() => {
+  const onScroll = () => setScrolled(window.scrollY > 20);
+  const sync = () => setProfile(readProfile());
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('noor-profile-updated', sync);
+
+  return () => {
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('noor-profile-updated', sync);
+  };
+}, []);
+
+useEffect(() => {
   document.documentElement.classList.toggle('dark', dark);
   document.documentElement.classList.toggle('light', !dark);
   localStorage.setItem('noor-theme', dark ? 'dark' : 'light');
 }, [dark]);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('noor-profile-updated', sync);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('noor-profile-updated', sync);
-    };
-  }, []);
 
   useEffect(() => {
     document.documentElement.lang = selectedLanguage;
