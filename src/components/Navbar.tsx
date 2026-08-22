@@ -2,28 +2,35 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router';
 import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House, Languages, Check } from 'lucide-react';
 import NoorLogo from './NoorLogo';
+import { getTranslation, isRTL, LanguageCode, TranslationKeys } from '../locales/translations';
 
-const navLinks = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/quran', label: "Qur'an" },
-  { to: '/hadith', label: 'Hadith' },
-  { to: '/duas', label: 'Duas' },
-  { to: '/calendar', label: 'Islamic Calendar' },
-  { to: '/zakat', label: 'Zakat' },
-  { to: '/stories', label: 'Stories' },
-  { to: '/blog', label: 'Blog' },
+interface NavItem {
+  to: string;
+  key: keyof TranslationKeys;
+  end?: boolean;
+}
+
+const navLinks: NavItem[] = [
+  { to: '/', key: 'home', end: true },
+  { to: '/quran', key: 'quran' },
+  { to: '/hadith', key: 'hadith' },
+  { to: '/duas', key: 'duas' },
+  { to: '/calendar', key: 'islamicCalendar' },
+  { to: '/zakat', key: 'zakat' },
+  { to: '/stories', key: 'stories' },
+  { to: '/blog', key: 'blog' },
 ];
 
-const moreLinks = [
-  { to: '/qibla', label: 'Qibla Finder' },
-  { to: '/tasbeeh', label: 'Tasbeeh & Dhikr' },
-  { to: '/calendar', label: 'Islamic Calendar' },
-  { to: '/zakat', label: 'Zakat Calculator' },
-  { to: '/stories', label: 'Islamic Stories' },
-  { to: '/blog', label: 'Islamic Blog' },
+const moreLinks: NavItem[] = [
+  { to: '/qibla', key: 'qiblaFinder' },
+  { to: '/tasbeeh', key: 'tasbeehDhikr' },
+  { to: '/calendar', key: 'islamicCalendar' },
+  { to: '/zakat', key: 'zakatCalculator' },
+  { to: '/stories', key: 'islamicStories' },
+  { to: '/blog', key: 'islamicBlog' },
 ];
 
-const languages = [
+const languages: { code: LanguageCode; name: string }[] = [
   { code: 'en', name: 'English' },
   { code: 'ar', name: 'العربية' },
   { code: 'ur', name: 'اردو' },
@@ -38,14 +45,18 @@ const languages = [
   { code: 'de', name: 'Deutsch' },
 ];
 
-const RTL_LANGUAGES = new Set(['ar', 'ur', 'fa']);
+interface SearchableItem {
+  to: string;
+  key: keyof TranslationKeys;
+  keywords: string;
+}
 
-const searchable = [
-  ...navLinks.map(({ to, label }) => ({ to, label, keywords: label.toLowerCase() })),
-  ...moreLinks.map(({ to, label }) => ({ to, label, keywords: label.toLowerCase() })),
-  { to: '/quran', label: 'Read Qur’an', keywords: 'quran qur an surah ayah verses' },
-  { to: '/hadith', label: 'Daily Hadith', keywords: 'hadith bukhari sunnah sayings' },
-  { to: '/duas', label: 'Daily Duas', keywords: 'dua duas supplication prayer' },
+const searchable: SearchableItem[] = [
+  ...navLinks.map(({ to, key }) => ({ to, key, keywords: key.toLowerCase() })),
+  ...moreLinks.map(({ to, key }) => ({ to, key, keywords: key.toLowerCase() })),
+  { to: '/quran', key: 'readQuran', keywords: 'quran qur an surah ayah verses' },
+  { to: '/hadith', key: 'dailyHadith', keywords: 'hadith bukhari sunnah sayings' },
+  { to: '/duas', key: 'dailyDuas', keywords: 'dua duas supplication prayer' },
 ];
 
 type Profile = { email: string; name: string };
@@ -59,11 +70,11 @@ function readProfile(): Profile | null {
   }
 }
 
-function readInitialLanguage(): string {
+function readInitialLanguage(): LanguageCode {
   try {
     const saved = localStorage.getItem('noor-language');
     if (saved && languages.some((l) => l.code === saved)) {
-      return saved;
+      return saved as LanguageCode;
     }
   } catch {
     // Fallback to default
@@ -80,8 +91,10 @@ export default function Navbar() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>(readInitialLanguage);
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>(readInitialLanguage);
   const [profile, setProfile] = useState<Profile | null>(readProfile);
+
+  const t = (key: keyof TranslationKeys) => getTranslation(selectedLanguage, key);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -96,7 +109,7 @@ export default function Navbar() {
 
   useEffect(() => {
     document.documentElement.lang = selectedLanguage;
-    document.documentElement.dir = RTL_LANGUAGES.has(selectedLanguage) ? 'rtl' : 'ltr';
+    document.documentElement.dir = isRTL(selectedLanguage) ? 'rtl' : 'ltr';
     try {
       localStorage.setItem('noor-language', selectedLanguage);
     } catch {
@@ -107,14 +120,19 @@ export default function Navbar() {
   const suggestions = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
-    return searchable.filter((item) => item.keywords.includes(q) || item.label.toLowerCase().includes(q)).slice(0, 5);
-  }, [search]);
+    return searchable
+      .map((item) => ({ ...item, label: t(item.key) }))
+      .filter((item) => item.keywords.includes(q) || item.label.toLowerCase().includes(q))
+      .slice(0, 5);
+  }, [search, selectedLanguage]);
 
   const submitSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
     const q = search.trim().toLowerCase();
     if (!q) return;
-    const result = searchable.find((item) => item.keywords.includes(q) || item.label.toLowerCase().includes(q));
+    const result = searchable
+      .map((item) => ({ ...item, label: t(item.key) }))
+      .find((item) => item.keywords.includes(q) || item.label.toLowerCase().includes(q));
     if (result) {
       navigate(result.to);
       setSearch('');
@@ -128,7 +146,7 @@ export default function Navbar() {
     window.dispatchEvent(new Event('noor-profile-updated'));
   };
 
-  const handleSelectLanguage = (code: string) => {
+  const handleSelectLanguage = (code: LanguageCode) => {
     setSelectedLanguage(code);
     setLangOpen(false);
   };
@@ -155,7 +173,7 @@ export default function Navbar() {
                   </div>
                 </div>
                 <div className="hidden xl:block text-noor-muted text-[8px] leading-tight max-w-[155px] pb-0.5">
-                  Your daily companion for prayer, remembrance & giving
+                  {t('tagline')}
                 </div>
               </div>
             </div>
@@ -176,7 +194,7 @@ export default function Navbar() {
                 }
               >
                 <span className="inline-flex items-center gap-1.5">
-                  {link.to === '/' && <House size={12} strokeWidth={2.4} />} {link.label}
+                  {link.to === '/' && <House size={12} strokeWidth={2.4} />} {t(link.key)}
                 </span>
               </NavLink>
             ))}
@@ -186,7 +204,8 @@ export default function Navbar() {
                 onClick={() => setMoreOpen((v) => !v)}
                 className="px-2.5 xl:px-3 py-1.5 rounded-md text-[11px] xl:text-xs text-noor-muted hover:text-noor-ivory hover:bg-white/5 flex items-center gap-1 transition-colors"
               >
-                More <ChevronDown size={12} className={moreOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                {t('more')}{' '}
+                <ChevronDown size={12} className={moreOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
               </button>
 
               {moreOpen && (
@@ -196,12 +215,12 @@ export default function Navbar() {
                 >
                   {moreLinks.map((item) => (
                     <Link
-                      key={item.label}
+                      key={item.key}
                       to={item.to}
                       onClick={() => setMoreOpen(false)}
                       className="block rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5"
                     >
-                      {item.label}
+                      {t(item.key)}
                     </Link>
                   ))}
                 </div>
@@ -216,7 +235,7 @@ export default function Navbar() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search anything..."
+                  placeholder={t('searchAnything')}
                   aria-label="Search Noor"
                   className="bg-transparent text-sm text-noor-ivory placeholder:text-noor-muted outline-none w-28 xl:w-40"
                 />
@@ -229,7 +248,7 @@ export default function Navbar() {
                 >
                   {suggestions.map((item) => (
                     <button
-                      key={`${item.to}-${item.label}`}
+                      key={`${item.to}-${item.key}`}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         navigate(item.to);
@@ -248,7 +267,7 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setLangOpen((v) => !v)}
-                aria-label="Select language"
+                aria-label={t('selectLanguage')}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-noor-gold bg-white/5 border border-noor-border hover:border-noor-gold/50 transition-colors"
               >
                 <Languages size={15} />
@@ -294,7 +313,7 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setProfileOpen((v) => !v)}
-                aria-label="Profile"
+                aria-label={t('profile')}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-noor-gold bg-white/5 border border-noor-border hover:border-noor-gold/50 transition-colors overflow-hidden"
               >
                 {profile ? (
@@ -331,12 +350,12 @@ export default function Navbar() {
                         onClick={signOut}
                         className="w-full flex items-center justify-center gap-2 rounded-lg border border-noor-border py-2 text-xs text-noor-muted hover:text-noor-gold"
                       >
-                        <LogOut size={13} /> Sign out
+                        <LogOut size={13} /> {t('signOut')}
                       </button>
                     </>
                   ) : (
                     <div>
-                      <p className="text-noor-ivory font-medium mb-1">Create your Noor profile</p>
+                      <p className="text-noor-ivory font-medium mb-1">{t('createYourNoorProfile')}</p>
                       <p className="text-noor-muted text-xs leading-relaxed mb-3">
                         Enter your email in the Stay Connected section below to save a profile on this device.
                       </p>
@@ -347,7 +366,7 @@ export default function Navbar() {
                         }
                         className="w-full rounded-lg border border-noor-border py-2 text-xs text-noor-ivory hover:border-noor-gold/50 hover:text-noor-gold transition-colors"
                       >
-                        Continue with Google
+                        {t('continueWithGoogle')}
                       </button>
                     </div>
                   )}
@@ -371,18 +390,18 @@ export default function Navbar() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search Noor..."
+                placeholder={t('searchNoor')}
                 className="flex-1 bg-transparent outline-none text-sm text-noor-ivory"
               />
             </form>
 
             <div className="mb-3 border-b border-noor-border pb-3 pt-1">
               <label className="text-xs text-noor-muted mb-1.5 flex items-center gap-1.5 px-1">
-                <Languages size={14} className="text-noor-gold" /> Select Language
+                <Languages size={14} className="text-noor-gold" /> {t('selectLanguage')}
               </label>
               <select
                 value={selectedLanguage}
-                onChange={(e) => handleSelectLanguage(e.target.value)}
+                onChange={(e) => handleSelectLanguage(e.target.value as LanguageCode)}
                 className="w-full bg-[#0B2820] text-noor-ivory border border-noor-border rounded-lg px-3 py-2 text-sm outline-none focus:border-noor-gold/50"
               >
                 {languages.map((lang) => (
@@ -396,7 +415,7 @@ export default function Navbar() {
             <div className="flex flex-col gap-1">
               {[...navLinks, ...moreLinks.filter((m) => !navLinks.some((n) => n.to === m.to))].map((link) => (
                 <NavLink
-                  key={link.label}
+                  key={link.key}
                   to={link.to}
                   onClick={() => setMobileOpen(false)}
                   className={({ isActive }) =>
@@ -405,7 +424,7 @@ export default function Navbar() {
                     }`
                   }
                 >
-                  {link.label}
+                  {t(link.key)}
                 </NavLink>
               ))}
             </div>
@@ -420,11 +439,11 @@ export default function Navbar() {
       >
         <div className="flex items-center justify-around py-2">
           {[
-            { to: '/', label: 'Home', end: true },
-            { to: '/quran', label: "Qur'an" },
-            { to: '/duas', label: 'Duas' },
-            { to: '/qibla', label: 'Qibla' },
-            { to: '/blog', label: 'More' },
+            { to: '/', key: 'home' as keyof TranslationKeys, end: true },
+            { to: '/quran', key: 'quran' as keyof TranslationKeys },
+            { to: '/duas', key: 'duas' as keyof TranslationKeys },
+            { to: '/qibla', key: 'qiblaFinder' as keyof TranslationKeys },
+            { to: '/blog', key: 'more' as keyof TranslationKeys },
           ].map((link) => (
             <NavLink
               key={link.to}
@@ -437,9 +456,9 @@ export default function Navbar() {
               }
             >
               <span className="text-base leading-none">
-                {link.label === 'Home' ? '🏠' : link.label === "Qur'an" ? '📖' : link.label === 'Duas' ? '🤲' : link.label === 'Qibla' ? '🧭' : '⋯'}
+                {link.to === '/' ? '🏠' : link.to === '/quran' ? '📖' : link.to === '/duas' ? '🤲' : link.to === '/qibla' ? '🧭' : '⋯'}
               </span>
-              {link.label}
+              {t(link.key)}
             </NavLink>
           ))}
         </div>
