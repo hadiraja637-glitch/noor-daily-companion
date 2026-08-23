@@ -35,26 +35,16 @@ type Ayah = {
 
 const BASMALA = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
 
-// Thoroughly removes embedded Bismillah from Ayah 1 across ALL Surahs
-function removeEmbeddedBismillah(text: string, surahNumber: number) {
+// Strict & Complete Bismillah Removal Function for ALL Ayah 1s
+function removeBismillahFromAyah(text: string): string {
   let cleaned = text.trim();
 
-  // Strip Bismillah variants from Ayah 1 if present
-  const bismillahPatterns = [
-    /^بِسۡمِ\s+ٱللَّهِ\s+ٱلرَّحۡمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
-    /^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/u,
-    /^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
-    /^بِسْمِ\s+اللهِ\s+الرَّحْمٰنِ\s+الرَّحِيمِ\s*/u,
-  ];
+  // Strip Bismillah in all Uthmani and Simple script formats
+  const bismillahRegex = /^(بِسۡمِ\s+ٱللَّهِ\s+ٱلرَّحۡمَٰنِ\s+ٱلرَّحِيمِ|بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ|بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ|بِسْمِ\s+اللهِ\s+الرَّحْمٰنِ\s+الرَّحِيمِ|بِسْمِ\s+اللهِ\s+الرَّحْمٰنِ\s+الرَّحِيْمِ)\s*/u;
 
-  for (const pattern of bismillahPatterns) {
-    if (pattern.test(cleaned)) {
-      cleaned = cleaned.replace(pattern, '').trim();
-      break;
-    }
-  }
+  cleaned = cleaned.replace(bismillahRegex, '');
 
-  return cleaned;
+  return cleaned.trim();
 }
 
 const FALLBACK_SURAHS: Surah[] = [
@@ -109,7 +99,6 @@ export default function Quran() {
     setLoading(true);
     setError('');
 
-    // Request Quran text
     Promise.all([
       fetch(`${API}/surah/${selected.number}/quran-simple`).then((r) => r.json()),
       fetch(`${API}/surah/${selected.number}/en.sahih`).then((r) => r.json()),
@@ -121,7 +110,7 @@ export default function Quran() {
         let processedArabic = arabicAyahs;
         let processedTranslation = translatedAyahs;
 
-        // If Surah Fatiha (#1), remove Bismillah from Ayah 1 completely so Ayah 1 is "Alhamdulillah"
+        // If Surah Al-Fatiha (#1) has 7 ayahs where Ayah 1 is Bismillah, slice it off so Ayah 1 is Al-Hamdu
         if (selected.number === 1 && arabicAyahs.length === 7) {
           processedArabic = arabicAyahs.slice(1);
           processedTranslation = translatedAyahs.slice(1);
@@ -129,9 +118,8 @@ export default function Quran() {
 
         setAyahs(
           processedArabic.map((ayah: Ayah, index: number) => {
-            const rawText = ayah.text;
-            // Clean embedded Bismillah from Ayah 1 in all surahs
-            const cleanedText = index === 0 ? removeEmbeddedBismillah(rawText, selected.number) : rawText;
+            // Remove Bismillah from Ayah 1 across EVERY surah
+            const cleanedText = index === 0 ? removeBismillahFromAyah(ayah.text) : ayah.text;
 
             return {
               number: ayah.number,
@@ -304,7 +292,7 @@ export default function Quran() {
                 {selected.numberOfAyahs} Ayahs · {selected.revelationType} · {selected.englishNameTranslation}
               </p>
 
-              {/* Audio Controls */}
+              {/* Audio Player Controls */}
               <div className="mt-6 flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
                 <div className="flex items-center justify-center gap-3 w-full">
                   <button
@@ -360,8 +348,8 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Standalone Bismillah Top Header for all Surahs EXCEPT Surah Fatiha (#1) and At-Tawbah (#9) */}
-              {!loading && selected.number !== 1 && selected.number !== 9 && (
+              {/* Standalone Bismillah Banner for ALL Surahs EXCEPT Surah At-Tawbah (#9) */}
+              {!loading && selected.number !== 9 && (
                 <div className="pb-6 pt-2 text-center border-b border-[#1A4035]/60 mb-6">
                   <p
                     className="font-arabic text-noor-gold text-3xl sm:text-4xl leading-relaxed"
@@ -373,15 +361,15 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Ayah Rendering */}
+              {/* Ayah List */}
               {!loading &&
                 ayahs.map((ayah) => {
                   const isBookmarked = bookmarks.includes(ayah.number);
                   const isPlayingThis = playingAyah === ayah.number;
                   const words = ayah.text.split(' ');
 
-                  // Precise sync math: slight early lead offset (1.05 multiplier) matches recitation start perfectly
-                  const audioProgress = duration > 0 ? (currentTime / duration) * 1.05 : 0;
+                  // Faster audio highlighting sync (1.18 factor eliminates delay)
+                  const audioProgress = duration > 0 ? (currentTime / duration) * 1.18 : 0;
                   const activeWordIndex = isPlayingThis
                     ? Math.min(Math.floor(audioProgress * words.length), words.length - 1)
                     : -1;
@@ -415,7 +403,7 @@ export default function Quran() {
                         </div>
                       </div>
 
-                      {/* Cleaned Arabic Text with Exact Word Audio Highlighting */}
+                      {/* Cleaned Arabic Text + Fast Highlighting */}
                       <div
                         className="font-arabic text-2xl sm:text-3xl text-right leading-[2.3] mb-4"
                         style={{ fontFamily: 'Amiri, serif' }}
@@ -426,7 +414,7 @@ export default function Quran() {
                           return (
                             <span
                               key={wIdx}
-                              className={`inline-block transition-all duration-100 px-1 ${
+                              className={`inline-block transition-all duration-75 px-1 ${
                                 isCurrent
                                   ? 'text-[#E8BD4B] font-bold scale-105 drop-shadow-[0_0_12px_rgba(232,189,75,0.9)]'
                                   : 'text-noor-ivory'
@@ -448,7 +436,7 @@ export default function Quran() {
             </div>
           </div>
         ) : (
-          /* Surah Card Grid */
+          /* Grid View for All Surahs */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((s) => (
               <div
