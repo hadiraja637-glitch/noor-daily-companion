@@ -35,25 +35,32 @@ type Ayah = {
 
 const BASMALA = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
 
-// Robust Bismillah stripping logic for all Quran text variants
+// Exact string stripping logic for API Uthmani text
 function cleanAyahText(text: string, surahNumber: number) {
-  // Surah Al-Fatiha (1): Bismillah IS the first verse, don't strip.
-  // Surah At-Tawbah (9): Does not have Bismillah at all.
   if (surahNumber === 1 || surahNumber === 9) {
     return text.trim();
   }
 
-  // Normalize text to unify Arabic diacritics and spaces
+  // Uthmani API prepends Bismillah in Ayah 1. We strip by removing the Bismillah length or matching prefix.
+  const uthmaniBismillahs = [
+    'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+    'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+    'بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيمِ'
+  ];
+
   let cleaned = text.trim();
-
-  // Pattern matches various diacritic variants of Bismillah from Uthmani text APIs
-  const bismillahRegex = /^((بِسْمِ|بِسۡمِ)\s*(اللَّهِ|ٱللَّهِ|اللهِ)\s*(الرَّحْمَٰنِ|الرَّحۡمَٰنِ|الرَّحْمٰنِ|الرحمن)\s*(الرَّحِيمِ|الرَّحِيم|الرحيم))\s*/u;
-
-  if (bismillahRegex.test(cleaned)) {
-    cleaned = cleaned.replace(bismillahRegex, '').trim();
+  for (const bism of uthmaniBismillahs) {
+    if (cleaned.startsWith(bism)) {
+      cleaned = cleaned.substring(bism.length).trim();
+      break;
+    }
   }
 
-  return cleaned;
+  // Fallback regex if Unicode characters vary
+  cleaned = cleaned.replace(/^بِسۡمِ\s+ٱللَّهِ\s+ٱلرَّحۡمَٰنِ\s+ٱلرَّحِيمِ\s*/u, '');
+  cleaned = cleaned.replace(/^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/u, '');
+
+  return cleaned.trim();
 }
 
 const FALLBACK_SURAHS: Surah[] = [
@@ -381,8 +388,8 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Display standalone Bismillah banner for Surah #2 to #114 (except Surah #1 & #9) */}
-              {!loading && selected.number !== 1 && selected.number !== 9 && (
+              {/* Bismillah Header Banner for all Surahs except Surah At-Tawbah (#9) */}
+              {!loading && selected.number !== 9 && (
                 <div className="pb-6 pt-2 text-center border-b border-[#1A4035]/60 mb-6">
                   <p
                     className="font-arabic text-noor-gold text-3xl sm:text-4xl leading-relaxed"
