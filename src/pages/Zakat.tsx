@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Calculator, RotateCcw, CheckCircle2 } from 'lucide-react';
 
 type CurrencyCode = 'PKR' | 'USD' | 'SAR' | 'AED' | 'GBP';
@@ -21,7 +21,6 @@ interface Assets {
 }
 
 const CURRENCIES: Currency[] = [
-  // Approximate reference rates; update these when current local bullion rates change.
   { code: 'PKR', symbol: 'Rs', name: 'Pakistani Rupee', goldPerGram: 40900, silverPerGram: 605 },
   { code: 'USD', symbol: '$', name: 'US Dollar', goldPerGram: 146, silverPerGram: 2.15 },
   { code: 'SAR', symbol: '﷼', name: 'Saudi Riyal', goldPerGram: 547, silverPerGram: 8.06 },
@@ -53,6 +52,58 @@ function formatMoney(value: number, currency: Currency) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+// Field component moved outside to preserve focus on input change
+interface FieldProps {
+  label: string;
+  field: keyof Assets;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  unit?: string;
+  help?: string;
+}
+
+function Field({ label, field, value, onChange, unit, help }: FieldProps) {
+  return (
+    <div>
+      <label
+        htmlFor={`zakat-${field}`}
+        className="text-noor-muted text-xs mb-1.5 block"
+      >
+        {label}
+      </label>
+
+      <div
+        className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-colors focus-within:border-noor-gold/50"
+        style={{
+          background: '#072018',
+          border: '1px solid rgba(26,64,53,0.7)',
+        }}
+      >
+        <span className="text-noor-muted text-sm shrink-0">{unit}</span>
+
+        <input
+          id={`zakat-${field}`}
+          name={field}
+          type="number"
+          min="0"
+          step="any"
+          value={value}
+          onChange={onChange}
+          placeholder="0"
+          inputMode="decimal"
+          className="flex-1 bg-transparent text-noor-ivory text-sm outline-none min-w-0"
+        />
+      </div>
+
+      {help && (
+        <p className="text-[10px] text-noor-muted mt-1">
+          {help}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function Zakat() {
@@ -94,7 +145,6 @@ export default function Zakat() {
     const silverNisabValue =
       SILVER_NISAB_GRAMS * currency.silverPerGram;
 
-    // The calculator shows both commonly used Nisab references.
     const eligibleByGold = zakatableWealth >= goldNisabValue;
     const eligibleBySilver = zakatableWealth >= silverNisabValue;
 
@@ -114,56 +164,6 @@ export default function Zakat() {
     setAssets(initialAssets);
     setSubmitted(false);
   };
-
-  const Field = ({
-    label,
-    field,
-    unit = currency.symbol,
-    help,
-  }: {
-    label: string;
-    field: keyof Assets;
-    unit?: string;
-    help?: string;
-  }) => (
-    <div>
-      <label
-        htmlFor={`zakat-${field}`}
-        className="text-noor-muted text-xs mb-1.5 block"
-      >
-        {label}
-      </label>
-
-      <div
-        className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-colors focus-within:border-noor-gold/50"
-        style={{
-          background: '#072018',
-          border: '1px solid rgba(26,64,53,0.7)',
-        }}
-      >
-        <span className="text-noor-muted text-sm shrink-0">{unit}</span>
-
-        <input
-          id={`zakat-${field}`}
-          name={field}
-          type="number"
-          min="0"
-          step="any"
-          value={assets[field]}
-          onChange={setField(field)}
-          placeholder="0"
-          inputMode="decimal"
-          className="flex-1 bg-transparent text-noor-ivory text-sm outline-none min-w-0"
-        />
-      </div>
-
-      {help && (
-        <p className="text-[10px] text-noor-muted mt-1">
-          {help}
-        </p>
-      )}
-    </div>
-  );
 
   return (
     <div
@@ -263,11 +263,16 @@ export default function Zakat() {
             <Field
               label="Cash & Bank Balance"
               field="cash"
+              value={assets.cash}
+              onChange={setField('cash')}
+              unit={currency.symbol}
             />
 
             <Field
               label="Gold"
               field="gold"
+              value={assets.gold}
+              onChange={setField('gold')}
               unit="g"
               help="Enter the weight of your gold in grams."
             />
@@ -275,6 +280,8 @@ export default function Zakat() {
             <Field
               label="Silver"
               field="silver"
+              value={assets.silver}
+              onChange={setField('silver')}
               unit="g"
               help="Enter the weight of your silver in grams."
             />
@@ -282,11 +289,17 @@ export default function Zakat() {
             <Field
               label="Investments & Stocks"
               field="investments"
+              value={assets.investments}
+              onChange={setField('investments')}
+              unit={currency.symbol}
             />
 
             <Field
               label="Business Assets"
               field="business"
+              value={assets.business}
+              onChange={setField('business')}
+              unit={currency.symbol}
             />
           </div>
         </div>
@@ -306,6 +319,9 @@ export default function Zakat() {
           <Field
             label="Outstanding Debts"
             field="debts"
+            value={assets.debts}
+            onChange={setField('debts')}
+            unit={currency.symbol}
           />
         </div>
 
