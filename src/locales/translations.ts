@@ -40,6 +40,7 @@ export interface TranslationKeys {
   readQuran: string;
   dailyHadith: string;
   dailyDuas: string;
+  sunnahHabits: string;
 
   // Home Page Keys
   heroSubheader: string;
@@ -103,6 +104,7 @@ export const translations: Record<LanguageCode, TranslationKeys> = {
     duas: 'Duas',
     islamicCalendar: 'Islamic Calendar',
     zakat: 'Zakat',
+    sunnahHabits: 'Sunnah Habits',
     stories: 'Stories',
     blog: 'Blog',
     qiblaFinder: 'Qibla Finder',
