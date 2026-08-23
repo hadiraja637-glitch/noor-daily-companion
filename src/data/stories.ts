@@ -162,34 +162,43 @@ export const STORIES: Story[] = [
   }
 ];
 
-// Helper Functions & Dynamic API Fetcher
-export function getStory(slug: string): Story | undefined {
-  if (!slug) return undefined;
-  return STORIES.find((story) => story.slug.toLowerCase() === slug.toLowerCase());
-}
+// Dynamic cache array for API stories
+let API_STORIES_CACHE: Story[] = [];
 
-// Fetch Dynamic Stories/Verses using Quran API (Quran.com Public API)
-export async function fetchExternalIslamicStories(): Promise<Partial<Story>[]> {
+export async function fetchExternalIslamicStories(): Promise<Story[]> {
+  if (API_STORIES_CACHE.length > 0) return API_STORIES_CACHE;
   try {
     const res = await fetch('https://api.quran.com/api/v4/chapters?language=en');
     const data = await res.json();
     if (!data.chapters) return [];
 
-    return data.chapters.slice(0, 5).map((ch: any) => ({
+    API_STORIES_CACHE = data.chapters.slice(0, 10).map((ch: any) => ({
       slug: `surah-${ch.id}`,
       title: `Surah ${ch.name_simple} (${ch.translated_name.name})`,
-      excerpt: `Reflections from Surah ${ch.name_simple}, revealed in ${ch.revelation_place}.`,
+      excerpt: `Reflections and spiritual benefits from Surah ${ch.name_simple}, revealed in ${ch.revelation_place}.`,
       content: [
-        `Surah ${ch.name_simple} consists of ${ch.verses_count} verses and carries profound spiritual lessons for believers.`,
-        `Reading and contemplating Surah ${ch.name_simple} helps strengthen faith, offering divine peace and clarity.`,
+        `Surah ${ch.name_simple} consists of ${ch.verses_count} verses and carries profound wisdom for daily life.`,
+        `Reciting and reflecting on Surah ${ch.name_simple} brings tranquillity, mindfulness, and spiritual clarity.`,
+        `Explore its verses directly in the Quran tab to build a deeper daily connection.`
       ],
       img: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=1200&h=720&fit=crop&auto=format',
       alt: 'Quran reading',
       tag: 'Quranic Insights',
       lesson: `Contemplation on Surah ${ch.name_simple}`,
     }));
+    return API_STORIES_CACHE;
   } catch (err) {
-    console.warn('Unable to fetch live Quranic stories, falling back to static stories:', err);
+    console.warn('API error, fallback to static stories:', err);
     return [];
   }
+}
+
+export async function getStoryAsync(slug: string): Promise<Story | undefined> {
+  if (!slug) return undefined;
+  const staticFound = STORIES.find((story) => story.slug.toLowerCase() === slug.toLowerCase());
+  if (staticFound) return staticFound;
+
+  // Search API stories if not found statically
+  const apiStories = await fetchExternalIslamicStories();
+  return apiStories.find((story) => story.slug.toLowerCase() === slug.toLowerCase());
 }
