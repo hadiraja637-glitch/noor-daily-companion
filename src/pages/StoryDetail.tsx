@@ -26,7 +26,7 @@ export default function StoryDetail() {
       <div className="min-h-screen pt-28 pb-16 flex items-center justify-center" style={{ background: '#072018' }}>
         <div className="text-center text-noor-gold">
           <BookOpen className="animate-bounce mx-auto mb-2" size={32} />
-          <p className="text-xs text-noor-muted">Loading story...</p>
+          <p className="text-xs text-noor-muted">Story load ho rahi hai...</p>
         </div>
       </div>
     );
@@ -36,10 +36,10 @@ export default function StoryDetail() {
     return (
       <div className="min-h-screen pt-28 pb-16 flex items-center justify-center" style={{ background: '#072018' }}>
         <div className="text-center p-8 rounded-2xl bg-[#103329] border border-noor-border max-w-md mx-4">
-          <h2 className="text-noor-ivory text-xl font-semibold mb-2">Story Not Found</h2>
-          <p className="text-noor-muted text-xs mb-6">The requested story or reflection could not be loaded.</p>
+          <h2 className="text-noor-ivory text-xl font-semibold mb-2">Story Nahi Mili</h2>
+          <p className="text-noor-muted text-xs mb-6">Munsalik kahani ya zikr load nahi ho saka.</p>
           <Link to="/stories" className="px-5 py-2.5 rounded-full text-xs font-medium bg-[#E8BD4B] text-[#061812] inline-flex items-center gap-2">
-            <ArrowLeft size={14} /> Back to Stories
+            <ArrowLeft size={14} /> Wapas Stories Par Jayein
           </Link>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default function StoryDetail() {
     <div className="min-h-screen pt-20 pb-20" style={{ background: '#072018' }}>
       <div className="max-w-3xl mx-auto px-4 lg:px-8">
         <Link to="/stories" className="inline-flex items-center gap-1.5 text-xs text-noor-gold hover:underline mb-6">
-          <ArrowLeft size={13} /> Back to All Stories
+          <ArrowLeft size={13} /> Tamam Stories Wapas
         </Link>
 
         <div className="rounded-2xl overflow-hidden mb-8" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.6)' }}>
