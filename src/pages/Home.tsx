@@ -530,7 +530,7 @@ function IslamicStories() {
 const DHIKR_OPTIONS = ['SubhanAllah', 'Alhamdulillah', 'Allahu Akbar', 'La ilaha illallah'];
 
 function HadithDhikrCalendar() {
-  const [count, setCount] = useState(33);
+  const [count, setCount] = useState(0);
   const [dhikr, setDhikr] = useState('SubhanAllah');
   const dailyHadith = getDailyHadith();
 
