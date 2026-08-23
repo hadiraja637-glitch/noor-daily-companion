@@ -97,7 +97,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
       } catch {
         setData(null);
       }
-    } fontally {
+    } finally {
       setLoading(false);
     }
   };
@@ -114,7 +114,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setError('Could not load timings for that city. Please try again.');
       await load(city);
-    } fontally {
+    } finally {
       setLoading(false);
     }
   };
@@ -149,7 +149,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('noor-prayer-location', JSON.stringify(currentLoc));
         } catch {
           setError('Could not load prayer timings for your current location.');
-        } fontally {
+        } finally {
           setLoading(false);
         }
       },
