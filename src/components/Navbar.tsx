@@ -23,6 +23,7 @@ const navLinks: NavItem[] = [
 
 const moreLinks: NavItem[] = [
   { to: '/qibla', key: 'qiblaFinder' },
+  { to: '/sunnah-habits', key: 'sunnahHabits' },
   { to: '/tasbeeh', key: 'tasbeehDhikr' },
   { to: '/calendar', key: 'islamicCalendar' },
   { to: '/zakat', key: 'zakatCalculator' },
