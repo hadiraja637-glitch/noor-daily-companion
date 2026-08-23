@@ -62,7 +62,7 @@ export default function StoryDetail() {
     <div className="min-h-screen pt-20 pb-20" style={{ background: '#072018' }}>
       <div className="max-w-3xl mx-auto px-4 lg:px-8">
         <Link to="/stories" className="inline-flex items-center gap-1.5 text-xs text-noor-gold hover:underline mb-6">
-          <ArrowLeft size={13} /> Tamam Stories Wapas
+          <ArrowLeft size={13} /> Back
         </Link>
 
         <div className="rounded-2xl overflow-hidden mb-8" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.6)' }}>
