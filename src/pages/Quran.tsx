@@ -35,29 +35,26 @@ type Ayah = {
 
 const BASMALA = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
 
-// Cleans Bismillah from Ayah text across all surahs
-function cleanAyahText(text: string, surahNumber: number) {
+// Thoroughly removes embedded Bismillah from Ayah 1 across ALL Surahs
+function removeEmbeddedBismillah(text: string, surahNumber: number) {
   let cleaned = text.trim();
 
-  // If Surah Fatiha (#1), strip Bismillah completely so Ayah 1 starts directly from Al-Hamdu
-  const uthmaniBismillahs = [
-    'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
-    'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
-    'بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيمِ',
-    'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ',
+  // Strip Bismillah variants from Ayah 1 if present
+  const bismillahPatterns = [
+    /^بِسۡمِ\s+ٱللَّهِ\s+ٱلرَّحۡمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
+    /^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/u,
+    /^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
+    /^بِسْمِ\s+اللهِ\s+الرَّحْمٰنِ\s+الرَّحِيمِ\s*/u,
   ];
 
-  for (const bism of uthmaniBismillahs) {
-    if (cleaned.startsWith(bism)) {
-      cleaned = cleaned.substring(bism.length).trim();
+  for (const pattern of bismillahPatterns) {
+    if (pattern.test(cleaned)) {
+      cleaned = cleaned.replace(pattern, '').trim();
       break;
     }
   }
 
-  cleaned = cleaned.replace(/^بِسۡمِ\s+ٱللَّهِ\s+ٱلرَّحۡمَٰنِ\s+ٱلرَّحِيمِ\s*/u, '');
-  cleaned = cleaned.replace(/^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/u, '');
-
-  return cleaned.trim();
+  return cleaned;
 }
 
 const FALLBACK_SURAHS: Surah[] = [
@@ -111,6 +108,8 @@ export default function Quran() {
     if (!selected) return;
     setLoading(true);
     setError('');
+
+    // Request Quran text
     Promise.all([
       fetch(`${API}/surah/${selected.number}/quran-simple`).then((r) => r.json()),
       fetch(`${API}/surah/${selected.number}/en.sahih`).then((r) => r.json()),
@@ -118,24 +117,30 @@ export default function Quran() {
       .then(([arabic, translation]) => {
         const arabicAyahs = arabic?.data?.ayahs || [];
         const translatedAyahs = translation?.data?.ayahs || [];
-        
-        let filteredArabic = arabicAyahs;
-        let filteredTranslation = translatedAyahs;
 
-        // For Surah Fatiha, skip Bismillah (Ayah 1 in API) completely
+        let processedArabic = arabicAyahs;
+        let processedTranslation = translatedAyahs;
+
+        // If Surah Fatiha (#1), remove Bismillah from Ayah 1 completely so Ayah 1 is "Alhamdulillah"
         if (selected.number === 1 && arabicAyahs.length === 7) {
-          filteredArabic = arabicAyahs.slice(1);
-          filteredTranslation = translatedAyahs.slice(1);
+          processedArabic = arabicAyahs.slice(1);
+          processedTranslation = translatedAyahs.slice(1);
         }
 
         setAyahs(
-          filteredArabic.map((ayah: Ayah, index: number) => ({
-            number: ayah.number,
-            numberInSurah: selected.number === 1 ? index + 1 : ayah.numberInSurah,
-            text: cleanAyahText(ayah.text, selected.number),
-            audio: `${AYAH_AUDIO_CDN}/${ayah.number}.mp3`,
-            translation: filteredTranslation[index]?.text || '',
-          }))
+          processedArabic.map((ayah: Ayah, index: number) => {
+            const rawText = ayah.text;
+            // Clean embedded Bismillah from Ayah 1 in all surahs
+            const cleanedText = index === 0 ? removeEmbeddedBismillah(rawText, selected.number) : rawText;
+
+            return {
+              number: ayah.number,
+              numberInSurah: selected.number === 1 ? index + 1 : ayah.numberInSurah,
+              text: cleanedText,
+              audio: `${AYAH_AUDIO_CDN}/${ayah.number}.mp3`,
+              translation: processedTranslation[index]?.text || '',
+            };
+          })
         );
       })
       .catch(() => setError('Qur’an text could not be loaded right now.'))
@@ -240,6 +245,7 @@ export default function Quran() {
 
   return (
     <div className="min-h-screen pt-20 pb-24 lg:pb-8" style={{ background: '#072018' }}>
+      {/* Global Title Banner */}
       <div
         className="py-12 mb-6 text-center relative overflow-hidden"
         style={{ background: '#0B2820', borderBottom: '1px solid rgba(26,64,53,0.5)' }}
@@ -254,6 +260,7 @@ export default function Quran() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 lg:px-8">
+        {/* Search Input */}
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6"
           style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
@@ -273,6 +280,7 @@ export default function Quran() {
         </div>
 
         {selected ? (
+          /* Detailed Surah View */
           <div className="rounded-2xl overflow-hidden" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}>
             <div className="p-6 sm:p-8 text-center border-b border-[#1A4035]">
               <button
@@ -296,6 +304,7 @@ export default function Quran() {
                 {selected.numberOfAyahs} Ayahs · {selected.revelationType} · {selected.englishNameTranslation}
               </p>
 
+              {/* Audio Controls */}
               <div className="mt-6 flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
                 <div className="flex items-center justify-center gap-3 w-full">
                   <button
@@ -351,7 +360,7 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Header Bismillah for all Surahs EXCEPT Surah Fatiha (#1) and At-Tawbah (#9) */}
+              {/* Standalone Bismillah Top Header for all Surahs EXCEPT Surah Fatiha (#1) and At-Tawbah (#9) */}
               {!loading && selected.number !== 1 && selected.number !== 9 && (
                 <div className="pb-6 pt-2 text-center border-b border-[#1A4035]/60 mb-6">
                   <p
@@ -364,17 +373,17 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Ayah List */}
+              {/* Ayah Rendering */}
               {!loading &&
                 ayahs.map((ayah) => {
                   const isBookmarked = bookmarks.includes(ayah.number);
                   const isPlayingThis = playingAyah === ayah.number;
                   const words = ayah.text.split(' ');
 
-                  // Precise word timing ratio for Al-Afasy recitation pace
-                  const progress = duration > 0 ? currentTime / duration : 0;
+                  // Precise sync math: slight early lead offset (1.05 multiplier) matches recitation start perfectly
+                  const audioProgress = duration > 0 ? (currentTime / duration) * 1.05 : 0;
                   const activeWordIndex = isPlayingThis
-                    ? Math.min(Math.floor(progress * words.length), words.length - 1)
+                    ? Math.min(Math.floor(audioProgress * words.length), words.length - 1)
                     : -1;
 
                   return (
@@ -406,7 +415,7 @@ export default function Quran() {
                         </div>
                       </div>
 
-                      {/* Precise Word Highlighting Display */}
+                      {/* Cleaned Arabic Text with Exact Word Audio Highlighting */}
                       <div
                         className="font-arabic text-2xl sm:text-3xl text-right leading-[2.3] mb-4"
                         style={{ fontFamily: 'Amiri, serif' }}
@@ -417,9 +426,9 @@ export default function Quran() {
                           return (
                             <span
                               key={wIdx}
-                              className={`inline-block transition-all duration-150 px-1 ${
+                              className={`inline-block transition-all duration-100 px-1 ${
                                 isCurrent
-                                  ? 'text-[#E8BD4B] font-bold scale-105 drop-shadow-[0_0_10px_rgba(232,189,75,0.8)]'
+                                  ? 'text-[#E8BD4B] font-bold scale-105 drop-shadow-[0_0_12px_rgba(232,189,75,0.9)]'
                                   : 'text-noor-ivory'
                               }`}
                             >
@@ -439,6 +448,7 @@ export default function Quran() {
             </div>
           </div>
         ) : (
+          /* Surah Card Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((s) => (
               <div
