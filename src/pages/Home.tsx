@@ -583,11 +583,9 @@ function HadithDhikrCalendar() {
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <RotateCcw size={14} className="text-noor-gold" />
                   <h3 className="font-display text-noor-ivory font-semibold text-lg">Dhikr Counter</h3>
                 </div>
                 <button className="text-noor-muted hover:text-noor-gold transition-colors">
-                  <Settings size={14} />
                 </button>
               </div>
               <p className="text-noor-muted text-xs mb-6">Keep remembering Allah</p>
