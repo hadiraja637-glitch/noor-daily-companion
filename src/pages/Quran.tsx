@@ -33,19 +33,36 @@ type Ayah = {
   audio?: string;
 };
 
-// Remove any trace of Bismillah from Ayah text completely
-function removeBismillahPrefix(text: string): string {
+// Normalize Arabic text to easily remove Bismillah regardless of diacritics
+function removeBismillahForcefully(text: string): string {
   let cleaned = text.trim();
-  const patterns = [
+
+  // Remove Bismillah variations from the beginning of Ayah 1
+  const bismillahPatterns = [
     /^بِسۡمِ\s+ٱللَّهِ\s+ٱلرَّحۡمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
     /^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/u,
     /^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
     /^بِسْمِ\s+اللهِ\s+الرَّحْمٰنِ\s+الرَّحِيمِ\s*/u,
     /^بِسْمِ\s+اللهِ\s+الرَّحْمٰنِ\s+الرَّحِيْمِ\s*/u,
+    /^بِسۡمِ\s+اللهِ\s+الرَّحۡمٰنِ\s+الرَّحِيمِ\s*/u,
   ];
-  for (const pat of patterns) {
+
+  for (const pat of bismillahPatterns) {
     cleaned = cleaned.replace(pat, '');
   }
+
+  // Fallback check: if first 4 words equal Bismillah in normalized form
+  const words = cleaned.split(/\s+/);
+  if (words.length > 4) {
+    const normalizedStart = words
+      .slice(0, 4)
+      .join(' ')
+      .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '');
+    if (normalizedStart.includes('بسم الله') || normalizedStart.includes('بسم الله الرحمن')) {
+      cleaned = words.slice(4).join(' ');
+    }
+  }
+
   return cleaned.trim();
 }
 
@@ -109,18 +126,18 @@ export default function Quran() {
         let arabicAyahs: Ayah[] = arabic?.data?.ayahs || [];
         let translatedAyahs: Ayah[] = translation?.data?.ayahs || [];
 
-        // Fix Surah Al-Fatiha (#1) if Bismillah is indexed as Ayah 1 in API response
-        if (selected.number === 1) {
-          if (arabicAyahs.length === 7 && arabicAyahs[0].text.includes('بِسْمِ')) {
-            arabicAyahs = arabicAyahs.slice(1);
-            translatedAyahs = translatedAyahs.slice(1);
-          }
+        // Fix Surah Al-Fatiha (#1) if Bismillah is indexed as Ayah 1
+        if (selected.number === 1 && arabicAyahs.length === 7 && arabicAyahs[0].text.includes('بِسْمِ')) {
+          arabicAyahs = arabicAyahs.slice(1);
+          translatedAyahs = translatedAyahs.slice(1);
         }
 
         const processed = arabicAyahs.map((ayah, index) => {
           let cleanText = ayah.text;
+          
+          // Remove Bismillah from Ayah 1 of ALL Surahs
           if (index === 0) {
-            cleanText = removeBismillahPrefix(cleanText);
+            cleanText = removeBismillahForcefully(cleanText);
           }
 
           return {
@@ -134,7 +151,7 @@ export default function Quran() {
 
         setAyahs(processed);
       })
-      .catch(() => setError('Surah load nahi ho saki.'))
+      .catch(() => setError('Surah text load nahi ho saka.'))
       .finally(() => setLoading(false));
   }, [selected]);
 
@@ -233,7 +250,7 @@ export default function Quran() {
 
   return (
     <div className="min-h-screen pt-20 pb-24 lg:pb-8" style={{ background: '#072018' }}>
-      {/* Header Banner */}
+      {/* Top Banner Header */}
       <div
         className="py-10 mb-6 text-center relative overflow-hidden"
         style={{ background: '#0B2820', borderBottom: '1px solid rgba(26,64,53,0.5)' }}
@@ -245,7 +262,7 @@ export default function Quran() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 lg:px-8">
-        {/* Search */}
+        {/* Search Bar */}
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6"
           style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
@@ -265,7 +282,7 @@ export default function Quran() {
         </div>
 
         {selected ? (
-          /* Surah Details View */
+          /* Detailed Surah View */
           <div className="rounded-2xl overflow-hidden" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}>
             <div className="p-6 sm:p-8 text-center border-b border-[#1A4035]">
               <button
@@ -345,7 +362,7 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Ayah Rendering (Cleaned from Bismillah) */}
+              {/* Ayahs Container (100% Bismillah Free) */}
               {!loading &&
                 ayahs.map((ayah) => {
                   const isBookmarked = bookmarks.includes(ayah.number);
@@ -382,7 +399,7 @@ export default function Quran() {
                         </div>
                       </div>
 
-                      {/* Clean Arabic Text */}
+                      {/* Clean Verse Text */}
                       <div
                         className={`font-arabic text-2xl sm:text-3xl text-right leading-[2.3] mb-4 transition-colors ${
                           isPlayingThis ? 'text-noor-gold font-semibold' : 'text-noor-ivory'
