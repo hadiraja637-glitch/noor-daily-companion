@@ -12,6 +12,7 @@ import Calendar from './pages/Calendar';
 import Zakat from './pages/Zakat';
 import Tasbeeh from './pages/Tasbeeh';
 import Stories from './pages/Stories';
+import StoryDetail from './pages/StoryDetail';
 import Blog from './pages/Blog';
 import SunnahHabits from './pages/SunnahHabits';
 
@@ -42,8 +43,10 @@ export const router = createBrowserRouter([
       { path: '/zakat', element: <Zakat /> },
       { path: '/tasbeeh', element: <Tasbeeh /> },
       { path: '/stories', element: <Stories /> },
+      { path: '/stories/:slug', element: <StoryDetail /> },
       { path: '/blog', element: <Blog /> },
       { path: '/sunnah-habits', element: <SunnahHabits /> },
+      { path: '/sunnah-habits/:slug', element: <SunnahHabits /> },
     ],
   },
 ]);
