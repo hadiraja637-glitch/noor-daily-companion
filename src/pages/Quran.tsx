@@ -35,6 +35,7 @@ type Ayah = {
 
 const BASMALA = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
 
+// Cleans Bismillah from Ayah 1 for Surah 2 to 114 (except Surah 9 At-Tawbah which has no Bismillah)
 function cleanAyahText(text: string, surahNumber: number) {
   if (surahNumber === 1 || surahNumber === 9) {
     return text.trim();
@@ -230,6 +231,7 @@ export default function Quran() {
 
   return (
     <div className="min-h-screen pt-20 pb-24 lg:pb-8" style={{ background: '#072018' }}>
+      {/* Global Header Banner */}
       <div
         className="py-12 mb-6 text-center relative overflow-hidden"
         style={{ background: '#0B2820', borderBottom: '1px solid rgba(26,64,53,0.5)' }}
@@ -244,6 +246,7 @@ export default function Quran() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 lg:px-8">
+        {/* Search Bar */}
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6"
           style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
@@ -263,6 +266,7 @@ export default function Quran() {
         </div>
 
         {selected ? (
+          /* Detailed Surah View */
           <div className="rounded-2xl overflow-hidden" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}>
             <div className="p-6 sm:p-8 text-center border-b border-[#1A4035]">
               <button
@@ -286,6 +290,7 @@ export default function Quran() {
                 {selected.numberOfAyahs} Ayahs · {selected.revelationType} · {selected.englishNameTranslation}
               </p>
 
+              {/* Audio Controls */}
               <div className="mt-6 flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
                 <div className="flex items-center justify-center gap-3 w-full">
                   <button
@@ -341,8 +346,8 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Bismillah Header Banner (ONLY for Surahs except Al-Fatiha #1 and At-Tawbah #9) */}
-              {!loading && selected.number !== 1 && selected.number !== 9 && (
+              {/* Top Bismillah Banner for all Surahs except At-Tawbah (#9) */}
+              {!loading && selected.number !== 9 && (
                 <div className="pb-6 pt-2 text-center border-b border-[#1A4035]/60 mb-6">
                   <p
                     className="font-arabic text-noor-gold text-3xl sm:text-4xl leading-relaxed"
@@ -361,7 +366,7 @@ export default function Quran() {
                   const isPlayingThis = playingAyah === ayah.number;
                   const words = ayah.text.split(' ');
 
-                  // Active word calculation based on audio playback time
+                  // Active word index calculation
                   const activeWordIndex =
                     isPlayingThis && duration > 0
                       ? Math.min(
@@ -399,9 +404,9 @@ export default function Quran() {
                         </div>
                       </div>
 
-                      {/* Word-by-Word Highlighted Arabic Text */}
-                      <p
-                        className="font-arabic text-2xl sm:text-3xl text-right leading-[2.3] mb-4 flex flex-wrap flex-row-reverse justify-start gap-2"
+                      {/* Arabic Text with Word-by-Word Active Audio Highlighting */}
+                      <div
+                        className="font-arabic text-2xl sm:text-3xl text-right leading-[2.3] mb-4"
                         style={{ fontFamily: 'Amiri, serif' }}
                         dir="rtl"
                       >
@@ -410,9 +415,9 @@ export default function Quran() {
                           return (
                             <span
                               key={wIdx}
-                              className={`transition-all duration-200 px-1 rounded ${
+                              className={`inline-block transition-colors duration-150 px-1 ${
                                 isCurrent
-                                  ? 'text-[#E8BD4B] font-bold scale-110 drop-shadow-[0_0_8px_rgba(232,189,75,0.6)]'
+                                  ? 'text-[#E8BD4B] font-bold drop-shadow-[0_0_10px_rgba(232,189,75,0.7)]'
                                   : 'text-noor-ivory'
                               }`}
                             >
@@ -420,8 +425,8 @@ export default function Quran() {
                             </span>
                           );
                         })}
-                        <span className="text-noor-gold text-lg mr-2"> ﴿{ayah.numberInSurah}﴾</span>
-                      </p>
+                        <span className="text-noor-gold text-lg mr-2 inline-block"> ﴿{ayah.numberInSurah}﴾</span>
+                      </div>
 
                       <p className="text-sm text-noor-muted/90 font-light leading-relaxed">
                         {ayah.translation}
@@ -432,6 +437,7 @@ export default function Quran() {
             </div>
           </div>
         ) : (
+          /* Surah List Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((s) => (
               <div
