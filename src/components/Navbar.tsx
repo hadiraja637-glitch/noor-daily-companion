@@ -221,7 +221,7 @@ useEffect(() => {
                       onClick={() => setMoreOpen(false)}
                       className="block rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5"
                     >
-                      {t(item.key)}
+                      {item.to === '/sunnah-habits' ? 'Sunnah Habits' : t(item.key)}
                     </Link>
                   ))}
                 </div>
