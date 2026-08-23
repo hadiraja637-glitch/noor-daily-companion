@@ -89,7 +89,7 @@ export default function Footer() {
               <div className="leading-none">
                 <div className="flex items-end gap-2 leading-none">
                   <div>
-                    <div className="text-[8px] text-noor-gold tracking-[0.2em] font-arabic leading-none mb-1" style={{ direction: 'rtl' }}>بِسْمِ اللَّهِ</div>
+                    <div className="text-[8px] text-noor-gold tracking-[0.2em] font-arabic leading-none mb-1" style={{ direction: 'rtl' }}></div>
                     <div className="font-display text-noor-ivory font-semibold text-2xl tracking-wide">Noor</div>
                   </div>
                 </div>
