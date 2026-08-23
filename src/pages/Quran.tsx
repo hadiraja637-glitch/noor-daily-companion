@@ -12,9 +12,9 @@ import {
   X,
 } from 'lucide-react';
 
-// Quran.com Official API v4
-const QURAN_COM_API = 'https://api.quran.com/api/v4';
-const RECITER_ID = 7; // Sheikh Mishary Rashid Al-Afasy
+const API = 'https://api.alquran.cloud/v1';
+const AUDIO_CDN = 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy';
+const AYAH_AUDIO_CDN = 'https://cdn.islamic.network/quran/audio/128/ar.alafasy';
 
 type Surah = {
   number: number;
@@ -25,32 +25,39 @@ type Surah = {
   revelationType: string;
 };
 
-type Word = {
-  id: number;
-  position: number;
-  text_uthmani: string;
-};
-
 type Ayah = {
   number: number;
   numberInSurah: number;
   text: string;
   translation?: string;
-  audioUrl?: string;
-  words: Word[];
-  timestamps?: { word_position: number; timestamp_from: number; timestamp_to: number }[];
+  audio?: string;
 };
 
 const BASMALA = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
 
+// Strip Bismillah from start of string
+function stripBismillah(text: string): string {
+  let cleaned = text.trim();
+  const patterns = [
+    /^بِسۡمِ\s+ٱللَّهِ\s+ٱلرَّحۡمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
+    /^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/u,
+    /^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
+    /^بِسْمِ\s+اللهِ\s+الرَّحْمٰنِ\s+الرَّحِيمِ\s*/u,
+  ];
+  for (const pat of patterns) {
+    cleaned = cleaned.replace(pat, '');
+  }
+  return cleaned.trim();
+}
+
 const FALLBACK_SURAHS: Surah[] = [
-  { number: 1, name: 'سُورَةُ ٱلْفَاتِحَةِ', englishName: 'Al-Fatihah', englishNameTranslation: 'The Opening', numberOfAyahs: 7, revelationType: 'makkah' },
-  { number: 2, name: 'سُورَةُ البَقَرَةِ', englishName: 'Al-Baqarah', englishNameTranslation: 'The Cow', numberOfAyahs: 286, revelationType: 'madinah' },
-  { number: 36, name: 'سُورَةُ يسٓ', englishName: 'Ya-Sin', englishNameTranslation: 'Ya-Sin', numberOfAyahs: 83, revelationType: 'makkah' },
-  { number: 67, name: 'سُورَةُ المُلۡكِ', englishName: 'Al-Mulk', englishNameTranslation: 'The Sovereignty', numberOfAyahs: 30, revelationType: 'makkah' },
-  { number: 112, name: 'سُورَةُ الإِخۡلَاصِ', englishName: 'Al-Ikhlas', englishNameTranslation: 'Sincerity', numberOfAyahs: 4, revelationType: 'makkah' },
-  { number: 113, name: 'سُورَةُ الفَلَقِ', englishName: 'Al-Falaq', englishNameTranslation: 'The Daybreak', numberOfAyahs: 5, revelationType: 'makkah' },
-  { number: 114, name: 'سُورَةُ النَّاسِ', englishName: 'An-Nas', englishNameTranslation: 'Mankind', numberOfAyahs: 6, revelationType: 'makkah' },
+  { number: 1, name: 'سُورَةُ ٱلْفَاتِحَةِ', englishName: 'Al-Faatiha', englishNameTranslation: 'The Opening', numberOfAyahs: 7, revelationType: 'Meccan' },
+  { number: 2, name: 'سُورَةُ البَقَرَةِ', englishName: 'Al-Baqara', englishNameTranslation: 'The Cow', numberOfAyahs: 286, revelationType: 'Medinan' },
+  { number: 36, name: 'سُورَةُ يسٓ', englishName: 'Yaseen', englishNameTranslation: 'Yaseen', numberOfAyahs: 83, revelationType: 'Meccan' },
+  { number: 67, name: 'سُورَةُ المُلۡكِ', englishName: 'Al-Mulk', englishNameTranslation: 'The Sovereignty', numberOfAyahs: 30, revelationType: 'Meccan' },
+  { number: 112, name: 'سُورَةُ الإِخۡلَاصِ', englishName: 'Al-Ikhlaas', englishNameTranslation: 'Sincerity', numberOfAyahs: 4, revelationType: 'Meccan' },
+  { number: 113, name: 'سُورَةُ الفَلَقِ', englishName: 'Al-Falaq', englishNameTranslation: 'The Dawn', numberOfAyahs: 5, revelationType: 'Meccan' },
+  { number: 114, name: 'سُورَةُ النَّاسِ', englishName: 'An-Naas', englishNameTranslation: 'Mankind', numberOfAyahs: 6, revelationType: 'Meccan' },
 ];
 
 function formatTime(seconds: number) {
@@ -81,78 +88,54 @@ export default function Quran() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Load All Chapters from Quran.com API
   useEffect(() => {
-    fetch(`${QURAN_COM_API}/chapters?language=en`)
+    fetch(`${API}/surah`)
       .then((res) => res.json())
-      .then((data) => {
-        if (data?.chapters) {
-          const formatted = data.chapters.map((ch: any) => ({
-            number: ch.id,
-            name: ch.name_arabic,
-            englishName: ch.name_simple,
-            englishNameTranslation: ch.translated_name.name,
-            numberOfAyahs: ch.verses_count,
-            revelationType: ch.revelation_place,
-          }));
-          setSurahs(formatted);
-        }
+      .then((json) => {
+        if (Array.isArray(json?.data) && json.data.length === 114) setSurahs(json.data);
       })
       .catch(() => undefined);
   }, []);
 
-  // Fetch Verses with Accurate Words & Audio Timestamps for Selected Surah
   useEffect(() => {
     if (!selected) return;
     setLoading(true);
     setError('');
 
-    const fetchVerses = `${QURAN_COM_API}/verses/by_chapter/${selected.number}?language=en&words=true&word_fields=text_uthmani&translations=131&per_page=300`;
-    const fetchAudio = `${QURAN_COM_API}/recitations/${RECITER_ID}/by_chapter/${selected.number}?per_page=300&fields=timestamps`;
+    Promise.all([
+      fetch(`${API}/surah/${selected.number}/quran-simple`).then((r) => r.json()),
+      fetch(`${API}/surah/${selected.number}/en.sahih`).then((r) => r.json()),
+    ])
+      .then(([arabic, translation]) => {
+        let arabicAyahs: Ayah[] = arabic?.data?.ayahs || [];
+        let translatedAyahs: Ayah[] = translation?.data?.ayahs || [];
 
-    Promise.all([fetch(fetchVerses).then((r) => r.json()), fetch(fetchAudio).then((r) => r.json())])
-      .then(([versesRes, audioRes]) => {
-        const versesList = versesRes?.verses || [];
-        const audioList = audioRes?.audio_files || [];
+        // Hard Fix for Surah Al-Fatiha (#1)
+        if (selected.number === 1) {
+          if (arabicAyahs.length === 7 && arabicAyahs[0].text.includes('بِسْمِ')) {
+            arabicAyahs = arabicAyahs.slice(1);
+            translatedAyahs = translatedAyahs.slice(1);
+          }
+        }
 
-        const audioMap = new Map();
-        audioList.forEach((item: any) => {
-          audioMap.set(item.verse_key, {
-            url: item.url.startsWith('http') ? item.url : `https://audio.qurancdn.com/${item.url}`,
-            timestamps: item.timestamps || [],
-          });
-        });
-
-        const formattedAyahs: Ayah[] = versesList.map((v: any) => {
-          const verseKey = v.verse_key;
-          const audioData = audioMap.get(verseKey);
-
-          // Clean non-letter word components
-          const wordsList: Word[] = (v.words || [])
-            .filter((w: any) => w.char_type_name === 'word')
-            .map((w: any) => ({
-              id: w.id,
-              position: w.position,
-              text_uthmani: w.text_uthmani,
-            }));
-
-          const cleanArabicText = wordsList.map((w) => w.text_uthmani).join(' ');
-          const enTranslation = v.translations?.[0]?.text?.replace(/<[^>]+>/g, '') || '';
+        const processed = arabicAyahs.map((ayah, index) => {
+          let cleanText = ayah.text;
+          if (index === 0) {
+            cleanText = stripBismillah(cleanText);
+          }
 
           return {
-            number: v.id,
-            numberInSurah: v.verse_number,
-            text: cleanArabicText,
-            translation: enTranslation,
-            audioUrl: audioData?.url,
-            words: wordsList,
-            timestamps: audioData?.timestamps || [],
+            number: ayah.number,
+            numberInSurah: index + 1,
+            text: cleanText,
+            audio: `${AYAH_AUDIO_CDN}/${ayah.number}.mp3`,
+            translation: translatedAyahs[index]?.text || '',
           };
         });
 
-        setAyahs(formattedAyahs);
+        setAyahs(processed);
       })
-      .catch(() => setError('Qur’an data could not be retrieved from Quran.com servers.'))
+      .catch(() => setError('Qur’an text load nahi ho saka. Baraye meherbani dobara koshish karein.'))
       .finally(() => setLoading(false));
   }, [selected]);
 
@@ -188,7 +171,7 @@ export default function Quran() {
     const onEnded = () => stopAudio();
     const onError = () => {
       stopAudio();
-      setError('Audio stream interrupted. Please check network connection.');
+      setError('Audio stream interrupted.');
     };
 
     audio.addEventListener('timeupdate', onTime);
@@ -230,33 +213,31 @@ export default function Quran() {
         setPlayingSurah(ayahNumber ? null : surahNumber);
         setPlayingAyah(ayahNumber || null);
       })
-      .catch(() => setError('Audio playback failed to start.'));
+      .catch(() => setError('Audio Playback Error.'));
   };
 
   const playSurah = () => {
-    if (!selected || ayahs.length === 0) return;
-    const fullSurahAudio = `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${selected.number}.mp3`;
+    if (!selected) return;
     if (playingSurah === selected.number) {
       audioRef.current?.pause();
       setPlayingSurah(null);
       return;
     }
-    playUrl(fullSurahAudio, selected.number);
+    playUrl(`${AUDIO_CDN}/${selected.number}.mp3`, selected.number);
   };
 
   const playAyah = (ayah: Ayah) => {
-    if (!ayah.audioUrl) return;
     if (playingAyah === ayah.number) {
       audioRef.current?.pause();
       setPlayingAyah(null);
       return;
     }
-    playUrl(ayah.audioUrl, selected?.number || 0, ayah.number);
+    playUrl(ayah.audio || `${AYAH_AUDIO_CDN}/${ayah.number}.mp3`, selected?.number || 0, ayah.number);
   };
 
   return (
     <div className="min-h-screen pt-20 pb-24 lg:pb-8" style={{ background: '#072018' }}>
-      {/* Global Title Banner */}
+      {/* Global Header */}
       <div
         className="py-12 mb-6 text-center relative overflow-hidden"
         style={{ background: '#0B2820', borderBottom: '1px solid rgba(26,64,53,0.5)' }}
@@ -271,7 +252,7 @@ export default function Quran() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 lg:px-8">
-        {/* Search Input */}
+        {/* Search Bar */}
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6"
           style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
@@ -311,11 +292,11 @@ export default function Quran() {
               <p className="font-arabic text-noor-gold text-3xl sm:text-4xl my-2" style={{ fontFamily: 'Amiri, serif' }}>
                 {selected.name}
               </p>
-              <p className="text-noor-muted text-xs capitalize">
+              <p className="text-noor-muted text-xs">
                 {selected.numberOfAyahs} Ayahs · {selected.revelationType} · {selected.englishNameTranslation}
               </p>
 
-              {/* Audio Player Controls */}
+              {/* Audio Controls */}
               <div className="mt-6 flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
                 <div className="flex items-center justify-center gap-3 w-full">
                   <button
@@ -328,7 +309,7 @@ export default function Quran() {
                   </button>
 
                   <a
-                    href={`https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${selected.number}.mp3`}
+                    href={`${AUDIO_CDN}/${selected.number}.mp3`}
                     download
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium border border-noor-gold/40 text-noor-gold hover:bg-noor-gold/10 transition-all"
                   >
@@ -361,7 +342,7 @@ export default function Quran() {
             <div className="p-4 sm:p-7">
               {loading && (
                 <div className="flex items-center justify-center gap-2 py-14 text-noor-muted text-sm">
-                  <Loader2 size={18} className="animate-spin" /> Fetching clean Quranic data...
+                  <Loader2 size={18} className="animate-spin" /> Loading Surah text...
                 </div>
               )}
 
@@ -371,7 +352,7 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Bismillah Header (Shown for all surahs EXCEPT Surah At-Tawbah #9) */}
+              {/* Bismillah Header (Except Surah At-Tawbah #9) */}
               {!loading && selected.number !== 9 && (
                 <div className="pb-6 pt-2 text-center border-b border-[#1A4035]/60 mb-6">
                   <p
@@ -384,24 +365,18 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Ayah List */}
+              {/* Ayah Rendering */}
               {!loading &&
                 ayahs.map((ayah) => {
                   const isBookmarked = bookmarks.includes(ayah.number);
                   const isPlayingThis = playingAyah === ayah.number;
+                  const words = ayah.text.split(' ');
 
-                  // High-Precision Word Timestamp Highlighting from Quran.com
-                  const curMs = currentTime * 1000;
-                  let activeWordPos = -1;
-
-                  if (isPlayingThis && ayah.timestamps && ayah.timestamps.length > 0) {
-                    const activeSegment = ayah.timestamps.find(
-                      (ts) => curMs >= ts.timestamp_from && curMs <= ts.timestamp_to
-                    );
-                    if (activeSegment) {
-                      activeWordPos = activeSegment.word_position;
-                    }
-                  }
+                  // Smooth Audio Highlighting Progress
+                  const progressRatio = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+                  const activeWordIndex = isPlayingThis
+                    ? Math.min(Math.floor(progressRatio * words.length), words.length - 1)
+                    : -1;
 
                   return (
                     <article
@@ -432,24 +407,24 @@ export default function Quran() {
                         </div>
                       </div>
 
-                      {/* Cleaned Arabic Text + Accurate Quran.com Timestamp Highlighting */}
+                      {/* Clean Arabic Ayah Text */}
                       <div
                         className="font-arabic text-2xl sm:text-3xl text-right leading-[2.3] mb-4"
                         style={{ fontFamily: 'Amiri, serif' }}
                         dir="rtl"
                       >
-                        {ayah.words.map((word) => {
-                          const isCurrent = isPlayingThis && word.position === activeWordPos;
+                        {words.map((word, wIdx) => {
+                          const isCurrent = isPlayingThis && wIdx === activeWordIndex;
                           return (
                             <span
-                              key={word.id}
-                              className={`inline-block transition-all duration-75 px-1 ${
+                              key={wIdx}
+                              className={`inline-block transition-all duration-150 px-1 ${
                                 isCurrent
-                                  ? 'text-[#E8BD4B] font-bold scale-105 drop-shadow-[0_0_12px_rgba(232,189,75,0.9)]'
+                                  ? 'text-[#E8BD4B] font-bold scale-110 drop-shadow-[0_0_12px_rgba(232,189,75,0.9)]'
                                   : 'text-noor-ivory'
                               }`}
                             >
-                              {word.text_uthmani}
+                              {word}
                             </span>
                           );
                         })}
@@ -465,7 +440,7 @@ export default function Quran() {
             </div>
           </div>
         ) : (
-          /* Grid View for All Surahs */
+          /* Grid View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((s) => (
               <div
