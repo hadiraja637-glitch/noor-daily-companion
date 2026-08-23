@@ -35,13 +35,25 @@ type Ayah = {
 
 const BASMALA = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
 
-function stripLeadingBasmala(text: string, surahNumber: number) {
-  if (surahNumber === 1 || surahNumber === 9) return text.trim();
-  return text
-    .replace(/^بِسْمِ\s+اللَّهِ\s+الرَّحْمَـٰنِ\s+الرَّحِيمِ\s*/u, '')
-    .replace(/^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/u, '')
-    .replace(/^بسم\s+الله\s+الرحمن\s+الرحيم\s*/u, '')
-    .trim();
+// Robust Bismillah stripping logic for all Quran text variants
+function cleanAyahText(text: string, surahNumber: number) {
+  // Surah Al-Fatiha (1): Bismillah IS the first verse, don't strip.
+  // Surah At-Tawbah (9): Does not have Bismillah at all.
+  if (surahNumber === 1 || surahNumber === 9) {
+    return text.trim();
+  }
+
+  // Normalize text to unify Arabic diacritics and spaces
+  let cleaned = text.trim();
+
+  // Pattern matches various diacritic variants of Bismillah from Uthmani text APIs
+  const bismillahRegex = /^((بِسْمِ|بِسۡمِ)\s*(اللَّهِ|ٱللَّهِ|اللهِ)\s*(الرَّحْمَٰنِ|الرَّحۡمَٰنِ|الرَّحْمٰنِ|الرحمن)\s*(الرَّحِيمِ|الرَّحِيم|الرحيم))\s*/u;
+
+  if (bismillahRegex.test(cleaned)) {
+    cleaned = cleaned.replace(bismillahRegex, '').trim();
+  }
+
+  return cleaned;
 }
 
 const FALLBACK_SURAHS: Surah[] = [
@@ -111,7 +123,7 @@ export default function Quran() {
           arabicAyahs.map((ayah: Ayah, index: number) => ({
             number: ayah.number,
             numberInSurah: ayah.numberInSurah,
-            text: index === 0 ? stripLeadingBasmala(ayah.text, selected.number) : ayah.text,
+            text: index === 0 ? cleanAyahText(ayah.text, selected.number) : ayah.text,
             audio: `${AYAH_AUDIO_CDN}/${ayah.number}.mp3`,
             translation: translatedAyahs[index]?.text || '',
           }))
@@ -254,7 +266,7 @@ export default function Quran() {
 
   return (
     <div className="min-h-screen pt-20 pb-24 lg:pb-8" style={{ background: '#072018' }}>
-      {/* Header Banner */}
+      {/* Main Header Banner */}
       <div
         className="py-12 mb-6 text-center relative overflow-hidden"
         style={{ background: '#0B2820', borderBottom: '1px solid rgba(26,64,53,0.5)' }}
@@ -301,7 +313,7 @@ export default function Quran() {
               >
                 <ArrowLeft size={14} /> Back to Surah list
               </button>
-              
+
               <p className="text-noor-muted text-xs mb-1">Surah {selected.number}</p>
               <h2 className="font-display text-noor-ivory text-3xl sm:text-4xl font-semibold mb-1">
                 {selected.englishName}
@@ -313,7 +325,7 @@ export default function Quran() {
                 {selected.numberOfAyahs} Ayahs · {selected.revelationType} · {selected.englishNameTranslation}
               </p>
 
-              {/* Audio Controls */}
+              {/* Audio & Download Bar */}
               <div className="mt-6 flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
                 <div className="flex items-center justify-center gap-3 w-full">
                   <button
@@ -369,8 +381,8 @@ export default function Quran() {
                 </div>
               )}
 
-              {/* Bismillah Header for Surahs except Surah At-Tawbah (9) */}
-              {!loading && selected.number !== 9 && (
+              {/* Display standalone Bismillah banner for Surah #2 to #114 (except Surah #1 & #9) */}
+              {!loading && selected.number !== 1 && selected.number !== 9 && (
                 <div className="pb-6 pt-2 text-center border-b border-[#1A4035]/60 mb-6">
                   <p
                     className="font-arabic text-noor-gold text-3xl sm:text-4xl leading-relaxed"
@@ -437,7 +449,7 @@ export default function Quran() {
             </div>
           </div>
         ) : (
-          /* Surah Index Grid */
+          /* Surah Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((s) => (
               <div
