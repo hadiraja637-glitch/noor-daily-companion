@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
