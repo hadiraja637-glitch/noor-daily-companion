@@ -131,7 +131,6 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         
-        // Fetch exact city name from coordinates
         const cityName = await getCityFromCoordinates(lat, lon);
         
         const currentLoc: PrayerLocation = {
@@ -449,7 +448,6 @@ function PrayerTimesSection() {
   );
 }
 
-// Fixed route for Sunnah Habits here (/sunnah-habits)
 const FEATURES = [
   { icon: BookOpen, label: "Qur'an", sub: 'Read, Listen & Learn', to: '/quran' },
   { icon: MessageSquare, label: 'Hadith', sub: 'Authentic Sayings', to: '/hadith' },
@@ -570,6 +568,13 @@ function IslamicStories() {
 
 const DHIKR_OPTIONS = ['SubhanAllah', 'Alhamdulillah', 'Allahu Akbar', 'La ilaha illallah'];
 
+const GUIDANCE_LINKS = [
+  { label: 'Daily Sunnah Habits', to: '/sunnah-habits' },
+  { label: 'Find Qibla Direction', to: '/qibla' },
+  { label: 'Calculate Your Zakat', to: '/zakat' },
+  { label: 'Daily Duas & Supplications', to: '/duas' },
+];
+
 function HadithDhikrCalendar() {
   const [count, setCount] = useState(0);
   const [dhikr, setDhikr] = useState('SubhanAllah');
@@ -598,8 +603,8 @@ function HadithDhikrCalendar() {
   return (
     <section className="py-14" style={{ background: '#072018' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Daily Hadith */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Islamic Guidance Card */}
           <FadeIn>
             <div
               className="rounded-2xl p-6 h-full flex flex-col justify-between"
@@ -607,8 +612,43 @@ function HadithDhikrCalendar() {
             >
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <CalendarDays size={14} className="text-noor-gold" />
-                  <h3 className="font-display text-noor-ivory font-semibold text-lg">Daily Hadith</h3>
+                  <Compass size={18} className="text-noor-gold" />
+                  <h3 className="font-display text-noor-ivory font-semibold text-xl">Islamic Guidance</h3>
+                </div>
+                <p className="text-noor-muted text-xs mb-6">Quick access to essential Islamic tools</p>
+
+                <div className="flex flex-col gap-3">
+                  {GUIDANCE_LINKS.map((item) => (
+                    <Link
+                      key={item.label}
+                      to={item.to}
+                      className="flex items-center justify-between p-3.5 rounded-xl transition-all hover:border-noor-gold/50 group"
+                      style={{
+                        background: 'rgba(6,24,18,0.4)',
+                        border: '1px solid rgba(26,64,53,0.5)',
+                      }}
+                    >
+                      <span className="text-noor-ivory text-sm font-medium group-hover:text-noor-gold transition-colors">
+                        {item.label}
+                      </span>
+                      <ArrowRight size={14} className="text-noor-gold transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Daily Hadith */}
+          <FadeIn delay={0.05}>
+            <div
+              className="rounded-2xl p-6 h-full flex flex-col justify-between"
+              style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
+            >
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CalendarDays size={18} className="text-noor-gold" />
+                  <h3 className="font-display text-noor-ivory font-semibold text-xl">Daily Hadith</h3>
                 </div>
                 <p className="text-noor-muted text-xs mb-5">Today's guidance for a better tomorrow.</p>
 
@@ -651,7 +691,7 @@ function HadithDhikrCalendar() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-display text-noor-ivory font-semibold text-lg">Dhikr Counter</h3>
+                    <h3 className="font-display text-noor-ivory font-semibold text-xl">Dhikr Counter</h3>
                   </div>
                 </div>
                 <p className="text-noor-muted text-xs mb-6">Keep remembering Allah</p>
