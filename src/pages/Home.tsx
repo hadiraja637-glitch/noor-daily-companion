@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 import {
   BookOpen, MessageSquare, Heart, Compass, CalendarDays, DollarSign,
   RotateCcw, FileText, ArrowRight, Share2, Settings, MapPin,
