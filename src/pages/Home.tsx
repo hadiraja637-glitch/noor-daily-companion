@@ -97,7 +97,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
       } catch {
         setData(null);
       }
-    } finally {
+    } fontally {
       setLoading(false);
     }
   };
@@ -114,7 +114,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setError('Could not load timings for that city. Please try again.');
       await load(city);
-    } finally {
+    } fontally {
       setLoading(false);
     }
   };
@@ -149,7 +149,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('noor-prayer-location', JSON.stringify(currentLoc));
         } catch {
           setError('Could not load prayer timings for your current location.');
-        } finally {
+        } fontally {
           setLoading(false);
         }
       },
@@ -449,11 +449,11 @@ function PrayerTimesSection() {
   );
 }
 
-// Added Sunnah Habits card into quick feature grid
+// Fixed route for Sunnah Habits here (/sunnah-habits)
 const FEATURES = [
   { icon: BookOpen, label: "Qur'an", sub: 'Read, Listen & Learn', to: '/quran' },
   { icon: MessageSquare, label: 'Hadith', sub: 'Authentic Sayings', to: '/hadith' },
-  { icon: Sparkles, label: 'Sunnah Habits', sub: 'Daily Sunnah Practices', to: '/sunnah' },
+  { icon: Sparkles, label: 'Sunnah Habits', sub: 'Daily Sunnah Practices', to: '/sunnah-habits' },
   { icon: Heart, label: 'Duas', sub: 'For Every Moment', to: '/duas' },
   { icon: Compass, label: 'Qibla Finder', sub: 'Find Qibla Direction', to: '/qibla' },
   { icon: CalendarDays, label: 'Islamic Calendar', sub: 'Important Dates', to: '/calendar' },
@@ -598,7 +598,7 @@ function HadithDhikrCalendar() {
   return (
     <section className="py-14" style={{ background: '#072018' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Daily Hadith */}
           <FadeIn>
             <div
@@ -714,41 +714,6 @@ function HadithDhikrCalendar() {
               </div>
             </div>
           </FadeIn>
-
-          {/* Quick Islamic Features Card */}
-          <FadeIn delay={0.2}>
-            <div
-              className="rounded-2xl p-6 h-full flex flex-col justify-between"
-              style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
-            >
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Compass size={14} className="text-noor-gold" />
-                  <h3 className="font-display text-noor-ivory font-semibold text-lg">Islamic Guidance</h3>
-                </div>
-                <p className="text-noor-muted text-xs mb-5">Quick access to essential Islamic tools</p>
-                
-                <div className="space-y-3 mb-6">
-                  <Link to="/sunnah" className="flex items-center justify-between p-3 rounded-xl bg-[#072018]/60 border border-[#1A4035] hover:border-noor-gold/40 transition-colors">
-                    <span className="text-noor-ivory text-xs font-medium">Daily Sunnah Habits</span>
-                    <ArrowRight size={13} className="text-noor-gold" />
-                  </Link>
-                  <Link to="/qibla" className="flex items-center justify-between p-3 rounded-xl bg-[#072018]/60 border border-[#1A4035] hover:border-noor-gold/40 transition-colors">
-                    <span className="text-noor-ivory text-xs font-medium">Find Qibla Direction</span>
-                    <ArrowRight size={13} className="text-noor-gold" />
-                  </Link>
-                  <Link to="/zakat" className="flex items-center justify-between p-3 rounded-xl bg-[#072018]/60 border border-[#1A4035] hover:border-noor-gold/40 transition-colors">
-                    <span className="text-noor-ivory text-xs font-medium">Calculate Your Zakat</span>
-                    <ArrowRight size={13} className="text-noor-gold" />
-                  </Link>
-                  <Link to="/duas" className="flex items-center justify-between p-3 rounded-xl bg-[#072018]/60 border border-[#1A4035] hover:border-noor-gold/40 transition-colors">
-                    <span className="text-noor-ivory text-xs font-medium">Daily Duas & Supplications</span>
-                    <ArrowRight size={13} className="text-noor-gold" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </FadeIn>
         </div>
       </div>
     </section>
@@ -758,7 +723,7 @@ function HadithDhikrCalendar() {
 export default function Home() {
   return (
     <PrayerProvider>
-      <div dir="ltr" className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <div className="min-h-screen bg-[#061812] text-noor-ivory">
         <Hero />
         <PrayerTimesSection />
         <FeatureCards />
