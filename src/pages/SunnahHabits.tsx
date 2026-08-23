@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Flame } from 'lucide-react';
 
-/**
- * SunnahHabits page
- * Dark emerald + gold theme (matches the Zakat calculator design).
- * Colors are applied via inline styles / hex values rather than the
- * project's `noor-*` Tailwind tokens, so the look is guaranteed
- * regardless of Tailwind theme/build configuration.
- */
-
 const THEME = {
   bgPage: '#061812',
   bgHero: '#0B2820',
@@ -66,9 +58,7 @@ function readJSON<T>(key: string, fallback: T): T {
 function writeJSON(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* ignore quota / privacy-mode errors */
-  }
+  } catch {}
 }
 
 function todayKey() {
