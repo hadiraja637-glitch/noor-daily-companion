@@ -688,14 +688,9 @@ function HadithDhikrCalendar() {
 
 export default function Home() {
   return (
-    <PrayerProvider>
-      <div dir="ltr" className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-        <Hero />
-        <PrayerTimesSection />
-        <FeatureCards />
-        <IslamicStories />
-        <HadithDhikrCalendar />
-      </div>
-    </PrayerProvider>
+    <div className="min-h-screen bg-[#061812] text-white p-10">
+      <h1 className="text-4xl font-bold">NOOR HOME TEST</h1>
+      <p className="mt-4">Home.tsx is rendering correctly.</p>
+    </div>
   );
 }
