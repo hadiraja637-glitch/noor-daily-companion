@@ -1,3 +1,4 @@
+import { createBrowserRouter } from 'react-router-dom';
 import Home from './pages/Home';
 import Quran from './pages/Quran';
 import Hadith from './pages/Hadith';
@@ -23,3 +24,17 @@ export const routes = [
   { path: '/blog', component: Blog },
   { path: '/sunnah-habits', component: SunnahHabits }
 ];
+
+export const router = createBrowserRouter([
+  { path: '/', element: <Home /> },
+  { path: '/quran', element: <Quran /> },
+  { path: '/hadith', element: <Hadith /> },
+  { path: '/duas', element: <Duas /> },
+  { path: '/qibla', element: <Qibla /> },
+  { path: '/calendar', element: <Calendar /> },
+  { path: '/zakat', element: <Zakat /> },
+  { path: '/tasbeeh', element: <Tasbeeh /> },
+  { path: '/stories', element: <Stories /> },
+  { path: '/blog', element: <Blog /> },
+  { path: '/sunnah-habits', element: <SunnahHabits /> }
+]);
