@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import {
   BookOpen, MessageSquare, Heart, Compass, CalendarDays, DollarSign,
-  RotateCcw, FileText, ArrowRight, Share2, Settings, MapPin,
-  Plus, Minus, RefreshCw, Clock, Star, Mail,
+  RotateCcw, FileText, ArrowRight, Share2, MapPin,
+  Plus, Minus, RefreshCw, Clock, Star, Sparkles, Check
 } from 'lucide-react';
 import { STORIES } from '../data/stories';
 import {
   CITY_OPTIONS, DEFAULT_LOCATION, fetchPrayerData, getCurrentAndNextPrayer,
-  type PrayerData, type PrayerLocation,
+  getCityFromCoordinates, type PrayerData, type PrayerLocation,
 } from '../services/prayer';
 import { GLOBAL_LOCATIONS } from '../services/globalLocations';
 import { getDailyHadith } from '../data/dailyHadith';
@@ -90,7 +90,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
       setData(next);
       localStorage.setItem('noor-prayer-location', JSON.stringify(nextLocation));
     } catch {
-      setError('Prayer timings could not be refreshed right now. Showing the last available location.');
+      setError('Prayer timings could not be refreshed right now. Showing default location.');
       try {
         const fallback = await fetchPrayerData(DEFAULT_LOCATION);
         setData(fallback);
@@ -128,22 +128,35 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
     setError('');
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const current: PrayerLocation = {
-          name: 'Current location', country: '', lat: pos.coords.latitude, lon: pos.coords.longitude,
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        
+        // Fetch exact city name from coordinates
+        const cityName = await getCityFromCoordinates(lat, lon);
+        
+        const currentLoc: PrayerLocation = {
+          name: cityName,
+          country: cityName.split(',')[1]?.trim() || '',
+          lat: lat,
+          lon: lon,
         };
-        setLocation(current);
+        
+        setLocation(currentLoc);
         setLocationMode('current');
         try {
-          const next = await fetchPrayerData(current);
+          const next = await fetchPrayerData(currentLoc);
           setData(next);
-          localStorage.setItem('noor-prayer-location', JSON.stringify(current));
+          localStorage.setItem('noor-prayer-location', JSON.stringify(currentLoc));
         } catch {
           setError('Could not load prayer timings for your current location.');
         } finally {
           setLoading(false);
         }
       },
-      () => { setLoading(false); setError('Location permission was denied. Showing your saved city.'); },
+      () => { 
+        setLoading(false); 
+        setError('Location permission was denied. Showing your saved city.'); 
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 15 * 60 * 1000 },
     );
   };
@@ -259,8 +272,8 @@ function Hero() {
                 </div>
               </div>
               <div className="flex items-center gap-2 mb-4">
-                <MapPin size={13} className="text-noor-muted" />
-                <span className="text-noor-muted text-xs">{loading ? 'Loading location…' : location.name}</span>
+                <MapPin size={13} className="text-noor-gold" />
+                <span className="text-noor-ivory text-xs font-medium truncate">{loading ? 'Loading location…' : location.name}</span>
               </div>
               <Link
                 to="/calendar"
@@ -320,48 +333,69 @@ function PrayerTimesSection() {
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - Math.min(Math.max(progress, 0), 1));
 
+  const allCities = [...CITY_OPTIONS, ...GLOBAL_LOCATIONS];
+
   return (
     <section className="py-12" style={{ background: '#0B2820', borderTop: '1px solid rgba(26,64,53,0.5)' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2">
-            <div className="rounded-2xl p-5 sm:p-6 h-full" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}>
+            <div className="rounded-2xl p-5 sm:p-6 h-full flex flex-col justify-between" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}>
               <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <Clock size={15} className="text-noor-accent" />
+                    <Clock size={15} className="text-noor-gold" />
                     <h2 className="font-display text-noor-ivory text-xl font-semibold">Today's Prayer Times</h2>
                   </div>
                   <p className="text-noor-muted text-xs">Stay connected with your Salah</p>
                   {error && <p className="text-noor-gold text-[10px] mt-1">{error}</p>}
                 </div>
-                <div className="text-right flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-1 text-noor-muted text-xs"><MapPin size={11} /> {loading ? 'Loading location…' : location.name}</div>
+                <div className="text-right flex flex-col items-end gap-1.5">
+                  <div className="flex items-center gap-1.5 text-noor-ivory text-xs font-medium">
+                    <MapPin size={13} className="text-noor-gold" /> 
+                    {loading ? 'Loading location…' : location.name}
+                  </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={useCurrentLocation} className="text-[10px] text-noor-gold hover:underline">Use my location</button>
+                    <button 
+                      onClick={useCurrentLocation} 
+                      className="text-[11px] font-medium text-noor-gold hover:underline transition-all"
+                    >
+                      Use my location
+                    </button>
                     <div className="relative">
                       <input
                         list="noor-global-locations"
                         value={location.name}
-                        onChange={(e) => { const value = e.target.value; const city = [...CITY_OPTIONS, ...GLOBAL_LOCATIONS].find((c) => c.name.toLowerCase() === value.toLowerCase()); if (city) setCity(city); }}
+                        onChange={(e) => { 
+                          const value = e.target.value; 
+                          const city = allCities.find((c) => c.name.toLowerCase() === value.toLowerCase()); 
+                          if (city) setCity(city); 
+                        }}
                         placeholder="🌍 Search worldwide"
-                        className="bg-[#103329] text-[10px] text-noor-muted outline-none border border-noor-border rounded-lg px-2 py-1 w-[180px] placeholder:text-noor-muted/70"
+                        className="bg-[#072018] text-[11px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2.5 py-1 w-[180px] placeholder:text-noor-muted/60 focus:border-noor-gold/50 transition-colors"
                         aria-label="Search a country or city worldwide"
                       />
                       <datalist id="noor-global-locations">
-                        {[...CITY_OPTIONS, ...GLOBAL_LOCATIONS].map((city, i) => <option key={`${city.name}-${i}`} value={city.name} />)}
+                        {allCities.map((city, i) => <option key={`${city.name}-${i}`} value={city.name} />)}
                       </datalist>
                     </div>
                   </div>
-                  <Link to="/calendar" className="mt-1 inline-flex items-center gap-1 text-xs text-noor-gold hover:underline">View Calendar <ArrowRight size={11} /></Link>
+                  <Link to="/calendar" className="mt-0.5 inline-flex items-center gap-1 text-xs text-noor-gold hover:underline">
+                    View Calendar <ArrowRight size={11} />
+                  </Link>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 flex-1 w-full overflow-x-auto">
-                  {(timings.length ? timings : CITY_OPTIONS.length ? [
-                    { name: 'Fajr', time: '--:--', minutes: 0 }, { name: 'Sunrise', time: '--:--', minutes: 0 }, { name: 'Dhuhr', time: '--:--', minutes: 0 }, { name: 'Asr', time: '--:--', minutes: 0 }, { name: 'Maghrib', time: '--:--', minutes: 0 }, { name: 'Isha', time: '--:--', minutes: 0 },
-                  ] : []).map((prayer) => {
+                  {(timings.length ? timings : [
+                    { name: 'Fajr', time: '--:--', minutes: 0 }, 
+                    { name: 'Sunrise', time: '--:--', minutes: 0 }, 
+                    { name: 'Dhuhr', time: '--:--', minutes: 0 }, 
+                    { name: 'Asr', time: '--:--', minutes: 0 }, 
+                    { name: 'Maghrib', time: '--:--', minutes: 0 }, 
+                    { name: 'Isha', time: '--:--', minutes: 0 },
+                  ]).map((prayer) => {
                     const isActive = prayer.name === activePrayer?.name;
                     return (
                       <div key={prayer.name} className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl transition-all min-w-[70px]" style={{ background: isActive ? 'rgba(232,189,75,0.12)' : 'rgba(6,24,18,0.4)', border: isActive ? '1px solid rgba(232,189,75,0.35)' : '1px solid rgba(26,64,53,0.4)' }}>
@@ -392,17 +426,19 @@ function PrayerTimesSection() {
           </div>
 
           <FadeIn className="xl:col-span-1">
-            <div className="rounded-2xl overflow-hidden h-full" style={{ border: '1px solid rgba(26,64,53,0.7)' }}>
+            <div className="rounded-2xl overflow-hidden h-full flex flex-col" style={{ border: '1px solid rgba(26,64,53,0.7)', background: '#103329' }}>
               <div className="relative h-36 overflow-hidden">
                 <img src="https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=600&h=300&fit=crop&auto=format" alt="Quran" className="w-full h-full object-cover" loading="lazy" />
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(16,51,41,0.2), rgba(16,51,41,0.7))' }} />
-                <span className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(232,189,75,0.2)', color: '#E8BD4B', border: '1px solid rgba(232,189,75,0.3)' }}>Qur'an</span>
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(16,51,41,0.2), rgba(16,51,41,0.85))' }} />
+                <span className="absolute top-3 right-3 text-xs px-2.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(232,189,75,0.2)', color: '#E8BD4B', border: '1px solid rgba(232,189,75,0.3)' }}>Qur'an</span>
               </div>
-              <div className="p-5" style={{ background: '#103329' }}>
-                <h3 className="font-display text-noor-ivory text-base font-semibold mb-3">Verse of the Day</h3>
-                <p className="font-arabic text-noor-gold text-xl leading-loose mb-3 text-right" style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}>فَإِنَّ مَعَ الْعُسْرِ يُسْرًا</p>
-                <p className="text-noor-ivory/80 text-sm italic mb-1">"Indeed, with hardship comes ease."</p>
-                <p className="text-noor-muted text-xs mb-4">— Qur'an 94:6</p>
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-display text-noor-ivory text-base font-semibold mb-2">Verse of the Day</h3>
+                  <p className="font-arabic text-noor-gold text-xl leading-loose mb-2 text-right" style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}>فَإِنَّ مَعَ الْعُسْرِ يُسْرًا</p>
+                  <p className="text-noor-ivory/80 text-sm italic mb-1">"Indeed, with hardship comes ease."</p>
+                  <p className="text-noor-muted text-xs mb-4">— Qur'an 94:6</p>
+                </div>
                 <Link to="/quran" className="flex items-center gap-2 text-sm text-noor-gold hover:underline">Read Full Surah <ArrowRight size={13} /></Link>
               </div>
             </div>
@@ -413,9 +449,11 @@ function PrayerTimesSection() {
   );
 }
 
+// Added Sunnah Habits card into quick feature grid
 const FEATURES = [
   { icon: BookOpen, label: "Qur'an", sub: 'Read, Listen & Learn', to: '/quran' },
   { icon: MessageSquare, label: 'Hadith', sub: 'Authentic Sayings', to: '/hadith' },
+  { icon: Sparkles, label: 'Sunnah Habits', sub: 'Daily Sunnah Practices', to: '/sunnah' },
   { icon: Heart, label: 'Duas', sub: 'For Every Moment', to: '/duas' },
   { icon: Compass, label: 'Qibla Finder', sub: 'Find Qibla Direction', to: '/qibla' },
   { icon: CalendarDays, label: 'Islamic Calendar', sub: 'Important Dates', to: '/calendar' },
@@ -428,19 +466,19 @@ function FeatureCards() {
   return (
     <section className="py-8" style={{ background: '#072018', borderTop: '1px solid rgba(26,64,53,0.4)' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 sm:gap-3">
           {FEATURES.map((f, i) => (
-            <FadeIn key={f.label} delay={i * 0.04}>
+            <FadeIn key={f.label} delay={i * 0.03}>
               <Link
                 to={f.to}
-                className="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl group transition-all hover:scale-105"
+                className="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl group transition-all hover:scale-105 h-full"
                 style={{
                   background: 'rgba(16,51,41,0.5)',
                   border: '1px solid rgba(26,64,53,0.5)',
                 }}
               >
                 <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center"
+                  className="w-9 h-9 rounded-full flex items-center justify-center transition-transform group-hover:rotate-6"
                   style={{ background: 'rgba(232,189,75,0.12)' }}
                 >
                   <f.icon size={16} className="text-noor-gold" />
@@ -491,24 +529,27 @@ function IslamicStories() {
           style={{ scrollbarWidth: 'none' }}
         >
           {STORIES.map((s, i) => (
-            <FadeIn key={s.slug} delay={i * 0.06} className="flex-shrink-0 w-56 sm:w-auto">
+            <FadeIn key={s.slug || i} delay={i * 0.06} className="flex-shrink-0 w-56 sm:w-auto">
               <Link
                 to={`/stories/${s.slug}`}
-                className="block rounded-xl overflow-hidden group transition-transform hover:-translate-y-1"
+                className="block rounded-xl overflow-hidden group transition-transform hover:-translate-y-1 h-full"
                 style={{ border: '1px solid rgba(26,64,53,0.5)' }}
               >
-                <div className="relative h-44 overflow-hidden">
+                <div className="relative h-44 overflow-hidden bg-[#072018]">
                   <img
                     src={s.img}
-                    alt={s.alt}
+                    alt={s.title || 'Islamic Story'}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=600&h=400&fit=crop";
+                    }}
                   />
                   <div
                     className="absolute inset-0"
-                    style={{ background: 'linear-gradient(to top, rgba(6,24,18,0.9) 0%, rgba(6,24,18,0.1) 60%)' }}
+                    style={{ background: 'linear-gradient(to top, rgba(6,24,18,0.95) 0%, rgba(6,24,18,0.2) 60%)' }}
                   />
-                  <p className="absolute bottom-3 left-3 right-3 text-noor-ivory text-sm font-medium leading-snug whitespace-pre-line">
+                  <p className="absolute bottom-3 left-3 right-3 text-noor-ivory text-sm font-medium leading-snug whitespace-pre-line group-hover:text-noor-gold transition-colors">
                     {s.title}
                   </p>
                 </div>
@@ -532,7 +573,27 @@ const DHIKR_OPTIONS = ['SubhanAllah', 'Alhamdulillah', 'Allahu Akbar', 'La ilaha
 function HadithDhikrCalendar() {
   const [count, setCount] = useState(0);
   const [dhikr, setDhikr] = useState('SubhanAllah');
+  const [copied, setCopied] = useState(false);
   const dailyHadith = getDailyHadith();
+
+  const handleShareHadith = async () => {
+    const shareText = `"${dailyHadith.english}" — ${dailyHadith.source}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Daily Hadith - Noor',
+          text: shareText,
+          url: window.location.href,
+        });
+      } catch {
+        /* User cancelled or share failed */
+      }
+    } else {
+      await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <section className="py-14" style={{ background: '#072018' }}>
@@ -541,33 +602,39 @@ function HadithDhikrCalendar() {
           {/* Daily Hadith */}
           <FadeIn>
             <div
-              className="rounded-2xl p-6 h-full flex flex-col"
+              className="rounded-2xl p-6 h-full flex flex-col justify-between"
               style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <CalendarDays size={14} className="text-noor-gold" />
-                <h3 className="font-display text-noor-ivory font-semibold text-lg">Daily Hadith</h3>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CalendarDays size={14} className="text-noor-gold" />
+                  <h3 className="font-display text-noor-ivory font-semibold text-lg">Daily Hadith</h3>
+                </div>
+                <p className="text-noor-muted text-xs mb-5">Today's guidance for a better tomorrow.</p>
+
+                <p
+                  className="font-arabic text-noor-gold text-xl leading-loose mb-4 text-right"
+                  style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}
+                >
+                  {dailyHadith.arabic}
+                </p>
+                <p className="text-noor-ivory/80 text-sm italic mb-1">
+                  "{dailyHadith.english}"
+                </p>
+                <p className="text-noor-muted text-xs mb-5">— {dailyHadith.source} · changes daily</p>
               </div>
-              <p className="text-noor-muted text-xs mb-5">Today's guidance for a better tomorrow.</p>
 
-              <p
-                className="font-arabic text-noor-gold text-xl leading-loose mb-4 text-right flex-1"
-                style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}
-              >
-                {dailyHadith.arabic}
-              </p>
-              <p className="text-noor-ivory/80 text-sm italic mb-1">
-                "{dailyHadith.english}"
-              </p>
-              <p className="text-noor-muted text-xs mb-5">— {dailyHadith.source} · changes daily</p>
-
-              <div className="flex items-center gap-3 mt-auto">
-                <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-noor-muted border border-noor-border hover:border-noor-gold/40 hover:text-noor-gold transition-colors">
-                  <Share2 size={12} /> Share
+              <div className="flex items-center gap-3 pt-4 border-t border-[#1A4035]">
+                <button 
+                  onClick={handleShareHadith}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-noor-muted border border-noor-border hover:border-noor-gold/40 hover:text-noor-gold transition-colors"
+                >
+                  {copied ? <Check size={12} className="text-noor-gold" /> : <Share2 size={12} />} 
+                  {copied ? 'Copied!' : 'Share'}
                 </button>
                 <Link
                   to="/hadith"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-noor-gold border border-noor-gold/30 hover:bg-noor-gold/10 transition-colors"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs text-noor-gold border border-noor-gold/30 hover:bg-noor-gold/10 transition-colors"
                 >
                   View More <ArrowRight size={12} />
                 </Link>
@@ -578,52 +645,52 @@ function HadithDhikrCalendar() {
           {/* Dhikr Counter */}
           <FadeIn delay={0.1}>
             <div
-              className="rounded-2xl p-6 h-full flex flex-col"
+              className="rounded-2xl p-6 h-full flex flex-col justify-between"
               style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
             >
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-display text-noor-ivory font-semibold text-lg">Dhikr Counter</h3>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display text-noor-ivory font-semibold text-lg">Dhikr Counter</h3>
+                  </div>
                 </div>
-                <button className="text-noor-muted hover:text-noor-gold transition-colors">
-                </button>
-              </div>
-              <p className="text-noor-muted text-xs mb-6">Keep remembering Allah</p>
+                <p className="text-noor-muted text-xs mb-6">Keep remembering Allah</p>
 
-              <div className="flex items-center justify-center gap-6 mb-2">
-                <button
-                  onClick={() => setCount((c) => Math.max(0, c - 1))}
-                  className="w-10 h-10 rounded-full border border-noor-border flex items-center justify-center text-noor-muted hover:border-noor-gold/50 hover:text-noor-gold transition-all"
-                >
-                  <Minus size={16} />
-                </button>
-                <div className="text-center">
-                  <p className="font-display text-noor-gold text-5xl font-bold">{count}</p>
-                  <p className="text-noor-muted text-xs mt-1">{dhikr}</p>
+                <div className="flex items-center justify-center gap-6 mb-2">
+                  <button
+                    onClick={() => setCount((c) => Math.max(0, c - 1))}
+                    className="w-10 h-10 rounded-full border border-noor-border flex items-center justify-center text-noor-muted hover:border-noor-gold/50 hover:text-noor-gold transition-all"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <div className="text-center min-w-[100px]">
+                    <p className="font-display text-noor-gold text-5xl font-bold">{count}</p>
+                    <p className="text-noor-muted text-xs mt-1">{dhikr}</p>
+                  </div>
+                  <button
+                    onClick={() => setCount((c) => c + 1)}
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-noor-deep font-bold transition-all hover:scale-110"
+                    style={{ background: '#E8BD4B' }}
+                  >
+                    <Plus size={16} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setCount((c) => c + 1)}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-noor-deep font-bold transition-all hover:scale-110"
-                  style={{ background: '#E8BD4B' }}
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
 
-              <div className="flex gap-2 mb-4 mt-4">
-                <button
-                  onClick={() => setCount(0)}
-                  className="flex items-center gap-1.5 flex-1 justify-center py-2 rounded-xl text-xs border border-noor-border text-noor-muted hover:border-noor-gold/40 hover:text-noor-gold transition-colors"
-                >
-                  <RefreshCw size={11} /> Reset
-                </button>
-                <button
-                  onClick={() => setCount((c) => c + 33)}
-                  className="flex-1 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-90"
-                  style={{ background: '#E8BD4B', color: '#061812' }}
-                >
-                  +33
-                </button>
+                <div className="flex gap-2 mb-4 mt-4">
+                  <button
+                    onClick={() => setCount(0)}
+                    className="flex items-center gap-1.5 flex-1 justify-center py-2 rounded-xl text-xs border border-noor-border text-noor-muted hover:border-noor-gold/40 hover:text-noor-gold transition-colors"
+                  >
+                    <RefreshCw size={11} /> Reset
+                  </button>
+                  <button
+                    onClick={() => setCount((c) => c + 33)}
+                    className="flex-1 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-90"
+                    style={{ background: '#E8BD4B', color: '#061812' }}
+                  >
+                    +33
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -662,6 +729,10 @@ function HadithDhikrCalendar() {
                 <p className="text-noor-muted text-xs mb-5">Quick access to essential Islamic tools</p>
                 
                 <div className="space-y-3 mb-6">
+                  <Link to="/sunnah" className="flex items-center justify-between p-3 rounded-xl bg-[#072018]/60 border border-[#1A4035] hover:border-noor-gold/40 transition-colors">
+                    <span className="text-noor-ivory text-xs font-medium">Daily Sunnah Habits</span>
+                    <ArrowRight size={13} className="text-noor-gold" />
+                  </Link>
                   <Link to="/qibla" className="flex items-center justify-between p-3 rounded-xl bg-[#072018]/60 border border-[#1A4035] hover:border-noor-gold/40 transition-colors">
                     <span className="text-noor-ivory text-xs font-medium">Find Qibla Direction</span>
                     <ArrowRight size={13} className="text-noor-gold" />
