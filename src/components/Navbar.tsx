@@ -123,7 +123,11 @@ useEffect(() => {
     if (!q) return [];
     return searchable
       .map((item) => ({ ...item, label: t(item.key) }))
-      .filter((item) => item.keywords.includes(q) || item.label.toLowerCase().includes(q))
+      .filter(
+  (item) =>
+    item.keywords?.toLowerCase().includes(q) ||
+    item.label?.toLowerCase().includes(q)
+)
       .slice(0, 5);
   }, [search, selectedLanguage]);
 
@@ -133,7 +137,11 @@ useEffect(() => {
     if (!q) return;
     const result = searchable
       .map((item) => ({ ...item, label: t(item.key) }))
-      .find((item) => item.keywords.includes(q) || item.label.toLowerCase().includes(q));
+      .find(
+  (item) =>
+    item.keywords?.toLowerCase().includes(q) ||
+    item.label?.toLowerCase().includes(q)
+);
     if (result) {
       navigate(result.to);
       setSearch('');
