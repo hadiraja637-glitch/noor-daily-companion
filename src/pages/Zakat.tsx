@@ -1,6 +1,4 @@
-from pathlib import Path
-
-code = r"""import { useState } from 'react';
+import { useState } from 'react';
 import { Calculator, RotateCcw, CheckCircle2 } from 'lucide-react';
 
 type CurrencyCode = 'PKR' | 'USD' | 'SAR' | 'AED' | 'GBP';
@@ -468,8 +466,3 @@ export default function Zakat() {
     </div>
   );
 }
-"""
-
-path = Path("/mnt/data/Zakat.tsx")
-path.write_text(code, encoding="utf-8")
-print(f"File created: {path}")
