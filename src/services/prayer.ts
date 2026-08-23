@@ -43,33 +43,33 @@ export const CITY_OPTIONS: PrayerLocation[] = [
 
 const MAIN_PRAYERS: PrayerName[] = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-function toMinutes(value: string) {
+function toMinutes(value: string): number {
   const match = value.match(/(\d{1,2}):(\d{2})/);
   if (!match) return 0;
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
-function normalizeTime(value: string) {
+function normalizeTime(value: string): string {
   const match = value.match(/(\d{1,2}):(\d{2})/);
   if (!match) return value;
   return `${String(Number(match[1])).padStart(2, '0')}:${match[2]}`;
 }
 
-function formatDisplayTime(time: string) {
+function formatDisplayTime(time: string): string {
   const [h, m] = time.split(':').map(Number);
   const suffix = h >= 12 ? 'PM' : 'AM';
   const hour = h % 12 || 12;
   return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
 }
 
-function dateParam(date = new Date()) {
+function dateParam(date = new Date()): string {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const yyyy = date.getFullYear();
   return `${dd}-${mm}-${yyyy}`;
 }
 
-function hijriLabel(hijri: any) {
+function hijriLabel(hijri: any): string {
   if (!hijri) return '';
   const month = hijri.month?.en ?? '';
   return `${hijri.day} ${month} ${hijri.year} ${hijri.designation?.abbreviated ?? 'AH'}`;
@@ -83,12 +83,37 @@ async function requestJson(url: string) {
   return json.data;
 }
 
+/**
+ * Free Reverse Geocoding API to fetch exact City Name using Lat/Lon coordinates
+ */
+export async function getCityFromCoordinates(lat: number, lon: number): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+    );
+    if (!res.ok) throw new Error('Geocoding service unavailable');
+    
+    const data = await res.json();
+    const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || data.address?.state_district;
+    const country = data.address?.country;
+
+    if (city && country) {
+      return `${city}, ${country}`;
+    } else if (country) {
+      return country;
+    }
+    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+  }
+}
+
 export async function fetchPrayerData(location: PrayerLocation): Promise<PrayerData> {
   const date = dateParam();
   const url = new URL(`https://api.aladhan.com/v1/timings/${date}`);
   url.searchParams.set('latitude', String(location.lat));
   url.searchParams.set('longitude', String(location.lon));
-  // University of Islamic Sciences, Karachi + Hanafi school are appropriate defaults for Pakistan.
   url.searchParams.set('method', '1');
   url.searchParams.set('school', '1');
   url.searchParams.set('iso8601', 'false');
@@ -108,7 +133,7 @@ export async function fetchPrayerData(location: PrayerLocation): Promise<PrayerD
   };
 }
 
-export async function fetchPrayerDataByCity(city: PrayerLocation) {
+export async function fetchPrayerDataByCity(city: PrayerLocation): Promise<PrayerData> {
   const date = dateParam();
   const url = new URL(`https://api.aladhan.com/v1/timingsByCity/${date}`);
   url.searchParams.set('city', city.name.split(',')[0]);
@@ -116,37 +141,54 @@ export async function fetchPrayerDataByCity(city: PrayerLocation) {
   url.searchParams.set('method', '1');
   url.searchParams.set('school', '1');
   url.searchParams.set('iso8601', 'false');
+
   const data = await requestJson(url.toString());
   const timings = MAIN_PRAYERS.map((name) => {
     const normalized = normalizeTime(data.timings[name]);
     return { name, time: formatDisplayTime(normalized), minutes: toMinutes(normalized) };
   });
+
   return {
     location: city,
     timings,
     hijriDate: hijriLabel(data.date?.hijri),
     readableDate: data.date?.readable ?? new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
     timezone: data.meta?.timezone,
-  } satisfies PrayerData;
+  };
 }
 
 export function getCurrentAndNextPrayer(timings: PrayerTiming[], now = new Date(), timeZone?: string) {
   let mins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
   if (timeZone) {
     try {
-      const parts = new Intl.DateTimeFormat('en-GB', { timeZone, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(now);
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).formatToParts(now);
+
       const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
       const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
       const second = Number(parts.find((p) => p.type === 'second')?.value ?? 0);
       mins = hour * 60 + minute + second / 60;
-    } catch { /* fallback to browser time */ }
+    } catch {
+      /* fallback to browser time */
+    }
   }
+
   const active = timings.filter((p) => p.name !== 'Sunrise');
   let current = active[active.length - 1];
   let next = active[0];
+
   for (let i = 0; i < active.length; i++) {
     if (mins >= active[i].minutes) current = active[i];
-    if (mins < active[i].minutes) { next = active[i]; break; }
+    if (mins < active[i].minutes) {
+      next = active[i];
+      break;
+    }
   }
+
   return { current, next, mins };
 }
