@@ -41,48 +41,30 @@ export default function Footer() {
 
       <div className="relative max-w-[1400px] mx-auto px-4 lg:px-8 pt-6 lg:pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_.8fr] gap-3 mb-8">
-          {/* Subscribe Card */}
-          <div className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4"
-            style={{ background: 'rgba(16,51,41,0.72)', border: '1px solid rgba(24,185,138,0.28)' }}>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(232,189,75,0.12)' }}>
-              <Mail size={20} className="text-noor-gold" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-noor-ivory text-sm font-semibold">Stay Connected</p>
-              <p className="text-noor-muted text-[11px]">Get the latest Islamic content, reminders and updates.</p>
-            </div>
-            <form className="flex w-full sm:w-auto sm:min-w-[300px]" onSubmit={handleSubscribe}>
-              <input aria-label="Email address" type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSubscribed(false); }} placeholder="Enter your email address"
-                className="min-w-0 flex-1 rounded-l-full px-4 py-2.5 text-xs text-noor-ivory bg-transparent border border-noor-border outline-none focus:border-noor-gold/60" />
-              <button type="submit" className="rounded-r-full px-4 py-2.5 text-xs font-semibold whitespace-nowrap" style={{ background: '#E8BD4B', color: '#061812' }}>
-                {subscribed ? 'Profile Saved ✓' : <>Subscribe <ArrowRight size={13} className="inline ml-1" /></>}
-              </button>
-            </form>
-          </div>
-
-          {/* Follow Us Card */}
-          <div className="rounded-2xl p-4 sm:p-5 flex items-center gap-4"
-            style={{ background: 'rgba(16,51,41,0.72)', border: '1px solid rgba(24,185,138,0.28)' }}>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(232,189,75,0.12)' }}>
-              <UsersRound size={20} className="text-noor-gold" />
-            </div>
-            <div className="mr-auto">
-              <p className="text-noor-ivory text-sm font-semibold">Follow Us</p>
-              <p className="text-noor-muted text-[11px]">Join our community</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {SOCIAL_ICONS.map((s, i) => (
-                <a key={`top-${i}`} href="#" aria-label={`Social link ${i + 1}`}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-noor-muted hover:text-noor-gold transition-colors"
-                  style={{ background: 'rgba(6,24,18,0.45)', border: '1px solid rgba(26,64,53,0.7)' }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" dangerouslySetInnerHTML={{ __html: s }} />
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
+     {/* Top Bar - Single Full Width Subscribe Card */}
+<div className="max-w-[1400px] mx-auto px-4 lg:px-8 pt-6 lg:pt-10">
+  <div className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+    style={{ background: 'rgba(16,51,41,0.72)', border: '1px solid rgba(24,185,138,0.28)' }}>
+    <div className="flex items-center gap-3.5">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(232,189,75,0.12)' }}>
+        <Mail size={20} className="text-noor-gold" />
       </div>
-
+      <div>
+        <p className="text-noor-ivory text-sm font-semibold">Stay Connected</p>
+        <p className="text-noor-muted text-[11px]">Get the latest Islamic content, reminders and updates.</p>
+      </div>
+    </div>
+    
+    <form className="flex w-full sm:w-auto sm:min-w-[340px]" onSubmit={handleSubscribe}>
+      <input aria-label="Email address" type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSubscribed(false); }} placeholder="Enter your email address"
+        className="min-w-0 flex-1 rounded-l-full px-4 py-2.5 text-xs text-noor-ivory bg-transparent border border-noor-border outline-none focus:border-noor-gold/60" />
+      <button type="submit" className="rounded-r-full px-5 py-2.5 text-xs font-semibold whitespace-nowrap" style={{ background: '#E8BD4B', color: '#061812' }}>
+        {subscribed ? 'Saved ✓' : <>Subscribe <ArrowRight size={13} className="inline ml-1" /></>}
+      </button>
+    </form>
+  </div>
+</div>       
+      
       {/* Main Footer Section */}
       <div className="relative max-w-[1400px] mx-auto px-4 lg:px-8 pt-2 pb-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 mb-10">
