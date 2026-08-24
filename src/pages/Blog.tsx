@@ -10,6 +10,7 @@ import {
   User,
   MessageSquare,
   ImageIcon,
+  Sparkles
 } from 'lucide-react';
 
 interface BlogPost {
@@ -72,7 +73,7 @@ const DEFAULT_POSTS: BlogPost[] = [
 
 const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar', 'Community & Life'];
 
-const Blog: React.FC = () => {
+ const Blog: React.FC = () => {
   // --- Persistent User Profile ---
   const [userName, setUserName] = useState<string>(() => localStorage.getItem('noor_user_nickname') || '');
   const [userEmail, setUserEmail] = useState<string>(() => localStorage.getItem('noor_user_email') || '');
@@ -134,7 +135,7 @@ const Blog: React.FC = () => {
     }
   }, []);
 
-  // --- BACKEND REAL-TIME SYNC API HOOK (Broadcast Channel for Multi-tab / Public Sync) ---
+  // --- Broadcast Channel Hook ---
   useEffect(() => {
     const channel = new BroadcastChannel('noor_public_chat_channel');
 
@@ -264,288 +265,306 @@ const Blog: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Header Banner */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <BookOpen className="text-emerald-600" /> Islamic Knowledge & Reflections
-              </h1>
-              <p className="text-slate-500 text-sm mt-1">
-                Explore authentic articles, community posts, and daily reminders.
-              </p>
-            </div>
+    <div className="min-h-screen bg-[#04221c] text-slate-100 py-6 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* --- NOOR HERO BANNER --- */}
+        <div className="text-center py-8 px-4 rounded-3xl bg-gradient-to-b from-[#07332a] to-[#04221c] border border-emerald-900/40 shadow-2xl relative overflow-hidden">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-950/80 border border-amber-500/30 text-amber-400 text-xs font-medium mb-4">
+            <BookOpen size={14} /> Islamic Insights & Knowledge Portal
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-serif tracking-wide text-amber-50 font-bold mb-3">
+            Knowledge & Reflections
+          </h1>
+          <p className="text-slate-300 max-w-2xl mx-auto text-xs sm:text-sm leading-relaxed mb-6">
+            Read verified Islamic posts, publish your reflections, and participate in our moderated Islamic chat room.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => setIsSubmitOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-medium text-xs sm:text-sm hover:bg-emerald-700 transition shadow-sm active:scale-95 whitespace-nowrap"
+              className="px-5 py-2.5 rounded-full bg-amber-400 text-[#04221c] font-bold text-xs sm:text-sm hover:bg-amber-300 transition shadow-lg active:scale-95 flex items-center gap-2"
             >
-              <PlusCircle size={16} /> Submit Article
+              <PlusCircle size={16} /> Submit Your Article
             </button>
+
+            <a
+              href="#lounge"
+              className="px-5 py-2.5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 hover:bg-emerald-800/60 font-medium text-xs sm:text-sm transition flex items-center gap-2"
+            >
+              <MessageSquare size={16} /> Public Islamic Chat
+            </a>
           </div>
-
-          {/* Search & Categories */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
-            <div className="relative w-full sm:w-72">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search articles or authors..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
-              />
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto w-full sm:w-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
-                    activeCategory === cat
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Featured Post */}
-          {filteredPosts.find((p) => p.featured) && activeCategory === 'All' && !searchQuery && (
-            (() => {
-              const feat = filteredPosts.find((p) => p.featured)!;
-              return (
-                <div
-                  onClick={() => setSelectedPost(feat)}
-                  className="cursor-pointer group relative rounded-2xl overflow-hidden bg-white border border-slate-100 hover:border-emerald-500 transition grid grid-cols-1 md:grid-cols-12 shadow-sm hover:shadow-md"
-                >
-                  <div className="md:col-span-5 h-48 md:h-auto overflow-hidden relative">
-                    <img
-                      src={feat.img}
-                      alt={feat.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                    />
-                  </div>
-                  <div className="md:col-span-7 p-5 flex flex-col justify-between space-y-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
-                          {feat.category}
-                        </span>
-                        <span className="text-slate-400 text-xs flex items-center gap-1">
-                          <Clock size={12} /> {feat.readTime}
-                        </span>
-                      </div>
-                      <h2 className="font-bold text-lg sm:text-xl text-slate-800 group-hover:text-emerald-600 transition">
-                        {feat.title}
-                      </h2>
-                      <p className="text-slate-500 text-xs sm:text-sm line-clamp-2">{feat.excerpt}</p>
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-500">
-                      <span className="flex items-center gap-1.5">
-                        <User size={13} className="text-emerald-600" /> {feat.author}
-                      </span>
-                      <span>{feat.date}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()
-          )}
-
-          {/* Blog Grid */}
-          {filteredPosts.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-xs sm:text-sm bg-white rounded-2xl border border-slate-100">
-              No articles found matching your query.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {filteredPosts.map((post) => (
-                <div
-                  key={post.id}
-                  onClick={() => setSelectedPost(post)}
-                  className="cursor-pointer group rounded-2xl bg-white border border-slate-100 hover:border-emerald-500 transition flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-md"
-                >
-                  <div>
-                    <div className="h-40 overflow-hidden relative bg-slate-100">
-                      <img
-                        src={post.img}
-                        alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      />
-                      <span className="absolute top-3 left-3 text-[10px] font-semibold text-slate-700 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200">
-                        {post.category}
-                      </span>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <div className="flex items-center justify-between text-[11px] text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Clock size={11} /> {post.readTime}
-                        </span>
-                        <span>{post.date}</span>
-                      </div>
-                      <h3 className="font-bold text-sm sm:text-base text-slate-800 group-hover:text-emerald-600 transition line-clamp-2">
-                        {post.title}
-                      </h3>
-                      <p className="text-slate-500 text-xs line-clamp-2">{post.excerpt}</p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 pt-0 border-t border-slate-50 mt-2 flex items-center justify-between text-xs text-slate-500">
-                    <span className="truncate max-w-[140px] flex items-center gap-1">
-                      <User size={12} /> {post.author}
-                    </span>
-                    <span className="text-emerald-600 font-medium group-hover:underline">Read →</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Professional Real-time Public Lounge */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 flex flex-col h-[600px] overflow-hidden sticky top-6">
-            {/* Header with Unique Teal/Emerald Unread Badge */}
-            <div className="p-4 bg-slate-900 text-white flex justify-between items-center shadow-md">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-sm tracking-wide">Public Islamic Lounge</h2>
-                  <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Live Sync Active
-                  </span>
-                </div>
-              </div>
+        {/* --- FILTER & SEARCH BAR --- */}
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full lg:w-80">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search articles or authors..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#07332a] border border-emerald-800/60 text-xs sm:text-sm text-slate-100 placeholder-emerald-600 focus:outline-none focus:border-amber-400 transition"
+            />
+          </div>
 
-              <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
-                  <button
-                    onClick={() => setUnreadCount(0)}
-                    className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-sm border border-teal-300/30 backdrop-blur-md animate-pulse"
+          <div className="flex gap-2 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0" style={{ scrollbarWidth: 'none' }}>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                  activeCategory === cat
+                    ? 'bg-amber-400 text-[#04221c] shadow-md'
+                    : 'bg-[#07332a] text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* --- MAIN LAYOUT GRID --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          
+          {/* BLOGS CONTENT AREA */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* FEATURED POST */}
+            {filteredPosts.find((p) => p.featured) && activeCategory === 'All' && !searchQuery && (
+              (() => {
+                const feat = filteredPosts.find((p) => p.featured)!;
+                return (
+                  <div
+                    onClick={() => setSelectedPost(feat)}
+                    className="cursor-pointer group relative rounded-3xl overflow-hidden bg-[#07332a] border border-emerald-800/60 hover:border-amber-400/60 transition grid grid-cols-1 md:grid-cols-12 shadow-xl"
                   >
-                    +{unreadCount} new
-                  </button>
-                )}
-
-                {isProfileSet && (
-                  <button
-                    onClick={() => setShowProfileModal(true)}
-                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 transition"
-                  >
-                    👤 {userName}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Chat Display Area */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/60" onClick={() => setUnreadCount(0)}>
-              {messages.length === 0 ? (
-                <div className="text-center text-slate-400 text-xs mt-16">
-                  No messages yet. Be the first to start the discussion!
-                </div>
-              ) : (
-                messages.map((msg) => {
-                  const isMe = msg.senderName === userName;
-                  return (
-                    <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      <span className="text-[11px] font-medium text-slate-400 mb-0.5 px-1">
-                        {isMe ? 'You' : msg.senderName}
-                      </span>
-                      <div
-                        className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                          isMe
-                            ? 'bg-emerald-600 text-white rounded-tr-none'
-                            : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
-                        }`}
-                      >
-                        <p className="leading-relaxed">{msg.message}</p>
-                        <span className={`text-[10px] block text-right mt-1 ${isMe ? 'text-emerald-200' : 'text-slate-400'}`}>
-                          {msg.timestamp}
+                    <div className="md:col-span-5 h-52 md:h-auto overflow-hidden relative">
+                      <img
+                        src={feat.img}
+                        alt={feat.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90"
+                      />
+                    </div>
+                    <div className="md:col-span-7 p-6 flex flex-col justify-between space-y-4">
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-amber-300 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
+                            {feat.category}
+                          </span>
+                          <span className="text-emerald-300 text-xs flex items-center gap-1">
+                            <Clock size={12} /> {feat.readTime}
+                          </span>
+                        </div>
+                        <h2 className="font-serif font-bold text-xl sm:text-2xl text-amber-50 group-hover:text-amber-300 transition leading-snug">
+                          {feat.title}
+                        </h2>
+                        <p className="text-slate-300 text-xs sm:text-sm line-clamp-2 leading-relaxed">{feat.excerpt}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-4 border-t border-emerald-800/40 text-xs text-emerald-300">
+                        <span className="flex items-center gap-1.5">
+                          <User size={13} className="text-amber-400" /> {feat.author}
                         </span>
+                        <span>{feat.date}</span>
                       </div>
                     </div>
-                  );
-                })
-              )}
-              <div ref={chatEndRef} />
-            </div>
+                  </div>
+                );
+              })()
+            )}
 
-            {/* Clean Input Area */}
-            <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-100 flex gap-2">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder={isProfileSet ? 'Type a public message...' : 'Set nickname to start chatting...'}
-                className="flex-1 px-4 py-2.5 bg-slate-100 border border-transparent rounded-xl text-sm focus:outline-none focus:bg-white focus:border-emerald-500 transition"
-              />
-              <button
-                type="submit"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl transition shadow-md active:scale-95"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
+            {/* BLOGS GRID */}
+            {filteredPosts.length === 0 ? (
+              <div className="text-center py-12 text-emerald-400 text-xs sm:text-sm bg-[#07332a] rounded-3xl border border-emerald-800/40">
+                No articles found matching your criteria.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {filteredPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    onClick={() => setSelectedPost(post)}
+                    className="cursor-pointer group rounded-3xl bg-[#07332a] border border-emerald-800/50 hover:border-amber-400/50 transition flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-2xl"
+                  >
+                    <div>
+                      <div className="h-44 overflow-hidden relative bg-emerald-950">
+                        <img
+                          src={post.img}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90"
+                        />
+                        <span className="absolute top-3 left-3 text-[10px] font-bold text-amber-300 bg-[#04221c]/90 backdrop-blur-md px-3 py-1 rounded-full border border-amber-400/20">
+                          {post.category}
+                        </span>
+                      </div>
+                      <div className="p-5 space-y-2.5">
+                        <div className="flex items-center justify-between text-[11px] text-emerald-400">
+                          <span className="flex items-center gap-1">
+                            <Clock size={11} /> {post.readTime}
+                          </span>
+                          <span>{post.date}</span>
+                        </div>
+                        <h3 className="font-serif font-bold text-base text-amber-50 group-hover:text-amber-300 transition line-clamp-2">
+                          {post.title}
+                        </h3>
+                        <p className="text-slate-300 text-xs line-clamp-2 leading-relaxed">{post.excerpt}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-5 pt-0 border-t border-emerald-800/30 mt-3 flex items-center justify-between text-xs text-emerald-300">
+                      <span className="truncate max-w-[140px] flex items-center gap-1">
+                        <User size={12} className="text-amber-400" /> {post.author}
+                      </span>
+                      <span className="text-amber-400 font-semibold group-hover:underline">Read →</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* CHAT LOUNGE SIDEBAR */}
+          <div id="lounge" className="lg:col-span-1">
+            <div className="bg-[#07332a] rounded-3xl shadow-2xl border border-emerald-800/60 flex flex-col h-[600px] overflow-hidden sticky top-6">
+              
+              {/* Header */}
+              <div className="p-4 bg-[#04221c] text-slate-100 flex justify-between items-center border-b border-emerald-800/60">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-emerald-900/50 rounded-xl text-amber-400 border border-amber-400/20">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-sm tracking-wide text-amber-50">Public Islamic Lounge</h2>
+                    <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Live Sync Active
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => setUnreadCount(0)}
+                      className="bg-gradient-to-r from-amber-500 to-amber-400 text-[#04221c] text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-md animate-pulse"
+                    >
+                      +{unreadCount} new
+                    </button>
+                  )}
+
+                  {isProfileSet && (
+                    <button
+                      onClick={() => setShowProfileModal(true)}
+                      className="text-xs bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 px-2.5 py-1 rounded-lg border border-emerald-700/50 transition"
+                    >
+                      👤 {userName}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Messages Area */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#04221c]/50" onClick={() => setUnreadCount(0)}>
+                {messages.length === 0 ? (
+                  <div className="text-center text-emerald-500/70 text-xs mt-20">
+                    No messages yet. Start the conversation!
+                  </div>
+                ) : (
+                  messages.map((msg) => {
+                    const isMe = msg.senderName === userName;
+                    return (
+                      <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                        <span className="text-[11px] font-medium text-emerald-400/80 mb-0.5 px-1">
+                          {isMe ? 'You' : msg.senderName}
+                        </span>
+                        <div
+                          className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm shadow-md ${
+                            isMe
+                              ? 'bg-amber-400 text-[#04221c] font-medium rounded-tr-none'
+                              : 'bg-[#0a4035] text-slate-100 border border-emerald-800/40 rounded-tl-none'
+                          }`}
+                        >
+                          <p className="leading-relaxed">{msg.message}</p>
+                          <span className={`text-[9px] block text-right mt-1 ${isMe ? 'text-[#04221c]/70' : 'text-emerald-400/70'}`}>
+                            {msg.timestamp}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input Form */}
+              <form onSubmit={handleSendMessage} className="p-3 bg-[#04221c] border-t border-emerald-800/60 flex gap-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder={isProfileSet ? 'Type a public message...' : 'Set nickname to start chatting...'}
+                  className="flex-1 px-4 py-2.5 bg-[#07332a] border border-emerald-800/60 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-emerald-600 focus:outline-none focus:border-amber-400 transition"
+                />
+                <button
+                  type="submit"
+                  className="bg-amber-400 hover:bg-amber-300 text-[#04221c] p-2.5 rounded-xl transition shadow-md active:scale-95 font-bold"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Persistent Profile Setup Modal */}
+      {/* --- PROFILE SETUP MODAL --- */}
       {showProfileModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-100">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#07332a] rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-emerald-700/60">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                <User className="text-emerald-600" /> Set Your Display Profile
+              <h3 className="font-bold text-amber-50 text-base flex items-center gap-2">
+                <User className="text-amber-400" /> Set Your Display Profile
               </h3>
               {isProfileSet && (
-                <button onClick={() => setShowProfileModal(false)} className="text-slate-400 hover:text-slate-600">
+                <button onClick={() => setShowProfileModal(false)} className="text-emerald-400 hover:text-slate-100">
                   <X className="w-5 h-5" />
                 </button>
               )}
             </div>
 
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="text-xs text-slate-300 mb-4">
               Save your nickname to participate in public discussions. Your profile identity will be remembered locally.
             </p>
 
             <form onSubmit={handleSaveProfile} className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">Nickname / Display Name *</label>
+                <label className="text-xs font-semibold text-emerald-300 block mb-1">Nickname / Display Name *</label>
                 <input
                   type="text"
                   required
                   value={tempNickname}
                   onChange={(e) => setTempNickname(e.target.value)}
                   placeholder="e.g. Ali Ahmed"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 text-slate-800"
+                  className="w-full px-3 py-2 bg-[#04221c] border border-emerald-800/60 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">Email Address (Optional)</label>
+                <label className="text-xs font-semibold text-emerald-300 block mb-1">Email Address (Optional)</label>
                 <input
                   type="email"
                   value={tempEmail}
                   onChange={(e) => setTempEmail(e.target.value)}
                   placeholder="ali@example.com"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 text-slate-800"
+                  className="w-full px-3 py-2 bg-[#04221c] border border-emerald-800/60 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl text-sm transition mt-2 shadow-sm"
+                className="w-full bg-amber-400 hover:bg-amber-300 text-[#04221c] font-bold py-2.5 rounded-xl text-xs sm:text-sm transition mt-2 shadow-md"
               >
                 Save & Continue
               </button>
@@ -554,29 +573,29 @@ const Blog: React.FC = () => {
         </div>
       )}
 
-      {/* FULL ARTICLE VIEW MODAL */}
+      {/* --- FULL ARTICLE VIEW MODAL --- */}
       {selectedPost && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative text-slate-800 border border-slate-100">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#07332a] rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative text-slate-100 border border-emerald-700/60">
             <button
               onClick={() => setSelectedPost(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 transition"
+              className="absolute top-4 right-4 p-2 rounded-full bg-[#04221c] text-emerald-400 hover:text-amber-400 transition"
             >
               <X size={18} />
             </button>
 
-            <div className="h-52 sm:h-64 rounded-xl overflow-hidden bg-slate-100">
+            <div className="h-52 sm:h-64 rounded-2xl overflow-hidden bg-emerald-950">
               <img src={selectedPost.img} alt={selectedPost.title} className="w-full h-full object-cover" />
             </div>
 
-            <div className="space-y-2 border-b border-slate-100 pb-4">
-              <span className="text-xs text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+            <div className="space-y-2 border-b border-emerald-800/40 pb-4">
+              <span className="text-xs text-amber-300 font-semibold bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
                 {selectedPost.category}
               </span>
-              <h2 className="text-xl sm:text-2xl font-bold pt-1">{selectedPost.title}</h2>
-              <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+              <h2 className="text-xl sm:text-2xl font-serif font-bold pt-2 text-amber-50">{selectedPost.title}</h2>
+              <div className="flex items-center justify-between text-xs text-emerald-300 pt-1">
                 <span>
-                  By <strong className="text-slate-700">{selectedPost.author}</strong>
+                  By <strong className="text-amber-400">{selectedPost.author}</strong>
                 </span>
                 <span>
                   {selectedPost.date} • {selectedPost.readTime}
@@ -584,67 +603,67 @@ const Blog: React.FC = () => {
               </div>
             </div>
 
-            <div className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line space-y-3">
+            <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line space-y-3">
               {selectedPost.content}
             </div>
           </div>
         </div>
       )}
 
-      {/* SUBMIT ARTICLE MODAL */}
+      {/* --- SUBMIT ARTICLE MODAL --- */}
       {isSubmitOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative text-slate-800 border border-slate-100">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#07332a] rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative text-slate-100 border border-emerald-700/60">
             <button
               onClick={() => setIsSubmitOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 transition"
+              className="absolute top-4 right-4 p-2 rounded-full bg-[#04221c] text-emerald-400 hover:text-amber-400 transition"
             >
               <X size={18} />
             </button>
 
             <div className="space-y-1">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-800">Submit Your Article</h2>
-              <p className="text-slate-500 text-xs">Share your beneficial knowledge and thoughts with the community.</p>
+              <h2 className="text-lg sm:text-xl font-serif font-bold text-amber-50">Submit Your Article</h2>
+              <p className="text-emerald-300 text-xs">Share your beneficial knowledge and thoughts with the community.</p>
             </div>
 
             {submittedSuccess ? (
-              <div className="py-8 text-center space-y-3 text-emerald-600">
+              <div className="py-8 text-center space-y-3 text-amber-400">
                 <Check size={36} className="mx-auto animate-bounce" />
                 <p className="text-sm font-semibold">Article Submitted Successfully!</p>
               </div>
             ) : (
               <form onSubmit={handleSubmitArticle} className="space-y-3 text-xs sm:text-sm">
                 <div>
-                  <label className="block text-slate-600 mb-1 text-xs font-medium">Article Title *</label>
+                  <label className="block text-emerald-300 mb-1 text-xs font-medium">Article Title *</label>
                   <input
                     type="text"
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g. Benefits of Giving Charity in Secret"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-emerald-500 text-slate-800"
+                    className="w-full px-3 py-2 rounded-xl bg-[#04221c] border border-emerald-800/60 text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-600 mb-1 text-xs font-medium">Author Name *</label>
+                    <label className="block text-emerald-300 mb-1 text-xs font-medium">Author Name *</label>
                     <input
                       type="text"
                       required
                       value={formData.author}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                       placeholder="e.g. Brother Ali"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-emerald-500 text-slate-800"
+                      className="w-full px-3 py-2 rounded-xl bg-[#04221c] border border-emerald-800/60 text-slate-100 focus:outline-none focus:border-amber-400"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 mb-1 text-xs font-medium">Category</label>
+                    <label className="block text-emerald-300 mb-1 text-xs font-medium">Category</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 rounded-xl bg-[#04221c] border border-emerald-800/60 text-slate-100 focus:outline-none focus:border-amber-400"
                     >
                       {CATEGORIES.filter((c) => c !== 'All').map((c) => (
                         <option key={c} value={c}>
@@ -656,7 +675,7 @@ const Blog: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 mb-1 text-xs font-medium flex items-center gap-1">
+                  <label className="block text-emerald-300 mb-1 text-xs font-medium flex items-center gap-1">
                     <ImageIcon size={12} /> Image URL (Optional)
                   </label>
                   <input
@@ -664,25 +683,25 @@ const Blog: React.FC = () => {
                     value={formData.img}
                     onChange={(e) => setFormData({ ...formData, img: e.target.value })}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-emerald-500 text-slate-800"
+                    className="w-full px-3 py-2 rounded-xl bg-[#04221c] border border-emerald-800/60 text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 mb-1 text-xs font-medium">Article Content *</label>
+                  <label className="block text-emerald-300 mb-1 text-xs font-medium">Article Content *</label>
                   <textarea
                     rows={4}
                     required
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     placeholder="Write your main article text here..."
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-emerald-500 text-slate-800"
+                    className="w-full px-3 py-2 rounded-xl bg-[#04221c] border border-emerald-800/60 text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-xs sm:text-sm hover:bg-emerald-700 transition shadow-sm flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#04221c] font-bold text-xs sm:text-sm transition shadow-md flex items-center justify-center gap-2 active:scale-95"
                 >
                   <Send size={15} /> Publish Article
                 </button>
