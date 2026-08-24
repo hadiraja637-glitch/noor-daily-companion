@@ -1,16 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  Search,
-  PlusCircle,
-  Clock,
-  X,
-  Check,
-  BookOpen,
-  Send,
-  User,
-  MessageSquare,
-  ImageIcon
-} from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare, ShieldAlert, Link as LinkIcon, Image as ImageIcon, Sparkles, Share2 } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -27,10 +16,11 @@ interface BlogPost {
 
 interface ChatMessage {
   id: string;
-  senderName: string;
-  senderEmail?: string;
-  message: string;
-  timestamp: string;
+  user: string;
+  text: string;
+  time: string;
+  linkUrl?: string;
+  isSelf?: boolean;
 }
 
 const DEFAULT_POSTS: BlogPost[] = [
@@ -70,41 +60,46 @@ const DEFAULT_POSTS: BlogPost[] = [
   },
 ];
 
+const INITIAL_CHAT: ChatMessage[] = [
+  {
+    id: '1',
+    user: 'Brother Hamza',
+    text: 'Assalamu Alaikum! Share authentic Quran lectures or Bayan links here.',
+    time: '10:15 AM',
+  },
+  {
+    id: '2',
+    user: 'Sister Ayesha',
+    text: 'Wa Alaikum Assalam! Must watch this Bayan on Surah Ar-Rahman:',
+    linkUrl: 'https://youtube.com/watch?v=demo-bayan',
+    time: '10:18 AM',
+  },
+];
+
 const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar', 'Community & Life'];
 
- const Blog: React.FC = () => {
-  // Persistent User Profile State
-  const [userName, setUserName] = useState<string>(() => localStorage.getItem('noor_user_nickname') || '');
-  const [userEmail, setUserEmail] = useState<string>(() => localStorage.getItem('noor_user_email') || '');
-  const [isProfileSet, setIsProfileSet] = useState<boolean>(() => !!localStorage.getItem('noor_user_nickname'));
+// Moderation Keywords Filter
+const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy', 'number', 'whatsapp', 'fuck', 'shit', 'abuse', 'single', 'meet me'];
 
-  // Profile Modal State
-  const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
-  const [tempNickname, setTempNickname] = useState('');
-  const [tempEmail, setTempEmail] = useState('');
-
-  // Real-time Public Chat State
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    try {
-      const saved = localStorage.getItem('noor_public_chat_messages');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [newMessage, setNewMessage] = useState('');
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Blog & Search State
+export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // Modals & Chat
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
-
-  // Submit Article Modal State
   const [isSubmitOpen, setIsSubmitOpen] = useState<boolean>(false);
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
+
+  // Chat State
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT);
+  const [newMsg, setNewMsg] = useState('');
+  const [userName, setUserName] = useState('');
+  const [chatError, setChatError] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Form State
   const [formData, setFormData] = useState({
     title: '',
     category: 'Spiritual Growth',
@@ -115,94 +110,31 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
     img: '',
   });
 
-  // Load Saved Posts
   useEffect(() => {
-    try {
-      const savedBlogs = localStorage.getItem('noor_user_blogs');
-      if (savedBlogs) {
-        const parsed = JSON.parse(savedBlogs);
-        if (Array.isArray(parsed)) {
-          setPosts([...parsed, ...DEFAULT_POSTS]);
-        } else {
-          setPosts(DEFAULT_POSTS);
-        }
-      } else {
+    const savedBlogs = localStorage.getItem('noor_user_blogs');
+    if (savedBlogs) {
+      try {
+        setPosts([...JSON.parse(savedBlogs), ...DEFAULT_POSTS]);
+      } catch (e) {
         setPosts(DEFAULT_POSTS);
       }
-    } catch {
+    } else {
       setPosts(DEFAULT_POSTS);
     }
-  }, []);
 
-  // Broadcast Channel Hook
-  useEffect(() => {
-    const channel = new BroadcastChannel('noor_public_chat_channel');
-
-    channel.onmessage = (event) => {
-      const incomingMessage: ChatMessage = event.data;
-      setMessages((prev) => {
-        const updated = [...prev, incomingMessage];
-        localStorage.setItem('noor_public_chat_messages', JSON.stringify(updated));
-        return updated;
-      });
-      setUnreadCount((prev) => prev + 1);
-    };
-
-    return () => {
-      channel.close();
-    };
+    const savedChat = localStorage.getItem('noor_community_chat');
+    if (savedChat) {
+      try {
+        setChatMessages(JSON.parse(savedChat));
+      } catch (e) {}
+    }
   }, []);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tempNickname.trim()) return;
-
-    localStorage.setItem('noor_user_nickname', tempNickname.trim());
-    if (tempEmail.trim()) {
-      localStorage.setItem('noor_user_email', tempEmail.trim());
+    if (isChatOpen) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-
-    setUserName(tempNickname.trim());
-    setUserEmail(tempEmail.trim());
-    setIsProfileSet(true);
-    setShowProfileModal(false);
-  };
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-
-    if (!isProfileSet) {
-      setShowProfileModal(true);
-      return;
-    }
-
-    const msgObj: ChatMessage = {
-      id: Date.now().toString(),
-      senderName: userName,
-      senderEmail: userEmail,
-      message: newMessage.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    const updatedMessages = [...messages, msgObj];
-    setMessages(updatedMessages);
-    localStorage.setItem('noor_public_chat_messages', JSON.stringify(updatedMessages));
-
-    try {
-      const channel = new BroadcastChannel('noor_public_chat_channel');
-      channel.postMessage(msgObj);
-      channel.close();
-    } catch (err) {
-      console.error('Broadcast error:', err);
-    }
-
-    setNewMessage('');
-  };
+  }, [chatMessages, isChatOpen]);
 
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
@@ -216,103 +148,129 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
     });
   }, [posts, activeCategory, searchQuery]);
 
+  // Find featured post safely
+  const featuredPost = useMemo(() => filteredPosts.find((p) => p.featured), [filteredPosts]);
+  const showFeatured = featuredPost && activeCategory === 'All' && !searchQuery;
+
   const handleSubmitArticle = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.content.trim() || !formData.author.trim()) return;
+    if (!formData.title || !formData.content || !formData.author) return;
 
     const newPost: BlogPost = {
       id: Date.now().toString(),
-      title: formData.title.trim(),
+      title: formData.title,
       category: formData.category,
-      excerpt: formData.excerpt.trim() || formData.content.trim().slice(0, 110) + '...',
-      content: formData.content.trim(),
-      author: formData.author.trim(),
+      excerpt: formData.excerpt || formData.content.slice(0, 110) + '...',
+      content: formData.content,
+      author: formData.author,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-      readTime: formData.readTime || '3 min read',
+      readTime: formData.readTime,
       img: formData.img.trim() || 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=800&q=80',
     };
 
     const updated = [newPost, ...posts];
     setPosts(updated);
-
-    try {
-      const existingUserBlogs = JSON.parse(localStorage.getItem('noor_user_blogs') || '[]');
-      localStorage.setItem('noor_user_blogs', JSON.stringify([newPost, ...existingUserBlogs]));
-    } catch {
-      localStorage.setItem('noor_user_blogs', JSON.stringify([newPost]));
-    }
-
+    localStorage.setItem('noor_user_blogs', JSON.stringify([newPost, ...(JSON.parse(localStorage.getItem('noor_user_blogs') || '[]'))]));
+    
     setSubmittedSuccess(true);
     setTimeout(() => {
       setSubmittedSuccess(false);
       setIsSubmitOpen(false);
-      setFormData({
-        title: '',
-        category: 'Spiritual Growth',
-        author: '',
-        readTime: '3 min read',
-        excerpt: '',
-        content: '',
-        img: '',
-      });
-    }, 1500);
+      setFormData({ title: '', category: 'Spiritual Growth', author: '', readTime: '3 min read', excerpt: '', content: '', img: '' });
+    }, 1800);
+  };
+
+  // URL Extraction Regex
+  const extractUrl = (text: string) => {
+    const urlMatch = text.match(/(https?:\/\/[^\s]+)/g);
+    return urlMatch ? urlMatch[0] : null;
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    setChatError('');
+
+    if (!newMsg.trim()) return;
+
+    const lowerMsg = newMsg.toLowerCase();
+    const containsBadWords = BANNED_KEYWORDS.some((word) => lowerMsg.includes(word));
+
+    if (containsBadWords) {
+      setChatError('Strict Moderation: Personal dating, contact sharing & informal chat are prohibited!');
+      return;
+    }
+
+    const detectedLink = extractUrl(newMsg);
+    const cleanText = newMsg.replace(/(https?:\/\/[^\s]+)/g, '').trim();
+
+    const messageObj: ChatMessage = {
+      id: Date.now().toString(),
+      user: userName.trim() || 'Servant of Allah',
+      text: cleanText || (detectedLink ? 'Shared an Islamic Resource Link:' : newMsg),
+      linkUrl: detectedLink || undefined,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    const updatedChat = [...chatMessages, messageObj];
+    setChatMessages(updatedChat);
+    localStorage.setItem('noor_community_chat', JSON.stringify(updatedChat));
+    setNewMsg('');
   };
 
   return (
-    <div className="min-h-screen bg-[#021814] text-slate-100 py-6 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* --- DEEP AESTHETIC NOOR HERO BANNER --- */}
-        <div className="text-center py-10 px-4 rounded-3xl bg-gradient-to-b from-[#042821] via-[#03201a] to-[#021814] border border-[#0d4a3c]/60 shadow-2xl relative overflow-hidden">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#021511] border border-amber-500/30 text-amber-400 text-xs font-medium mb-5">
+    <div className="min-h-screen pt-16 sm:pt-20 pb-24 lg:pb-12 bg-[#061812] text-noor-ivory">
+      {/* Header Banner */}
+      <div className="py-8 sm:py-12 mb-6 text-center relative overflow-hidden bg-[#0B2820] border-b border-[#1A4035]/50 px-4">
+        <div className="islamic-pattern absolute inset-0 opacity-30 pointer-events-none" />
+        <div className="relative max-w-3xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8BD4B]/10 border border-[#E8BD4B]/30 text-[#E8BD4B] text-xs font-medium shadow-sm">
             <BookOpen size={13} /> Islamic Insights & Knowledge Portal
           </div>
-          <h1 className="text-3xl sm:text-5xl font-serif font-normal tracking-wide text-[#f7e8cf] drop-shadow-sm mb-3">
-            Knowledge & Reflections
-          </h1>
-          <p className="text-emerald-200/70 max-w-2xl mx-auto text-xs sm:text-sm leading-relaxed mb-8">
+          <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-wide">Knowledge & Reflections</h1>
+          <p className="text-noor-muted text-xs sm:text-sm max-w-xl mx-auto">
             Read verified Islamic posts, publish your reflections, and participate in our moderated Islamic chat room.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               onClick={() => setIsSubmitOpen(true)}
-              className="px-6 py-2.5 rounded-full bg-amber-400 text-[#021814] font-semibold text-xs sm:text-sm hover:bg-amber-300 transition shadow-lg active:scale-95 flex items-center gap-2"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E8BD4B] text-[#061812] font-semibold text-xs sm:text-sm hover:bg-[#f2ca5c] transition-all shadow-md"
             >
-              <PlusCircle size={15} /> Submit Your Article
+              <PlusCircle size={16} /> Submit Your Article
             </button>
-
-            <a
-              href="#lounge"
-              className="px-6 py-2.5 rounded-full bg-[#021511]/90 text-emerald-300 border border-[#0a4034]/80 hover:bg-[#03201a] font-medium text-xs sm:text-sm transition flex items-center gap-2"
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/40 text-[#E8BD4B] font-semibold text-xs sm:text-sm hover:bg-[#1A4035] transition-all shadow-md"
             >
-              <MessageSquare size={15} /> Public Islamic Chat
-            </a>
+              <MessageSquare size={16} /> Public Islamic Chat
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* --- FILTER & SEARCH BAR --- */}
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full lg:w-80">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-600" />
+      <div className="max-w-6xl mx-auto px-4 lg:px-8 space-y-8">
+        {/* Search & Categories */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full sm:w-80">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-noor-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search articles or authors..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#04241d] border border-[#0a4034]/70 text-xs sm:text-sm text-slate-100 placeholder-emerald-600 focus:outline-none focus:border-amber-400/80 transition"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]/50 transition-all"
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition ${
+                className={`px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all shadow-sm ${
                   activeCategory === cat
-                    ? 'bg-amber-400 text-[#021814] font-semibold shadow-md'
-                    : 'bg-[#04241d] text-emerald-200/80 border border-[#0a4034]/60 hover:bg-[#063329]'
+                    ? 'bg-[#E8BD4B]/20 border border-[#E8BD4B]/50 text-[#E8BD4B]'
+                    : 'bg-[#103329]/60 border border-[#1A4035]/60 text-noor-muted hover:text-noor-ivory hover:border-[#1A4035]'
                 }`}
               >
                 {cat}
@@ -321,390 +279,311 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
           </div>
         </div>
 
-        {/* --- MAIN LAYOUT GRID --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          
-          {/* BLOGS CONTENT AREA */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* FEATURED POST */}
-            {filteredPosts.find((p) => p.featured) && activeCategory === 'All' && !searchQuery && (
-              (() => {
-                const feat = filteredPosts.find((p) => p.featured)!;
-                return (
-                  <div
-                    onClick={() => setSelectedPost(feat)}
-                    className="cursor-pointer group relative rounded-3xl overflow-hidden bg-[#04241d] border border-[#0a4034]/70 hover:border-amber-400/40 transition grid grid-cols-1 md:grid-cols-12 shadow-xl"
-                  >
-                    <div className="md:col-span-5 h-52 md:h-auto overflow-hidden relative bg-[#021511]">
-                      <img
-                        src={feat.img}
-                        alt={feat.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-85"
-                      />
-                    </div>
-                    <div className="md:col-span-7 p-6 flex flex-col justify-between space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] tracking-wider font-semibold text-amber-300 bg-amber-400/10 px-3 py-0.5 rounded-full border border-amber-400/20">
-                            {feat.category.toUpperCase()}
-                          </span>
-                          <span className="text-emerald-400/80 text-xs flex items-center gap-1">
-                            <Clock size={12} /> {feat.readTime}
-                          </span>
-                        </div>
-                        <h2 className="font-serif font-normal text-xl sm:text-2xl text-[#f7e8cf] group-hover:text-amber-300 transition leading-snug">
-                          {feat.title}
-                        </h2>
-                        <p className="text-emerald-200/70 text-xs sm:text-sm line-clamp-2 leading-relaxed">{feat.excerpt}</p>
-                      </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-[#093d31]/80 text-xs text-emerald-400/80">
-                        <span className="flex items-center gap-1.5">
-                          <User size={13} className="text-amber-400" /> {feat.author}
-                        </span>
-                        <span>{feat.date}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()
-            )}
-
-            {/* BLOGS GRID */}
-            {filteredPosts.length === 0 ? (
-              <div className="text-center py-12 text-emerald-400/80 text-xs sm:text-sm bg-[#04241d] rounded-3xl border border-[#0a4034]/60">
-                No articles found matching your criteria.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {filteredPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    onClick={() => setSelectedPost(post)}
-                    className="cursor-pointer group rounded-3xl bg-[#04241d] border border-[#0a4034]/70 hover:border-amber-400/40 transition flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-2xl"
-                  >
-                    <div>
-                      <div className="h-44 overflow-hidden relative bg-[#021511]">
-                        <img
-                          src={post.img}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-85"
-                        />
-                        <span className="absolute top-3 left-3 text-[10px] font-semibold text-amber-300 bg-[#021814]/90 backdrop-blur-md px-3 py-0.5 rounded-full border border-amber-400/20">
-                          {post.category}
-                        </span>
-                      </div>
-                      <div className="p-5 space-y-2.5">
-                        <div className="flex items-center justify-between text-[11px] text-emerald-400/80">
-                          <span className="flex items-center gap-1">
-                            <Clock size={11} /> {post.readTime}
-                          </span>
-                          <span>{post.date}</span>
-                        </div>
-                        <h3 className="font-serif font-normal text-base sm:text-lg text-[#f7e8cf] group-hover:text-amber-300 transition line-clamp-2">
-                          {post.title}
-                        </h3>
-                        <p className="text-emerald-200/70 text-xs line-clamp-2 leading-relaxed">{post.excerpt}</p>
-                      </div>
-                    </div>
-
-                    <div className="p-5 pt-0 border-t border-[#093d31]/60 mt-3 flex items-center justify-between text-xs text-emerald-400/80">
-                      <span className="truncate max-w-[140px] flex items-center gap-1">
-                        <User size={12} className="text-amber-400" /> {post.author}
-                      </span>
-                      <span className="text-amber-400 font-medium group-hover:underline">Read →</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* CHAT LOUNGE SIDEBAR */}
-          <div id="lounge" className="lg:col-span-1">
-            <div className="bg-[#04241d] rounded-3xl shadow-2xl border border-[#0a4034]/80 flex flex-col h-[580px] overflow-hidden sticky top-6">
-              
-              {/* Header */}
-              <div className="p-4 bg-[#021511] text-slate-100 flex justify-between items-center border-b border-[#0a4034]/80">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-[#04241d] rounded-xl text-amber-400 border border-amber-400/20">
-                    <MessageSquare className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-xs sm:text-sm tracking-wide text-[#f7e8cf]">Public Islamic Lounge</h2>
-                    <span className="text-[10px] text-emerald-400/80 font-medium flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync Active
-                    </span>
-                  </div>
+        {/* Featured Post (Fixed layout for Laptop and Mobile) */}
+        {showFeatured && featuredPost && (
+          <div
+            onClick={() => setSelectedPost(featuredPost)}
+            className="cursor-pointer group relative rounded-2xl overflow-hidden bg-[#103329] border border-[#E8BD4B]/40 hover:border-[#E8BD4B] transition-all flex flex-col md:flex-row shadow-xl"
+          >
+            <div className="md:w-5/12 h-56 md:h-auto min-h-[220px] relative overflow-hidden bg-[#0B2820]">
+              <img 
+                src={featuredPost.img} 
+                alt={featuredPost.title} 
+                className="w-full h-full object-cover absolute inset-0 group-hover:scale-105 transition-transform duration-700" 
+              />
+            </div>
+            <div className="md:w-7/12 p-5 sm:p-8 flex flex-col justify-center space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] sm:text-xs uppercase font-bold text-[#E8BD4B] bg-[#E8BD4B]/10 px-2.5 py-1 rounded-md border border-[#E8BD4B]/20 shadow-sm">
+                    {featuredPost.category}
+                  </span>
+                  <span className="text-noor-muted text-xs flex items-center gap-1.5 font-medium"><Clock size={14} /> {featuredPost.readTime}</span>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={() => setUnreadCount(0)}
-                      className="bg-amber-400 text-[#021814] text-[10px] font-bold px-2 py-0.5 rounded-full shadow"
-                    >
-                      +{unreadCount} new
-                    </button>
-                  )}
-
-                  {isProfileSet && (
-                    <button
-                      onClick={() => setShowProfileModal(true)}
-                      className="text-xs bg-[#04241d] hover:bg-[#063329] text-emerald-200 px-2.5 py-1 rounded-lg border border-[#0a4034]/70 transition"
-                    >
-                      👤 {userName}
-                    </button>
-                  )}
-                </div>
+                <h2 className="font-display text-xl sm:text-3xl font-bold text-noor-ivory group-hover:text-[#E8BD4B] transition-colors leading-snug">
+                  {featuredPost.title}
+                </h2>
+                <p className="text-noor-muted text-sm sm:text-base line-clamp-3 leading-relaxed">{featuredPost.excerpt}</p>
               </div>
-
-              {/* Messages Area */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#021511]/50" onClick={() => setUnreadCount(0)}>
-                {messages.length === 0 ? (
-                  <div className="text-center text-emerald-500/60 text-xs mt-20">
-                    No messages yet. Start the conversation!
-                  </div>
-                ) : (
-                  messages.map((msg) => {
-                    const isMe = msg.senderName === userName;
-                    return (
-                      <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                        <span className="text-[10px] font-medium text-emerald-400/70 mb-0.5 px-1">
-                          {isMe ? 'You' : msg.senderName}
-                        </span>
-                        <div
-                          className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs shadow-sm ${
-                            isMe
-                              ? 'bg-amber-400 text-[#021814] font-medium rounded-tr-none'
-                              : 'bg-[#07362c] text-slate-100 border border-[#0b4a3c]/60 rounded-tl-none'
-                          }`}
-                        >
-                          <p className="leading-relaxed">{msg.message}</p>
-                          <span className={`text-[9px] block text-right mt-1 ${isMe ? 'text-[#021814]/70' : 'text-emerald-400/60'}`}>
-                            {msg.timestamp}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={chatEndRef} />
+              <div className="flex items-center justify-between pt-4 border-t border-[#1A4035]/60 text-xs sm:text-sm text-noor-muted font-medium">
+                <span className="flex items-center gap-2"><User size={15} className="text-[#E8BD4B]" /> {featuredPost.author}</span>
+                <span>{featuredPost.date}</span>
               </div>
-
-              {/* Input Form */}
-              <form onSubmit={handleSendMessage} className="p-3 bg-[#021511] border-t border-[#0a4034]/80 flex gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={isProfileSet ? 'Type a public message...' : 'Set nickname to start chatting...'}
-                  className="flex-1 px-3.5 py-2 bg-[#04241d] border border-[#0a4034]/70 rounded-xl text-xs text-slate-100 placeholder-emerald-600 focus:outline-none focus:border-amber-400/80 transition"
-                />
-                <button
-                  type="submit"
-                  className="bg-amber-400 hover:bg-amber-300 text-[#021814] p-2 rounded-xl transition shadow font-bold active:scale-95"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
             </div>
           </div>
+        )}
+
+        {/* Blog Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {filteredPosts.filter(p => !showFeatured || p.id !== featuredPost?.id).map((post) => (
+            <div
+              key={post.id}
+              onClick={() => setSelectedPost(post)}
+              className="cursor-pointer group rounded-2xl bg-[#103329] border border-[#1A4035] hover:border-[#E8BD4B]/40 transition-all flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-[#E8BD4B]/5"
+            >
+              <div>
+                <div className="h-48 overflow-hidden relative bg-[#0B2820]">
+                  <img src={post.img} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <span className="absolute top-3 left-3 text-[10px] font-semibold text-noor-ivory bg-[#061812]/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#1A4035] shadow-sm">
+                    {post.category}
+                  </span>
+                </div>
+                <div className="p-5 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs text-noor-muted font-medium">
+                    <span className="flex items-center gap-1.5"><Clock size={13} /> {post.readTime}</span>
+                    <span>{post.date}</span>
+                  </div>
+                  <h3 className="font-display text-base sm:text-lg font-bold text-noor-ivory group-hover:text-[#E8BD4B] transition-colors line-clamp-2 leading-tight">
+                    {post.title}
+                  </h3>
+                  <p className="text-noor-muted text-sm line-clamp-2 leading-relaxed">{post.excerpt}</p>
+                </div>
+              </div>
+
+              <div className="p-5 pt-0 border-t border-[#1A4035]/40 mt-2 flex items-center justify-between text-xs text-noor-muted font-medium">
+                <span className="truncate max-w-[140px] flex items-center gap-1.5"><User size={14} className="text-[#E8BD4B]/70" /> {post.author}</span>
+                <span className="text-[#E8BD4B] group-hover:underline flex items-center gap-1">Read <span className="hidden sm:inline">Article</span> →</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* --- PROFILE SETUP MODAL --- */}
-      {showProfileModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#04241d] rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-[#0a4034]/80">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-[#f7e8cf] text-sm flex items-center gap-2">
-                <User className="text-amber-400" size={16} /> Set Your Display Profile
-              </h3>
-              {isProfileSet && (
-                <button onClick={() => setShowProfileModal(false)} className="text-emerald-400 hover:text-slate-100">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            <p className="text-xs text-emerald-200/70 mb-4 leading-relaxed">
-              Save your nickname to participate in public discussions.
-            </p>
-
-            <form onSubmit={handleSaveProfile} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-emerald-300 block mb-1">Nickname / Display Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={tempNickname}
-                  onChange={(e) => setTempNickname(e.target.value)}
-                  placeholder="e.g. Ali Ahmed"
-                  className="w-full px-3 py-2 bg-[#021511] border border-[#0a4034]/70 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-emerald-300 block mb-1">Email Address (Optional)</label>
-                <input
-                  type="email"
-                  value={tempEmail}
-                  onChange={(e) => setTempEmail(e.target.value)}
-                  placeholder="ali@example.com"
-                  className="w-full px-3 py-2 bg-[#021511] border border-[#0a4034]/70 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-amber-400 hover:bg-amber-300 text-[#021814] font-semibold py-2.5 rounded-xl text-xs transition mt-2 shadow"
-              >
-                Save & Continue
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- FULL ARTICLE VIEW MODAL --- */}
+      {/* ARTICLE FULL READ MODAL (Responsive Fixed) */}
       {selectedPost && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#04241d] rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative text-slate-100 border border-[#0a4034]/80">
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0B2820] border border-[#1A4035] rounded-2xl max-w-2xl w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-8 space-y-5 shadow-2xl relative text-noor-ivory scrollbar-thin scrollbar-thumb-[#1A4035]">
             <button
               onClick={() => setSelectedPost(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-[#021511] text-emerald-400 hover:text-amber-400 transition"
+              className="absolute top-4 right-4 p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-colors z-10 shadow-md border border-[#1A4035]"
             >
-              <X size={16} />
+              <X size={18} />
             </button>
 
-            <div className="h-52 sm:h-64 rounded-2xl overflow-hidden bg-[#021511]">
+            <div className="h-52 sm:h-72 rounded-xl overflow-hidden relative bg-[#061812]">
               <img src={selectedPost.img} alt={selectedPost.title} className="w-full h-full object-cover" />
             </div>
 
-            <div className="space-y-2 border-b border-[#0a4034]/80 pb-4">
-              <span className="text-xs text-amber-300 font-medium bg-amber-400/10 px-3 py-0.5 rounded-full border border-amber-400/20">
+            <div className="space-y-3 border-b border-[#1A4035] pb-5">
+              <span className="inline-block text-xs text-[#E8BD4B] font-semibold bg-[#E8BD4B]/10 px-3 py-1 rounded-full border border-[#E8BD4B]/20">
                 {selectedPost.category}
               </span>
-              <h2 className="text-xl sm:text-2xl font-serif font-normal pt-2 text-[#f7e8cf]">{selectedPost.title}</h2>
-              <div className="flex items-center justify-between text-xs text-emerald-400/80 pt-1">
-                <span>
-                  By <strong className="text-amber-400 font-medium">{selectedPost.author}</strong>
-                </span>
-                <span>
-                  {selectedPost.date} • {selectedPost.readTime}
-                </span>
+              <h2 className="font-display text-2xl sm:text-3xl font-bold leading-tight">{selectedPost.title}</h2>
+              <div className="flex items-center justify-between text-sm text-noor-muted pt-1 font-medium">
+                <span className="flex items-center gap-2"><User size={15} className="text-[#E8BD4B]" /> {selectedPost.author}</span>
+                <span>{selectedPost.date} • {selectedPost.readTime}</span>
               </div>
             </div>
 
-            <div className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed whitespace-pre-line space-y-3">
+            <div className="prose prose-invert max-w-none text-sm sm:text-base text-noor-ivory/90 leading-relaxed whitespace-pre-line space-y-4">
               {selectedPost.content}
             </div>
           </div>
         </div>
       )}
 
-      {/* --- SUBMIT ARTICLE MODAL --- */}
+      {/* SUBMIT ARTICLE MODAL (Responsive Grid Fixes) */}
       {isSubmitOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#04241d] rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative text-slate-100 border border-[#0a4034]/80">
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0B2820] border border-[#E8BD4B]/30 rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-7 space-y-4 shadow-2xl relative text-noor-ivory scrollbar-thin scrollbar-thumb-[#1A4035]">
             <button
               onClick={() => setIsSubmitOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-[#021511] text-emerald-400 hover:text-amber-400 transition"
+              className="absolute top-4 right-4 p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-colors"
             >
-              <X size={16} />
+              <X size={18} />
             </button>
 
-            <div className="space-y-1">
-              <h2 className="text-lg sm:text-xl font-serif font-normal text-[#f7e8cf]">Submit Your Article</h2>
-              <p className="text-emerald-300/70 text-xs">Share your beneficial knowledge and thoughts with the community.</p>
+            <div className="space-y-1.5 pb-2 border-b border-[#1A4035]">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#E8BD4B]">Submit Your Article</h2>
+              <p className="text-noor-muted text-xs sm:text-sm">Share your Islamic thoughts or reflections with the community.</p>
             </div>
 
             {submittedSuccess ? (
-              <div className="py-8 text-center space-y-3 text-amber-400">
-                <Check size={32} className="mx-auto animate-bounce" />
-                <p className="text-sm font-medium">Article Submitted Successfully!</p>
+              <div className="py-10 text-center space-y-3 text-emerald-400">
+                <Check size={48} className="mx-auto animate-bounce bg-emerald-400/10 p-3 rounded-full border border-emerald-400/20" />
+                <p className="text-base sm:text-lg font-semibold">Article Published Successfully!</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmitArticle} className="space-y-3 text-xs sm:text-sm">
+              <form onSubmit={handleSubmitArticle} className="space-y-4">
                 <div>
-                  <label className="block text-emerald-300 mb-1 text-xs font-medium">Article Title *</label>
+                  <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium">Article Title *</label>
                   <input
                     type="text"
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g. Benefits of Giving Charity in Secret"
-                    className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-emerald-300 mb-1 text-xs font-medium">Author Name *</label>
+                    <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium">Your Name / Author *</label>
                     <input
                       type="text"
                       required
                       value={formData.author}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                       placeholder="e.g. Brother Ali"
-                      className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-emerald-300 mb-1 text-xs font-medium">Category</label>
+                    <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium">Category</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors"
                     >
                       {CATEGORIES.filter((c) => c !== 'All').map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
+                        <option key={c} value={c} className="bg-[#0B2820] text-noor-ivory">{c}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-emerald-300 mb-1 text-xs font-medium flex items-center gap-1">
-                    <ImageIcon size={12} /> Image URL (Optional)
+                  <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium flex items-center gap-1.5">
+                    <ImageIcon size={14} /> Image URL (Optional)
                   </label>
                   <input
                     type="url"
                     value={formData.img}
                     onChange={(e) => setFormData({ ...formData, img: e.target.value })}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-emerald-300 mb-1 text-xs font-medium">Article Content *</label>
+                  <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium">Article Content *</label>
                   <textarea
-                    rows={4}
+                    rows={5}
                     required
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="Write your main article text here..."
-                    className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
+                    placeholder="Write your article body here..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#021814] font-semibold text-xs sm:text-sm transition shadow flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl bg-[#E8BD4B] text-[#061812] font-bold text-sm sm:text-base hover:bg-[#f2ca5c] transition-all shadow-md flex items-center justify-center gap-2"
                 >
-                  <Send size={14} /> Publish Article
+                  <Send size={18} /> Publish Article
                 </button>
               </form>
             )}
           </div>
         </div>
       )}
+
+      {/* MODERN PUBLIC CHAT MODAL (Mobile Responsive Fixes) */}
+      {isChatOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-[#081F18] border border-[#1A4035] rounded-2xl sm:rounded-3xl max-w-lg w-full h-[90dvh] sm:h-[85vh] flex flex-col justify-between shadow-2xl relative text-noor-ivory overflow-hidden">
+            {/* Header */}
+            <div className="p-3.5 sm:p-5 border-b border-[#1A4035] bg-[#0B2820]/95 backdrop-blur-md flex items-center justify-between z-10 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#E8BD4B]/15 border border-[#E8BD4B]/40 flex items-center justify-center text-[#E8BD4B] shadow-inner">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base sm:text-lg text-noor-ivory flex items-center gap-2">
+                    Islamic Community Hub
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </h3>
+                  <p className="text-xs text-noor-muted">Sharing Knowledge & Authentic Links</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-all border border-[#1A4035]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Chat Messages Body */}
+            <div className="p-4 flex-1 overflow-y-auto space-y-4 bg-[#061812]/70 scrollbar-thin scrollbar-thumb-[#1A4035]">
+              {chatMessages.map((msg) => (
+                <div key={msg.id} className="flex gap-3 items-start">
+                  {/* User Avatar */}
+                  <div className="w-8 h-8 rounded-full bg-[#103329] border border-[#1A4035] flex items-center justify-center text-xs sm:text-sm text-[#E8BD4B] font-bold flex-shrink-0 shadow-sm">
+                    {msg.user.charAt(0).toUpperCase()}
+                  </div>
+
+                  {/* Message Bubble */}
+                  <div className="flex-1 max-w-[90%] bg-[#0B2820] border border-[#1A4035] rounded-2xl rounded-tl-sm p-3.5 space-y-2 shadow-md">
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs">
+                      <span className="font-bold text-[#E8BD4B]">{msg.user}</span>
+                      <span className="font-medium text-noor-muted/70">{msg.time}</span>
+                    </div>
+
+                    {msg.text && <p className="text-sm text-noor-ivory/95 leading-relaxed break-words">{msg.text}</p>}
+
+                    {/* Detected Link Attachment Card */}
+                    {msg.linkUrl && (
+                      <a
+                        href={msg.linkUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 flex items-center gap-3 p-2.5 rounded-xl bg-[#103329] border border-[#E8BD4B]/30 text-[#E8BD4B] hover:bg-[#1A4035] hover:border-[#E8BD4B]/50 transition-all group shadow-sm"
+                      >
+                        <div className="p-2 rounded-lg bg-[#E8BD4B]/10 text-[#E8BD4B]">
+                          <Share2 size={16} />
+                        </div>
+                        <div className="overflow-hidden text-xs truncate flex-1">
+                          <span className="block text-[10px] text-emerald-400 font-bold uppercase tracking-wider mb-0.5">Islamic Reference Link</span>
+                          <span className="text-noor-ivory group-hover:underline truncate block break-all">{msg.linkUrl}</span>
+                        </div>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Bottom Input Controls */}
+            <div className="p-3 sm:p-4 border-t border-[#1A4035] bg-[#0B2820] space-y-3 z-10">
+              {chatError && (
+                <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20 font-medium">
+                  <ShieldAlert size={16} /> {chatError}
+                </div>
+              )}
+              <form onSubmit={handleSendMessage} className="space-y-2.5">
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="Your Name (e.g. Brother Ali)"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#061812] border border-[#1A4035] text-sm text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B] transition-colors"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMsg}
+                    onChange={(e) => setNewMsg(e.target.value)}
+                    placeholder="Write a message or paste YouTube/Islamic link..."
+                    className="flex-1 px-3.5 py-3 rounded-xl bg-[#061812] border border-[#1A4035] text-sm text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B] transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    className="px-5 py-3 rounded-xl bg-[#E8BD4B] text-[#061812] font-bold hover:bg-[#f2ca5c] transition-all shadow-md flex items-center justify-center gap-1"
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
+}
 export default Blog;
