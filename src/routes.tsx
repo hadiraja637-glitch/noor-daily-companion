@@ -16,7 +16,7 @@ import Stories from './pages/Stories';
 import StoryDetail from './pages/StoryDetail';
 import Blog from './pages/Blog';
 import SunnahHabits from './pages/SunnahHabits';
-
+import InfoPage from './pages/InfoPage';
 // Agat aapke paas ye components hain to import kar lein:
 // import About from './pages/About';
 // import Privacy from './pages/Privacy';
