@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare, ShieldAlert, Image as ImageIcon, Sparkles, Share2 } from 'lucide-react';
+import { Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare, ShieldAlert, Image as ImageIcon, Sparkles, Share2, MoreVertical, Trash2, Mail } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -17,10 +17,15 @@ interface BlogPost {
 interface ChatMessage {
   id: string;
   user: string;
+  email: string;
   text: string;
   time: string;
   linkUrl?: string;
-  isSelf?: boolean;
+}
+
+interface UserProfile {
+  name: string;
+  email: string;
 }
 
 const DEFAULT_POSTS: BlogPost[] = [
@@ -47,33 +52,6 @@ const DEFAULT_POSTS: BlogPost[] = [
     readTime: '4 min read',
     img: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80',
   },
-  {
-    id: '3',
-    title: 'The Power of Istighfar: Unlocking Barakah and Peace',
-    category: 'Duas & Azkar',
-    excerpt: 'How seeking forgiveness daily opens closed doors, relieves stress, and brings unexpected provisions.',
-    content: `Istighfar (seeking forgiveness) is not only for sins—it is a spiritual remedy for worry, debt, and hardship. Prophet Muhammad (PBUH) used to seek forgiveness more than 70 times a day.\n\n**Benefits mentioned in Quran (Surah Nuh):**\n- Sends down rain and wealth\n- Grants righteous offspring\n- Bestows peace of mind`,
-    author: 'Hassan Raza',
-    date: 'Aug 05, 2026',
-    readTime: '6 min read',
-    img: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=800&q=80',
-  },
-];
-
-const INITIAL_CHAT: ChatMessage[] = [
-  {
-    id: '1',
-    user: 'Brother Hamza',
-    text: 'Assalamu Alaikum! Share authentic Quran lectures or Bayan links here.',
-    time: '10:15 AM',
-  },
-  {
-    id: '2',
-    user: 'Sister Ayesha',
-    text: 'Wa Alaikum Assalam! Must watch this Bayan on Surah Ar-Rahman:',
-    linkUrl: 'https://youtube.com/watch?v=demo-bayan',
-    time: '10:18 AM',
-  },
 ];
 
 const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar', 'Community & Life'];
@@ -90,17 +68,22 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
 
+  // Profile Gate Modal & User State
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileInput, setProfileInput] = useState({ name: '', email: '' });
+
   // Chat & Unread Badge State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [newMsg, setNewMsg] = useState('');
-  const [userName, setUserName] = useState('');
-  const [isEditingName, setIsEditingName] = useState(false);
   const [chatError, setChatError] = useState('');
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatChannelRef = useRef<BroadcastChannel | null>(null);
 
-  // Form State
+  // Submit Article Form State
   const [formData, setFormData] = useState({
     title: '',
     category: 'Spiritual Growth',
@@ -111,7 +94,7 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
     img: '',
   });
 
-  // Persistent Profile & Local Storage Sync
+  // Load Saved Storage & Profile
   useEffect(() => {
     const savedBlogs = localStorage.getItem('noor_user_blogs');
     if (savedBlogs) {
@@ -131,11 +114,11 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
       } catch (e) {}
     }
 
-    const savedUsername = localStorage.getItem('noor_chat_username');
-    if (savedUsername) {
-      setUserName(savedUsername);
-    } else {
-      setUserName('Servant of Allah');
+    const savedProfile = localStorage.getItem('noor_user_profile');
+    if (savedProfile) {
+      try {
+        setUserProfile(JSON.parse(savedProfile));
+      } catch (e) {}
     }
   }, []);
 
@@ -146,15 +129,20 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
       chatChannelRef.current = channel;
 
       channel.onmessage = (event) => {
-        if (event.data && event.data.type === 'NEW_CHAT_MESSAGE') {
-          const incomingMsg: ChatMessage = event.data.message;
-          setChatMessages((prev) => {
-            if (prev.some((m) => m.id === incomingMsg.id)) return prev;
-            return [...prev, incomingMsg];
-          });
+        if (event.data) {
+          if (event.data.type === 'NEW_CHAT_MESSAGE') {
+            const incomingMsg: ChatMessage = event.data.message;
+            setChatMessages((prev) => {
+              if (prev.some((m) => m.id === incomingMsg.id)) return prev;
+              return [...prev, incomingMsg];
+            });
 
-          if (!isChatOpen) {
-            setUnreadCount((prev) => prev + 1);
+            if (!isChatOpen) {
+              setUnreadCount((prev) => prev + 1);
+            }
+          } else if (event.data.type === 'DELETE_CHAT_MESSAGE') {
+            const deleteId = event.data.id;
+            setChatMessages((prev) => prev.filter((m) => m.id !== deleteId));
           }
         }
       };
@@ -165,27 +153,13 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
     }
   }, [isChatOpen]);
 
-  // Auto Reset Unread on Chat Open
+  // Auto Reset Unread & Scroll on Chat Open
   useEffect(() => {
     if (isChatOpen) {
       setUnreadCount(0);
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, isChatOpen]);
-
-  // Firebase / Supabase Strategy Integration Hooks (Modular placeholders)
-  const syncToRemoteDatabase = async (msg: ChatMessage) => {
-    // Example Integration Placeholder:
-    // await firebase.database().ref('messages').push(msg);
-    // await supabase.from('messages').insert([msg]);
-  };
-
-  const handleSaveUsername = (name: string) => {
-    const trimmed = name.trim() || 'Servant of Allah';
-    setUserName(trimmed);
-    localStorage.setItem('noor_chat_username', trimmed);
-    setIsEditingName(false);
-  };
 
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
@@ -235,7 +209,26 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
     return urlMatch ? urlMatch[0] : null;
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileInput.name.trim() || !profileInput.email.trim()) return;
+
+    const newProf: UserProfile = {
+      name: profileInput.name.trim(),
+      email: profileInput.email.trim(),
+    };
+
+    setUserProfile(newProf);
+    localStorage.setItem('noor_user_profile', JSON.stringify(newProf));
+    setIsProfileModalOpen(false);
+
+    // Continue sending pending message if any
+    if (newMsg.trim()) {
+      executeSendMessage(newProf);
+    }
+  };
+
+  const handleSendTrigger = (e: React.FormEvent) => {
     e.preventDefault();
     setChatError('');
 
@@ -249,23 +242,32 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
       return;
     }
 
+    // Check if profile exists, else trigger Modal
+    if (!userProfile || !userProfile.name) {
+      setIsProfileModalOpen(true);
+      return;
+    }
+
+    executeSendMessage(userProfile);
+  };
+
+  const executeSendMessage = (profile: UserProfile) => {
     const detectedLink = extractUrl(newMsg);
     const cleanText = newMsg.replace(/(https?:\/\/[^\s]+)/g, '').trim();
 
     const messageObj: ChatMessage = {
       id: Date.now().toString(),
-      user: userName || 'Servant of Allah',
+      user: profile.name,
+      email: profile.email,
       text: cleanText || (detectedLink ? 'Shared an Islamic Resource Link:' : newMsg),
       linkUrl: detectedLink || undefined,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isSelf: true,
     };
 
     const updatedChat = [...chatMessages, messageObj];
     setChatMessages(updatedChat);
     localStorage.setItem('noor_community_chat', JSON.stringify(updatedChat));
 
-    // Broadcast across local tabs in real time
     if (chatChannelRef.current) {
       chatChannelRef.current.postMessage({
         type: 'NEW_CHAT_MESSAGE',
@@ -273,10 +275,21 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
       });
     }
 
-    // Call modular remote sync
-    syncToRemoteDatabase(messageObj);
-
     setNewMsg('');
+  };
+
+  const handleDeleteMessage = (id: string) => {
+    const updated = chatMessages.filter((m) => m.id !== id);
+    setChatMessages(updated);
+    localStorage.setItem('noor_community_chat', JSON.stringify(updated));
+
+    if (chatChannelRef.current) {
+      chatChannelRef.current.postMessage({
+        type: 'DELETE_CHAT_MESSAGE',
+        id: id,
+      });
+    }
+    setActiveMenuId(null);
   };
 
   return (
@@ -301,7 +314,7 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
               <PlusCircle size={16} /> Submit Your Article
             </button>
             
-            {/* Public Chat Button with Teal-to-Emerald Gradient Glass Badge */}
+            {/* Public Chat Button */}
             <button
               onClick={() => {
                 setIsChatOpen(true);
@@ -311,7 +324,7 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
             >
               <MessageSquare size={16} /> Public Islamic Chat
               {unreadCount > 0 && (
-                <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-[10px] font-bold shadow-lg border border-white/20 animate-pulse backdrop-blur-md">
+                <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-[10px] font-bold shadow-lg border border-white/20 animate-pulse">
                   +{unreadCount} new
                 </span>
               )}
@@ -424,7 +437,7 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
       {/* ARTICLE FULL READ MODAL */}
       {selectedPost && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0B2820] border border-[#1A4035] rounded-2xl max-w-2xl w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-8 space-y-5 shadow-2xl relative text-noor-ivory scrollbar-thin scrollbar-thumb-[#1A4035]">
+          <div className="bg-[#0B2820] border border-[#1A4035] rounded-2xl max-w-2xl w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-8 space-y-5 shadow-2xl relative text-noor-ivory">
             <button
               onClick={() => setSelectedPost(null)}
               className="absolute top-4 right-4 p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-colors z-10 shadow-md border border-[#1A4035]"
@@ -457,7 +470,7 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
       {/* SUBMIT ARTICLE MODAL */}
       {isSubmitOpen && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0B2820] border border-[#E8BD4B]/30 rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-7 space-y-4 shadow-2xl relative text-noor-ivory scrollbar-thin scrollbar-thumb-[#1A4035]">
+          <div className="bg-[#0B2820] border border-[#E8BD4B]/30 rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-7 space-y-4 shadow-2xl relative text-noor-ivory">
             <button
               onClick={() => setIsSubmitOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-colors"
@@ -553,34 +566,88 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
         </div>
       )}
 
-      {/* MODERN PUBLIC CHAT MODAL (Simplified Input + Persistent Profile) */}
+      {/* FIRST-TIME REQUIRED PROFILE MODAL */}
+      {isProfileModalOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0B2820] border border-[#E8BD4B]/40 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative text-noor-ivory animate-in fade-in zoom-in-95">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-full bg-[#E8BD4B]/10 border border-[#E8BD4B]/30 flex items-center justify-center text-[#E8BD4B] mx-auto">
+                <User size={24} />
+              </div>
+              <h3 className="font-display text-xl font-bold text-[#E8BD4B]">Setup Your Profile</h3>
+              <p className="text-noor-muted text-xs leading-relaxed">
+                Please enter your details once before joining the public Islamic conversation.
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div>
+                <label className="block text-noor-muted text-xs font-medium mb-1 flex items-center gap-1">
+                  <User size={13} className="text-[#E8BD4B]" /> Full Name or Public Nickname *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={profileInput.name}
+                  onChange={(e) => setProfileInput({ ...profileInput, name: e.target.value })}
+                  placeholder="e.g. Fatima Noor"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-noor-muted text-xs font-medium mb-1 flex items-center gap-1">
+                  <Mail size={13} className="text-[#E8BD4B]" /> Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={profileInput.email}
+                  onChange={(e) => setProfileInput({ ...profileInput, email: e.target.value })}
+                  placeholder="e.g. user@example.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-xl bg-[#E8BD4B] text-[#061812] font-bold text-sm hover:bg-[#f2ca5c] transition-all shadow-md mt-2"
+              >
+                Save & Continue to Chat
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODERN PUBLIC CHAT MODAL */}
       {isChatOpen && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
           <div className="bg-[#081F18] border border-[#1A4035] rounded-2xl sm:rounded-3xl max-w-lg w-full h-[90dvh] sm:h-[85vh] flex flex-col justify-between shadow-2xl relative text-noor-ivory overflow-hidden">
+            
             {/* Header */}
-            <div className="p-3.5 sm:p-5 border-b border-[#1A4035] bg-[#0B2820]/95 backdrop-blur-md flex items-center justify-between z-10 shadow-sm">
+            <div className="p-3.5 sm:p-4 border-b border-[#1A4035] bg-[#0B2820]/95 backdrop-blur-md flex items-center justify-between z-10 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#E8BD4B]/15 border border-[#E8BD4B]/40 flex items-center justify-center text-[#E8BD4B] shadow-inner">
                   <Sparkles size={18} />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold text-base sm:text-lg text-noor-ivory flex items-center gap-2">
+                  <h3 className="font-display font-bold text-base text-noor-ivory flex items-center gap-2">
                     Islamic Community Hub
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   </h3>
                   
-                  {/* Persistent Profile Username Control */}
-                  <div className="flex items-center gap-2 text-xs text-noor-muted">
-                    <span>Chatting as: <strong className="text-[#E8BD4B] font-semibold">{userName}</strong></span>
-                    <button 
-                      onClick={() => setIsEditingName(!isEditingName)} 
-                      className="text-[10px] text-teal-400 underline hover:text-teal-300"
-                    >
-                      {isEditingName ? 'Cancel' : 'Change'}
-                    </button>
+                  <div className="flex items-center gap-2 text-[11px] text-noor-muted">
+                    {userProfile ? (
+                      <span>Active as: <strong className="text-[#E8BD4B] font-semibold">{userProfile.name}</strong></span>
+                    ) : (
+                      <span className="text-amber-400 font-medium">Profile Pending</span>
+                    )}
+                    <span className="text-emerald-400 font-semibold">• Live Sync Active</span>
                   </div>
                 </div>
               </div>
+
               <button
                 onClick={() => setIsChatOpen(false)}
                 className="p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-all border border-[#1A4035]"
@@ -589,81 +656,90 @@ const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy',
               </button>
             </div>
 
-            {/* Quick Nickname Edit Panel */}
-            {isEditingName && (
-              <div className="bg-[#0B2820] p-3 border-b border-[#1A4035] flex items-center gap-2">
-                <input
-                  type="text"
-                  defaultValue={userName}
-                  placeholder="Enter Nickname..."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSaveUsername((e.target as HTMLInputElement).value);
-                    }
-                  }}
-                  className="flex-1 px-3 py-1.5 rounded-lg bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
-                />
-                <button
-                  onClick={(e) => {
-                    const input = (e.currentTarget.previousElementSibling as HTMLInputElement).value;
-                    handleSaveUsername(input);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-[#E8BD4B] text-[#061812] font-semibold text-xs"
-                >
-                  Save
-                </button>
-              </div>
-            )}
-
-            {/* Chat Messages Body (Auto Reset Unread on Click/Scroll) */}
+            {/* Chat Messages Feed */}
             <div 
-              onClick={() => setUnreadCount(0)}
+              onClick={() => {
+                setUnreadCount(0);
+                setActiveMenuId(null);
+              }}
               className="p-4 flex-1 overflow-y-auto space-y-4 bg-[#061812]/70 scrollbar-thin scrollbar-thumb-[#1A4035]"
             >
-              {chatMessages.map((msg) => (
-                <div key={msg.id} className="flex gap-3 items-start">
-                  <div className="w-8 h-8 rounded-full bg-[#103329] border border-[#1A4035] flex items-center justify-center text-xs sm:text-sm text-[#E8BD4B] font-bold flex-shrink-0 shadow-sm">
-                    {msg.user.charAt(0).toUpperCase()}
-                  </div>
-
-                  <div className="flex-1 max-w-[90%] bg-[#0B2820] border border-[#1A4035] rounded-2xl rounded-tl-sm p-3.5 space-y-2 shadow-md">
-                    <div className="flex items-center justify-between text-[11px] sm:text-xs">
-                      <span className="font-bold text-[#E8BD4B]">{msg.user}</span>
-                      <span className="font-medium text-noor-muted/70">{msg.time}</span>
+              {chatMessages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2 text-noor-muted/60">
+                  <MessageSquare size={36} className="text-[#E8BD4B]/40 mb-1" />
+                  <p className="text-sm font-medium text-noor-ivory/80">No Messages Yet</p>
+                  <p className="text-xs max-w-xs">Be the first to share an authentic Islamic quote or Bayan link with the community!</p>
+                </div>
+              ) : (
+                chatMessages.map((msg) => (
+                  <div key={msg.id} className="flex gap-3 items-start group relative">
+                    <div className="w-8 h-8 rounded-full bg-[#103329] border border-[#1A4035] flex items-center justify-center text-xs text-[#E8BD4B] font-bold flex-shrink-0 shadow-sm mt-1">
+                      {msg.user.charAt(0).toUpperCase()}
                     </div>
 
-                    {msg.text && <p className="text-sm text-noor-ivory/95 leading-relaxed break-words">{msg.text}</p>}
+                    <div className="flex-1 max-w-[88%] bg-[#0B2820] border border-[#1A4035] rounded-2xl rounded-tl-sm p-3.5 space-y-2 shadow-md relative">
+                      <div className="flex items-center justify-between text-[11px] sm:text-xs pr-5">
+                        <span className="font-bold text-[#E8BD4B]">{msg.user}</span>
+                        <span className="font-medium text-noor-muted/70">{msg.time}</span>
+                      </div>
 
-                    {msg.linkUrl && (
-                      <a
-                        href={msg.linkUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-2 flex items-center gap-3 p-2.5 rounded-xl bg-[#103329] border border-[#E8BD4B]/30 text-[#E8BD4B] hover:bg-[#1A4035] hover:border-[#E8BD4B]/50 transition-all group shadow-sm"
-                      >
-                        <div className="p-2 rounded-lg bg-[#E8BD4B]/10 text-[#E8BD4B]">
-                          <Share2 size={16} />
-                        </div>
-                        <div className="overflow-hidden text-xs truncate flex-1">
-                          <span className="block text-[10px] text-emerald-400 font-bold uppercase tracking-wider mb-0.5">Islamic Reference Link</span>
-                          <span className="text-noor-ivory group-hover:underline truncate block break-all">{msg.linkUrl}</span>
-                        </div>
-                      </a>
-                    )}
+                      {msg.text && <p className="text-sm text-noor-ivory/95 leading-relaxed break-words">{msg.text}</p>}
+
+                      {msg.linkUrl && (
+                        <a
+                          href={msg.linkUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 flex items-center gap-3 p-2.5 rounded-xl bg-[#103329] border border-[#E8BD4B]/30 text-[#E8BD4B] hover:bg-[#1A4035] transition-all shadow-sm"
+                        >
+                          <div className="p-2 rounded-lg bg-[#E8BD4B]/10 text-[#E8BD4B]">
+                            <Share2 size={16} />
+                          </div>
+                          <div className="overflow-hidden text-xs truncate flex-1">
+                            <span className="block text-[10px] text-emerald-400 font-bold uppercase tracking-wider mb-0.5">Islamic Reference Link</span>
+                            <span className="text-noor-ivory group-hover:underline truncate block break-all">{msg.linkUrl}</span>
+                          </div>
+                        </a>
+                      )}
+
+                      {/* 3-Dots Action Menu (Delete for Everyone) */}
+                      <div className="absolute top-2 right-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === msg.id ? null : msg.id);
+                          }}
+                          className="p-1 rounded-md text-noor-muted hover:text-noor-ivory transition-colors hover:bg-[#103329]"
+                        >
+                          <MoreVertical size={14} />
+                        </button>
+
+                        {activeMenuId === msg.id && (
+                          <div className="absolute right-0 top-6 z-20 bg-[#103329] border border-[#1A4035] rounded-xl shadow-xl py-1 w-36 animate-in fade-in zoom-in-95">
+                            <button
+                              onClick={() => handleDeleteMessage(msg.id)}
+                              className="w-full px-3 py-1.5 text-left text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 font-medium"
+                            >
+                              <Trash2 size={13} /> Delete for everyone
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
               <div ref={chatEndRef} />
             </div>
 
-            {/* Bottom Input Controls (Simplified Clean Chat Input) */}
+            {/* Bottom Input Controls */}
             <div className="p-3 sm:p-4 border-t border-[#1A4035] bg-[#0B2820] space-y-3 z-10">
               {chatError && (
                 <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20 font-medium">
                   <ShieldAlert size={16} /> {chatError}
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="flex gap-2">
+              <form onSubmit={handleSendTrigger} className="flex gap-2">
                 <input
                   type="text"
                   value={newMsg}
