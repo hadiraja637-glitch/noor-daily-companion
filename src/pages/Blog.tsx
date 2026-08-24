@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare, ShieldAlert, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare, ShieldAlert, Link as LinkIcon, Image as ImageIcon, Sparkles, Share2 } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -19,7 +19,8 @@ interface ChatMessage {
   user: string;
   text: string;
   time: string;
-  isIslamicLink?: boolean;
+  linkUrl?: string;
+  isSelf?: boolean;
 }
 
 const DEFAULT_POSTS: BlogPost[] = [
@@ -63,22 +64,22 @@ const INITIAL_CHAT: ChatMessage[] = [
   {
     id: '1',
     user: 'Brother Hamza',
-    text: 'Assalamu Alaikum everyone! Share your favorite Islamic lecture or Youtube link here.',
+    text: 'Assalamu Alaikum! Share authentic Quran lectures or Bayan links here.',
     time: '10:15 AM',
   },
   {
     id: '2',
     user: 'Sister Ayesha',
-    text: 'Wa Alaikum Assalam! Check this beautiful Quran recitation: https://youtube.com/watch?v=sample',
+    text: 'Wa Alaikum Assalam! Must watch this Bayan on Surah Ar-Rahman:',
+    linkUrl: 'https://youtube.com/watch?v=demo-bayan',
     time: '10:18 AM',
-    isIslamicLink: true,
   },
 ];
 
 const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar', 'Community & Life'];
 
-// Banned keywords filter (dating, bad words, non-islamic social networking)
-const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy', 'number', 'whatsapp', 'fuck', 'shit', 'abuse'];
+// Moderation Keywords Filter
+const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy', 'number', 'whatsapp', 'fuck', 'shit', 'abuse', 'single', 'meet me'];
 
 export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -98,7 +99,7 @@ export default function Blog() {
   const [chatError, setChatError] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Form State for User CMS
+  // Form State
   const [formData, setFormData] = useState({
     title: '',
     category: 'Spiritual Growth',
@@ -109,7 +110,6 @@ export default function Blog() {
     img: '',
   });
 
-  // Load posts & chat from LocalStorage
   useEffect(() => {
     const savedBlogs = localStorage.getItem('noor_user_blogs');
     if (savedBlogs) {
@@ -176,6 +176,12 @@ export default function Blog() {
     }, 1800);
   };
 
+  // URL Extraction Regex
+  const extractUrl = (text: string) => {
+    const urlMatch = text.match(/(https?:\/\/[^\s]+)/g);
+    return urlMatch ? urlMatch[0] : null;
+  };
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     setChatError('');
@@ -186,18 +192,19 @@ export default function Blog() {
     const containsBadWords = BANNED_KEYWORDS.some((word) => lowerMsg.includes(word));
 
     if (containsBadWords) {
-      setChatError('Message rejected! Only polite, respectful Islamic discussions and links are allowed.');
+      setChatError('Strict Moderation: Personal dating, contact sharing & informal chat are prohibited!');
       return;
     }
 
-    const isLink = lowerMsg.includes('http://') || lowerMsg.includes('https://') || lowerMsg.includes('youtube.com') || lowerMsg.includes('youtu.be');
+    const detectedLink = extractUrl(newMsg);
+    const cleanText = newMsg.replace(/(https?:\/\/[^\s]+)/g, '').trim();
 
     const messageObj: ChatMessage = {
       id: Date.now().toString(),
-      user: userName.trim() || 'Anonymous Servant',
-      text: newMsg.trim(),
+      user: userName.trim() || 'Servant of Allah',
+      text: cleanText || (detectedLink ? 'Shared an Islamic Resource Link:' : newMsg),
+      linkUrl: detectedLink || undefined,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isIslamicLink: isLink,
     };
 
     const updatedChat = [...chatMessages, messageObj];
@@ -213,11 +220,11 @@ export default function Blog() {
         <div className="islamic-pattern absolute inset-0 opacity-30 pointer-events-none" />
         <div className="relative max-w-3xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8BD4B]/10 border border-[#E8BD4B]/30 text-[#E8BD4B] text-xs font-medium">
-            <BookOpen size={13} /> Islamic Insights & Community CMS
+            <BookOpen size={13} /> Islamic Insights & Knowledge Portal
           </div>
           <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-wide">Knowledge & Reflections</h1>
           <p className="text-noor-muted text-xs sm:text-sm max-w-xl mx-auto">
-            Explore Islamic guidance, contribute articles, and join our public Islamic community chat.
+            Read verified Islamic posts, publish your reflections, and participate in our moderated Islamic chat room.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -229,7 +236,7 @@ export default function Blog() {
             </button>
             <button
               onClick={() => setIsChatOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/40 text-[#E8BD4B] font-semibold text-xs sm:text-sm hover:bg-[#1A4035] transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/40 text-[#E8BD4B] font-semibold text-xs sm:text-sm hover:bg-[#1A4035] transition-all shadow-md"
             >
               <MessageSquare size={16} /> Public Islamic Chat
             </button>
@@ -238,7 +245,7 @@ export default function Blog() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 lg:px-8 space-y-6">
-        {/* Search & Categories Controls */}
+        {/* Search & Categories */}
         <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
           <div className="relative w-full sm:w-72">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-noor-muted" />
@@ -268,7 +275,7 @@ export default function Blog() {
           </div>
         </div>
 
-        {/* Featured Post Card */}
+        {/* Featured Post */}
         {filteredPosts.find((p) => p.featured) && activeCategory === 'All' && !searchQuery && (
           (() => {
             const feat = filteredPosts.find((p) => p.featured)!;
@@ -303,7 +310,7 @@ export default function Blog() {
           })()
         )}
 
-        {/* Blog Cards Grid */}
+        {/* Blog Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredPosts.map((post) => (
             <div
@@ -339,9 +346,9 @@ export default function Blog() {
         </div>
       </div>
 
-      {/* READ ARTICLE FULL MODAL */}
+      {/* ARTICLE FULL READ MODAL */}
       {selectedPost && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#0B2820] border border-[#1A4035] rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 sm:p-7 space-y-4 shadow-2xl relative text-noor-ivory">
             <button
               onClick={() => setSelectedPost(null)}
@@ -471,49 +478,77 @@ export default function Blog() {
         </div>
       )}
 
-      {/* PUBLIC ISLAMIC COMMUNITY CHAT MODAL */}
+      {/* MODERN TELEGRAM/DISCORD STYLE PUBLIC CHAT MODAL */}
       {isChatOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-[#0B2820] border border-[#1A4035] rounded-2xl max-w-lg w-full h-[85vh] flex flex-col justify-between shadow-2xl relative text-noor-ivory overflow-hidden">
-            {/* Chat Header */}
-            <div className="p-4 border-b border-[#1A4035] bg-[#103329] flex items-center justify-between">
-              <div>
-                <h3 className="font-display font-bold text-sm sm:text-base text-[#E8BD4B] flex items-center gap-2">
-                  <MessageSquare size={16} /> Public Islamic Community
-                </h3>
-                <p className="text-[11px] text-noor-muted">Share Islamic reminders, Youtube links & knowledge only.</p>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-[#081F18] border border-[#1A4035] rounded-3xl max-w-lg w-full h-[88vh] flex flex-col justify-between shadow-2xl relative text-noor-ivory overflow-hidden">
+            {/* Header */}
+            <div className="p-3.5 sm:p-4 border-b border-[#1A4035] bg-[#0B2820]/90 backdrop-blur-md flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#E8BD4B]/15 border border-[#E8BD4B]/40 flex items-center justify-center text-[#E8BD4B] shadow-inner">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-sm sm:text-base text-noor-ivory flex items-center gap-2">
+                    Islamic Community Hub
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </h3>
+                  <p className="text-[10px] sm:text-[11px] text-noor-muted">Sharing Knowledge & Authentic Links</p>
+                </div>
               </div>
               <button
                 onClick={() => setIsChatOpen(false)}
-                className="p-1.5 rounded-full bg-[#061812] text-noor-muted hover:text-noor-ivory"
+                className="p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-all"
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* Chat Body */}
-            <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-[#061812]/50">
+            {/* Chat Messages Body */}
+            <div className="p-4 flex-1 overflow-y-auto space-y-3.5 bg-[#061812]/70 scrollbar-thin scrollbar-thumb-[#1A4035]">
               {chatMessages.map((msg) => (
-                <div key={msg.id} className="bg-[#103329] border border-[#1A4035] p-3 rounded-xl space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-semibold text-[#E8BD4B]">{msg.user}</span>
-                    <span className="text-noor-muted/60">{msg.time}</span>
+                <div key={msg.id} className="flex gap-2.5 items-start">
+                  {/* User Avatar */}
+                  <div className="w-7 h-7 rounded-full bg-[#103329] border border-[#1A4035] flex items-center justify-center text-xs text-[#E8BD4B] font-bold flex-shrink-0 mt-0.5">
+                    {msg.user.charAt(0).toUpperCase()}
                   </div>
-                  <p className="text-xs text-noor-ivory/90 leading-relaxed break-words">{msg.text}</p>
-                  {msg.isIslamicLink && (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 pt-1">
-                      <LinkIcon size={10} /> Verified Islamic / Video Link
-                    </span>
-                  )}
+
+                  {/* Message Bubble */}
+                  <div className="flex-1 bg-[#0B2820] border border-[#1A4035] rounded-2xl rounded-tl-xs p-3 space-y-1.5 shadow-md">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-[#E8BD4B]">{msg.user}</span>
+                      <span className="text-[10px] text-noor-muted/60">{msg.time}</span>
+                    </div>
+
+                    {msg.text && <p className="text-xs text-noor-ivory/90 leading-relaxed break-words">{msg.text}</p>}
+
+                    {/* Detected Link Attachment Card */}
+                    {msg.linkUrl && (
+                      <a
+                        href={msg.linkUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 flex items-center gap-2.5 p-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/30 text-[#E8BD4B] hover:bg-[#1A4035] transition-all group"
+                      >
+                        <div className="p-1.5 rounded-lg bg-[#E8BD4B]/10 text-[#E8BD4B]">
+                          <Share2 size={14} />
+                        </div>
+                        <div className="overflow-hidden text-xs truncate flex-1">
+                          <span className="block text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">Islamic Reference Link</span>
+                          <span className="text-noor-ivory group-hover:underline truncate block">{msg.linkUrl}</span>
+                        </div>
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
               <div ref={chatEndRef} />
             </div>
 
-            {/* Chat Input */}
-            <div className="p-3 border-t border-[#1A4035] bg-[#103329] space-y-2">
+            {/* Bottom Input Controls */}
+            <div className="p-3 border-t border-[#1A4035] bg-[#0B2820] space-y-2">
               {chatError && (
-                <div className="flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                <div className="flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 p-2 rounded-xl border border-red-500/20">
                   <ShieldAlert size={14} /> {chatError}
                 </div>
               )}
@@ -522,20 +557,20 @@ export default function Blog() {
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Your Name (e.g. Brother Ahmad)"
-                  className="w-full px-3 py-1.5 rounded-lg bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
+                  placeholder="Your Name (e.g. Brother Ali)"
+                  className="w-full px-3 py-1.5 rounded-xl bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]"
                 />
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newMsg}
                     onChange={(e) => setNewMsg(e.target.value)}
-                    placeholder="Type Islamic message or YouTube link..."
-                    className="flex-1 px-3 py-2 rounded-lg bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
+                    placeholder="Write a message or paste YouTube/Islamic link..."
+                    className="flex-1 px-3 py-2.5 rounded-xl bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]"
                   />
                   <button
                     type="submit"
-                    className="px-3.5 py-2 rounded-lg bg-[#E8BD4B] text-[#061812] font-semibold text-xs hover:bg-[#f2ca5c] transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-[#E8BD4B] text-[#061812] font-semibold text-xs hover:bg-[#f2ca5c] transition-all shadow-md flex items-center justify-center gap-1"
                   >
                     <Send size={14} />
                   </button>
