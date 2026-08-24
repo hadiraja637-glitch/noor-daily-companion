@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Copy, Share2, Check, Sparkles, BookOpen, Volume2, Search, Heart } from 'lucide-react';
+import { Copy, Share2, Check, Sparkles, BookOpen, Search } from 'lucide-react';
 
 interface DuaItem {
   id?: string;
@@ -28,30 +28,38 @@ const CATEGORIES = [
   'Travel',
 ];
 
-const HIGH_DEMAND_DUAS: DuaItem[] = [
-  // High Google Search: Anxiety & Stress
+const EXTENDED_DUAS: DuaItem[] = [
+  // Anxiety & Stress
   {
     category: 'Anxiety & Stress',
     arabic: 'لَّا إِلَٰهَ إِلَّا أَنتَ سُبْحَانَكَ إِنِّي كُنتُ مِنَ الظَّالِمِينَ',
     transliteration: 'La ilaha illa anta subhanaka inni kuntu minadh-dhalimin',
     translation: 'There is no deity except You; exalted are You. Indeed, I have been of the wrongdoers.',
-    reference: "Surah Al-Anbiya 21:87 (Dua of Prophet Yunus)",
+    reference: 'Surah Al-Anbiya 21:87 (Dua of Prophet Yunus)',
     keywords: ['anxiety', 'stress', 'distress', 'depression', 'difficulty', 'hardship'],
   },
   {
     category: 'Anxiety & Stress',
     arabic: 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ وَالْعَجْزِ وَالْكَسَلِ وَالْبُخْلِ وَالْجُبْنِ وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ',
-    transliteration: 'Allahumma inni a\'udhu bika minal-hammi wal-hazani, wal-\'ajzi wal-kasali, wal-bukhli wal-jubni, wa dala\'id-dayni wa ghalabatir-rijal',
+    transliteration: "Allahumma inni a'udhu bika minal-hammi wal-hazani, wal-'ajzi wal-kasali, wal-bukhli wal-jubni, wa dala'id-dayni wa ghalabatir-rijal",
     translation: 'O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness, miserliness and cowardice, the burden of debts and being overpowered by men.',
     reference: 'Sahih al-Bukhari 6369',
     keywords: ['anxiety', 'worry', 'debt', 'sadness', 'laziness'],
   },
+  {
+    category: 'Anxiety & Stress',
+    arabic: 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ',
+    transliteration: 'Hasbunallahu wa ni\'mal-wakeel',
+    translation: 'Sufficient for us is Allah, and [He is] the best Disposer of affairs.',
+    reference: 'Surah Ali \'Imran 3:173',
+    keywords: ['fear', 'stress', 'trust', 'anxiety'],
+  },
 
-  // High Google Search: Exams & Knowledge
+  // Exams & Success
   {
     category: 'Exams & Success',
     arabic: 'رَبِّ زِدْنِي عِلْمًا',
-    transliteration: 'Rabbi zidni \'ilma',
+    transliteration: "Rabbi zidni 'ilma",
     translation: 'My Lord, increase me in knowledge.',
     reference: 'Surah Taha 20:114',
     keywords: ['study', 'exam', 'knowledge', 'student', 'success', 'test'],
@@ -59,23 +67,39 @@ const HIGH_DEMAND_DUAS: DuaItem[] = [
   {
     category: 'Exams & Success',
     arabic: 'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي وَاحْلُلْ عُقْدَةً مِّن لِّسَانِي يَفْقَهُوا قَوْلِي',
-    transliteration: 'Rabbish-rah li sadri, wa yassir li amri, wahlul \'uqdatam-mil-lisani yafqahu qawli',
-    translation: 'My Lord, expand for me my breast [with assurance] and ease for me my task and untie the knot from my tongue that they may understand my speech.',
+    transliteration: "Rabbish-rah li sadri, wa yassir li amri, wahlul 'uqdatam-mil-lisani yafqahu qawli",
+    translation: 'My Lord, expand for me my breast and ease for me my task and untie the knot from my tongue that they may understand my speech.',
     reference: 'Surah Taha 20:25-28',
     keywords: ['speech', 'interview', 'exam', 'confidence', 'presentation'],
   },
+  {
+    category: 'Exams & Success',
+    arabic: 'اللَّهُمَّ لاَ سَهْلَ إِلاَّ مَا جَعَلْتَهُ سَهْلاً وَأَنْتَ تَجْعَلُ الْحَزْنَ إِذَا شِئْتَ سَهْلاً',
+    transliteration: "Allahumma la sahla illa ma ja'altahu sahla, wa anta taj'alul-hazna idha shi'ta sahla",
+    translation: 'O Allah, there is no ease except in that which You have made easy, and You make the difficulty, if You wish, easy.',
+    reference: 'Sahih Ibn Hibban 974',
+    keywords: ['difficult test', 'exam', 'hardship'],
+  },
 
-  // High Google Search: Health & Healing
+  // Health & Healing
   {
     category: 'Health & Healing',
     arabic: 'أَذْهِبِ الْبَأْسَ رَبَّ النَّاسِ واشْفِ أَنْتَ الشَّافِي لاَ شِفَاءَ إِلاَّ شِفَاؤُكَ شِفَاءً لاَ يُغَادِرُ سَقَمًا',
-    transliteration: 'Adhibil-ba\'sa Rabban-nas, ishfi antash-Shafi, la shifa\'a illa shifa\'uka shifa\'an la yughadiru saqama',
-    translation: 'Remove the suffering, O Lord of mankind, and heal; You are the Healer, there is no healing except Your healing—a healing that leaves behind no illness.',
+    transliteration: "Adhibil-ba'sa Rabban-nas, ishfi antash-Shafi, la shifa'a illa shifa'uka shifa'an la yughadiru saqama",
+    translation: 'Remove the suffering, O Lord of mankind, and heal; You are the Healer, there is no healing except Your healing.',
     reference: 'Sahih al-Bukhari 5743',
     keywords: ['sick', 'shifa', 'pain', 'healing', 'health', 'illness'],
   },
+  {
+    category: 'Health & Healing',
+    arabic: 'بِسْمِ اللَّهِ (٣×) أَعُوذُ بِاللَّهِ وَقُدْرَتِهِ مِنْ شَرِّ مَا أَجِدُ وَأُحَاذِرُ (٧×)',
+    transliteration: "Bismillah (3x), A'udhu billahi wa qudratihi min sharri ma ajidu wa uhadhir (7x)",
+    translation: 'In the Name of Allah (3 times). I seek refuge in Allah and His Might from the evil of what I feel and fear (7 times).',
+    reference: 'Sahih Muslim 2202',
+    keywords: ['body pain', 'healing', 'shifa'],
+  },
 
-  // High Google Search: Parents & Family
+  // Parents & Family
   {
     category: 'Parents & Family',
     arabic: 'رَّبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا',
@@ -84,8 +108,16 @@ const HIGH_DEMAND_DUAS: DuaItem[] = [
     reference: 'Surah Al-Isra 17:24',
     keywords: ['parents', 'mother', 'father', 'family', 'mercy'],
   },
+  {
+    category: 'Parents & Family',
+    arabic: 'رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا',
+    transliteration: "Rabbana hab lana min azwajina wa dhurriyyatina qurrata a'yunin waj'alna lil-muttaqina imama",
+    translation: 'Our Lord, grant us from among our wives and offspring comfort to our eyes and make us an example for the righteous.',
+    reference: 'Surah Al-Furqan 25:74',
+    keywords: ['family', 'children', 'spouse', 'marriage'],
+  },
 
-  // High Google Search: Rizq & Wealth
+  // Rizq & Wealth
   {
     category: 'Rizq & Wealth',
     arabic: 'اللَّهُمَّ اكْفِنِي بِحَلَالِكَ عَنْ حَرَامِكَ وَأَغْنِنِي بِفَضْلِكَ عَمَّنْ سِوَاكَ',
@@ -112,6 +144,14 @@ const HIGH_DEMAND_DUAS: DuaItem[] = [
     reference: "Surah Al-A'raf 7:23",
     keywords: ['sin', 'forgiveness', 'astagfirullah', 'repentance'],
   },
+  {
+    category: 'Forgiveness',
+    arabic: 'اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي',
+    transliteration: "Allahumma innaka 'afuwwun tuhibbul-'afwa fa'fu 'anni",
+    translation: 'O Allah, You are Forgiving and You love forgiveness, so forgive me.',
+    reference: 'Jami at-Tirmidhi 3513',
+    keywords: ['laylatul qadr', 'forgiveness', 'ramadan'],
+  },
 
   // Protection
   {
@@ -121,6 +161,14 @@ const HIGH_DEMAND_DUAS: DuaItem[] = [
     translation: 'I seek refuge in the perfect words of Allah from the evil of what He has created.',
     reference: 'Sahih Muslim 2708',
     keywords: ['evil eye', 'protection', 'fear', 'harm', 'safety'],
+  },
+  {
+    category: 'Protection',
+    arabic: 'بِسْمِ اللَّهِ الَّذِي لاَ يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الأَرْضِ وَلاَ فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ',
+    transliteration: "Bismillahil-ladhi la yadurru ma'as-mihi shay'un fil-ardi wa la fis-sama'i wa Huwas-Sami'ul-'Alim",
+    translation: 'In the Name of Allah with Whose Name nothing can cause harm in the earth nor in the heaven, and He is the All-Hearing, the All-Knowing.',
+    reference: 'Sunan Abu Dawud 5088',
+    keywords: ['daily protection', 'safety', 'morning protection'],
   },
 
   // Morning & Evening
@@ -133,12 +181,42 @@ const HIGH_DEMAND_DUAS: DuaItem[] = [
     keywords: ['morning', 'azkar', 'start day'],
   },
   {
+    category: 'Evening',
+    arabic: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ',
+    transliteration: "Amsayna wa amsal-mulku lillahi wal-hamdu lillah, la ilaha illallahu wahdahu la sharika lah",
+    translation: 'We have entered the evening and the kingdom belongs to Allah; all praise is due to Allah. There is no deity worthy of worship except Allah alone.',
+    reference: 'Sahih Muslim 2723',
+    keywords: ['evening azkar', 'night'],
+  },
+
+  // After Prayer
+  {
+    category: 'After Prayer',
+    arabic: 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ',
+    transliteration: "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatik",
+    translation: 'O Allah, help me to remember You, to give thanks to You, and to worship You in the best manner.',
+    reference: 'Abu Dawud 1522',
+    keywords: ['namaz', 'after prayer', 'dhikr'],
+  },
+
+  // Before Sleeping
+  {
     category: 'Before Sleeping',
     arabic: 'اللَّهُمَّ بِاسْمِكَ أَمُوتُ وَأَحْيَا',
     transliteration: 'Bismika Allahumma amutu wa ahya',
     translation: 'O Allah, in Your name I die and I live.',
     reference: 'Sahih al-Bukhari 6312',
     keywords: ['sleep', 'night', 'bedtime'],
+  },
+
+  // Travel
+  {
+    category: 'Travel',
+    arabic: 'سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ وَإِنَّا إِلَى رَبِّنَا لَمُنقَلِبُونَ',
+    transliteration: 'Subhanalladhi sakhkhara lana hadha wa ma kunna lahu muqrinin, wa inna ila Rabbina lamunqalibun',
+    translation: 'Glory be to He who has subjected this to us, and we could not have otherwise subdued it. And indeed to our Lord we will return.',
+    reference: 'Surah Az-Zukhruf 43:13-14',
+    keywords: ['travel', 'journey', 'flight', 'drive'],
   },
 ];
 
@@ -148,7 +226,6 @@ export default function Duas() {
   const [dailyDua, setDailyDua] = useState<DuaItem | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
   const [sharedIndex, setSharedIndex] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState<string | null>(null);
 
   // Daily Dynamic Dua selection
   useEffect(() => {
@@ -156,12 +233,12 @@ export default function Duas() {
     const start = new Date(today.getFullYear(), 0, 0);
     const diff = today.getTime() - start.getTime();
     const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
-    setDailyDua(HIGH_DEMAND_DUAS[dayOfYear % HIGH_DEMAND_DUAS.length]);
+    setDailyDua(EXTENDED_DUAS[dayOfYear % EXTENDED_DUAS.length]);
   }, []);
 
   // Filter Duas based on Category and Search Query
   const filteredDuas = useMemo(() => {
-    return HIGH_DEMAND_DUAS.filter((dua) => {
+    return EXTENDED_DUAS.filter((dua) => {
       const matchesSearch =
         searchQuery.trim() === '' ||
         dua.translation.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -170,7 +247,6 @@ export default function Duas() {
         dua.keywords?.some((k) => k.toLowerCase().includes(searchQuery.toLowerCase()));
 
       if (!matchesSearch) return false;
-
       if (searchQuery.trim() !== '') return true;
 
       if (activeCategory === 'All Duas') return true;
@@ -204,23 +280,6 @@ export default function Duas() {
     }
   };
 
-  const handleTextToSpeech = (text: string, id: string) => {
-    if ('speechSynthesis' in window) {
-      if (isPlaying === id) {
-        window.speechSynthesis.cancel();
-        setIsPlaying(null);
-        return;
-      }
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ar-SA';
-      utterance.onend = () => setIsPlaying(null);
-      utterance.onerror = () => setIsPlaying(null);
-      setIsPlaying(id);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
   return (
     <div className="min-h-screen pt-16 sm:pt-20 pb-24 lg:pb-12 bg-[#061812] text-noor-ivory">
       {/* Header Banner */}
@@ -228,10 +287,10 @@ export default function Duas() {
         <div className="islamic-pattern absolute inset-0 opacity-40 pointer-events-none" />
         <div className="relative max-w-2xl mx-auto space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8BD4B]/10 border border-[#E8BD4B]/30 text-[#E8BD4B] text-xs font-medium">
-            <BookOpen size={13} /> High Ranking & Authentic Duas
+            <BookOpen size={13} /> Blessed Supplications & Azkar
           </div>
           <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-wide">Sacred Duas</h1>
-          <p className="text-noor-muted text-xs sm:text-sm">Supplications for health, exams, anxiety, rizq & protection</p>
+          <p className="text-noor-muted text-xs sm:text-sm">Authentic supplications for health, exams, anxiety, rizq & protection</p>
         </div>
       </div>
 
@@ -336,60 +395,43 @@ export default function Duas() {
                     "{dua.translation}"
                   </p>
 
-                  {/* Actions Bar */}
-                  <div className="flex items-center justify-between pt-3 border-t border-[#1A4035]/50 text-xs">
+                  {/* Clean Accessible Actions Bar (Copy & Native Share) */}
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1A4035]/50 text-xs">
                     <button
-                      onClick={() => handleTextToSpeech(dua.arabic, duaId)}
-                      className={`p-2 rounded-xl transition-all flex items-center gap-1.5 ${
-                        isPlaying === duaId
-                          ? 'bg-[#E8BD4B] text-[#061812] font-semibold'
-                          : 'text-noor-muted hover:text-noor-gold hover:bg-[#061812]/40'
-                      }`}
-                      aria-label="Listen Audio"
+                      onClick={() => handleCopy(`${dua.arabic}\n\n"${dua.translation}"\n— ${dua.reference}`, duaId)}
+                      className="p-2 rounded-xl text-noor-muted hover:text-noor-gold hover:bg-[#061812]/40 transition-all flex items-center gap-1.5"
+                      aria-label="Copy Dua"
                     >
-                      <Volume2 size={15} className={isPlaying === duaId ? 'animate-bounce' : ''} />
-                      <span className="hidden sm:inline text-[11px]">
-                        {isPlaying === duaId ? 'Playing...' : 'Listen'}
-                      </span>
+                      {isCopied ? (
+                        <>
+                          <Check size={15} className="text-emerald-400" />
+                          <span className="text-emerald-400 text-[11px] font-medium">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={15} />
+                          <span className="hidden sm:inline text-[11px]">Copy</span>
+                        </>
+                      )}
                     </button>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => handleCopy(`${dua.arabic}\n\n"${dua.translation}"\n— ${dua.reference}`, duaId)}
-                        className="p-2 rounded-xl text-noor-muted hover:text-noor-gold hover:bg-[#061812]/40 transition-all flex items-center gap-1.5"
-                        aria-label="Copy Dua"
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check size={15} className="text-emerald-400" />
-                            <span className="text-emerald-400 text-[11px] font-medium">Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={15} />
-                            <span className="hidden sm:inline text-[11px]">Copy</span>
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => handleShare(dua, duaId)}
-                        className="p-2 rounded-xl text-noor-muted hover:text-noor-gold hover:bg-[#061812]/40 transition-all flex items-center gap-1.5"
-                        aria-label="Share Dua"
-                      >
-                        {isShared ? (
-                          <>
-                            <Check size={15} className="text-emerald-400" />
-                            <span className="text-emerald-400 text-[11px] font-medium">Shared!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Share2 size={15} />
-                            <span className="hidden sm:inline text-[11px]">Share</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleShare(dua, duaId)}
+                      className="p-2 rounded-xl text-noor-muted hover:text-noor-gold hover:bg-[#061812]/40 transition-all flex items-center gap-1.5"
+                      aria-label="Share Dua"
+                    >
+                      {isShared ? (
+                        <>
+                          <Check size={15} className="text-emerald-400" />
+                          <span className="text-emerald-400 text-[11px] font-medium">Shared!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 size={15} />
+                          <span className="hidden sm:inline text-[11px]">Share</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               );
