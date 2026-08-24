@@ -148,10 +148,6 @@ export default function Blog() {
     });
   }, [posts, activeCategory, searchQuery]);
 
-  // Find featured post safely
-  const featuredPost = useMemo(() => filteredPosts.find((p) => p.featured), [filteredPosts]);
-  const showFeatured = featuredPost && activeCategory === 'All' && !searchQuery;
-
   const handleSubmitArticle = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.author) return;
@@ -223,7 +219,7 @@ export default function Blog() {
       <div className="py-8 sm:py-12 mb-6 text-center relative overflow-hidden bg-[#0B2820] border-b border-[#1A4035]/50 px-4">
         <div className="islamic-pattern absolute inset-0 opacity-30 pointer-events-none" />
         <div className="relative max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8BD4B]/10 border border-[#E8BD4B]/30 text-[#E8BD4B] text-xs font-medium shadow-sm">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8BD4B]/10 border border-[#E8BD4B]/30 text-[#E8BD4B] text-xs font-medium">
             <BookOpen size={13} /> Islamic Insights & Knowledge Portal
           </div>
           <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-wide">Knowledge & Reflections</h1>
@@ -248,29 +244,29 @@ export default function Blog() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 lg:px-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 lg:px-8 space-y-6">
         {/* Search & Categories */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full sm:w-80">
+        <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
+          <div className="relative w-full sm:w-72">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-noor-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search articles or authors..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]/50 transition-all"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-xs text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]/50"
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-2 overflow-x-auto w-full sm:w-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all shadow-sm ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                   activeCategory === cat
                     ? 'bg-[#E8BD4B]/20 border border-[#E8BD4B]/50 text-[#E8BD4B]'
-                    : 'bg-[#103329]/60 border border-[#1A4035]/60 text-noor-muted hover:text-noor-ivory hover:border-[#1A4035]'
+                    : 'bg-[#103329]/60 border border-[#1A4035]/60 text-noor-muted hover:text-noor-ivory'
                 }`}
               >
                 {cat}
@@ -279,163 +275,164 @@ export default function Blog() {
           </div>
         </div>
 
-        {/* Featured Post (Fixed layout for Laptop and Mobile) */}
-        {showFeatured && featuredPost && (
-          <div
-            onClick={() => setSelectedPost(featuredPost)}
-            className="cursor-pointer group relative rounded-2xl overflow-hidden bg-[#103329] border border-[#E8BD4B]/40 hover:border-[#E8BD4B] transition-all flex flex-col md:flex-row shadow-xl"
-          >
-            <div className="md:w-5/12 h-56 md:h-auto min-h-[220px] relative overflow-hidden bg-[#0B2820]">
-              <img 
-                src={featuredPost.img} 
-                alt={featuredPost.title} 
-                className="w-full h-full object-cover absolute inset-0 group-hover:scale-105 transition-transform duration-700" 
-              />
-            </div>
-            <div className="md:w-7/12 p-5 sm:p-8 flex flex-col justify-center space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] sm:text-xs uppercase font-bold text-[#E8BD4B] bg-[#E8BD4B]/10 px-2.5 py-1 rounded-md border border-[#E8BD4B]/20 shadow-sm">
-                    {featuredPost.category}
-                  </span>
-                  <span className="text-noor-muted text-xs flex items-center gap-1.5 font-medium"><Clock size={14} /> {featuredPost.readTime}</span>
+        {/* Featured Post */}
+        {filteredPosts.find((p) => p.featured) && activeCategory === 'All' && !searchQuery && (
+          (() => {
+            const feat = filteredPosts.find((p) => p.featured)!;
+            return (
+              <div
+                onClick={() => setSelectedPost(feat)}
+                className="cursor-pointer group relative rounded-2xl overflow-hidden bg-[#103329] border border-[#E8BD4B]/40 hover:border-[#E8BD4B] transition-all grid grid-cols-1 md:grid-cols-12 shadow-xl"
+              >
+                <div className="md:col-span-5 h-52 md:h-auto overflow-hidden relative">
+                  <img src={feat.img} alt={feat.title} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
                 </div>
-                <h2 className="font-display text-xl sm:text-3xl font-bold text-noor-ivory group-hover:text-[#E8BD4B] transition-colors leading-snug">
-                  {featuredPost.title}
-                </h2>
-                <p className="text-noor-muted text-sm sm:text-base line-clamp-3 leading-relaxed">{featuredPost.excerpt}</p>
+                <div className="md:col-span-7 p-5 sm:p-6 flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase font-bold text-[#E8BD4B] bg-[#E8BD4B]/10 px-2 py-0.5 rounded-md border border-[#E8BD4B]/20">
+                        {feat.category}
+                      </span>
+                      <span className="text-noor-muted text-xs flex items-center gap-1"><Clock size={12} /> {feat.readTime}</span>
+                    </div>
+                    <h2 className="font-display text-lg sm:text-2xl font-bold text-noor-ivory group-hover:text-[#E8BD4B] transition-colors">
+                      {feat.title}
+                    </h2>
+                    <p className="text-noor-muted text-xs sm:text-sm line-clamp-2">{feat.excerpt}</p>
+                  </div>
+                  <div className="flex items-center justify-between pt-3 border-t border-[#1A4035]/60 text-xs text-noor-muted">
+                    <span className="flex items-center gap-1.5"><User size={13} className="text-[#E8BD4B]" /> {feat.author}</span>
+                    <span>{feat.date}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-[#1A4035]/60 text-xs sm:text-sm text-noor-muted font-medium">
-                <span className="flex items-center gap-2"><User size={15} className="text-[#E8BD4B]" /> {featuredPost.author}</span>
-                <span>{featuredPost.date}</span>
-              </div>
-            </div>
-          </div>
+            );
+          })()
         )}
 
         {/* Blog Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-          {filteredPosts.filter(p => !showFeatured || p.id !== featuredPost?.id).map((post) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredPosts.map((post) => (
             <div
               key={post.id}
               onClick={() => setSelectedPost(post)}
-              className="cursor-pointer group rounded-2xl bg-[#103329] border border-[#1A4035] hover:border-[#E8BD4B]/40 transition-all flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-[#E8BD4B]/5"
+              className="cursor-pointer group rounded-2xl bg-[#103329] border border-[#1A4035] hover:border-[#E8BD4B]/40 transition-all flex flex-col justify-between overflow-hidden shadow-md"
             >
               <div>
-                <div className="h-48 overflow-hidden relative bg-[#0B2820]">
-                  <img src={post.img} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                  <span className="absolute top-3 left-3 text-[10px] font-semibold text-noor-ivory bg-[#061812]/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#1A4035] shadow-sm">
+                <div className="h-44 overflow-hidden relative bg-[#0B2820]">
+                  <img src={post.img} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
+                  <span className="absolute top-3 left-3 text-[10px] font-semibold text-noor-ivory bg-[#061812]/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#1A4035]">
                     {post.category}
                   </span>
                 </div>
-                <div className="p-5 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs text-noor-muted font-medium">
-                    <span className="flex items-center gap-1.5"><Clock size={13} /> {post.readTime}</span>
+                <div className="p-4 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-noor-muted">
+                    <span className="flex items-center gap-1"><Clock size={11} /> {post.readTime}</span>
                     <span>{post.date}</span>
                   </div>
-                  <h3 className="font-display text-base sm:text-lg font-bold text-noor-ivory group-hover:text-[#E8BD4B] transition-colors line-clamp-2 leading-tight">
+                  <h3 className="font-display text-sm sm:text-base font-bold text-noor-ivory group-hover:text-[#E8BD4B] transition-colors line-clamp-2">
                     {post.title}
                   </h3>
-                  <p className="text-noor-muted text-sm line-clamp-2 leading-relaxed">{post.excerpt}</p>
+                  <p className="text-noor-muted text-xs line-clamp-2">{post.excerpt}</p>
                 </div>
               </div>
 
-              <div className="p-5 pt-0 border-t border-[#1A4035]/40 mt-2 flex items-center justify-between text-xs text-noor-muted font-medium">
-                <span className="truncate max-w-[140px] flex items-center gap-1.5"><User size={14} className="text-[#E8BD4B]/70" /> {post.author}</span>
-                <span className="text-[#E8BD4B] group-hover:underline flex items-center gap-1">Read <span className="hidden sm:inline">Article</span> →</span>
+              <div className="p-4 pt-0 border-t border-[#1A4035]/40 mt-2 flex items-center justify-between text-xs text-noor-muted">
+                <span className="truncate max-w-[140px] flex items-center gap-1"><User size={12} /> {post.author}</span>
+                <span className="text-[#E8BD4B] font-medium group-hover:underline">Read Article →</span>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ARTICLE FULL READ MODAL (Responsive Fixed) */}
+      {/* ARTICLE FULL READ MODAL */}
       {selectedPost && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0B2820] border border-[#1A4035] rounded-2xl max-w-2xl w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-8 space-y-5 shadow-2xl relative text-noor-ivory scrollbar-thin scrollbar-thumb-[#1A4035]">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0B2820] border border-[#1A4035] rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 sm:p-7 space-y-4 shadow-2xl relative text-noor-ivory">
             <button
               onClick={() => setSelectedPost(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-colors z-10 shadow-md border border-[#1A4035]"
+              className="absolute top-4 right-4 p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory"
             >
               <X size={18} />
             </button>
 
-            <div className="h-52 sm:h-72 rounded-xl overflow-hidden relative bg-[#061812]">
+            <div className="h-48 sm:h-64 rounded-xl overflow-hidden">
               <img src={selectedPost.img} alt={selectedPost.title} className="w-full h-full object-cover" />
             </div>
 
-            <div className="space-y-3 border-b border-[#1A4035] pb-5">
-              <span className="inline-block text-xs text-[#E8BD4B] font-semibold bg-[#E8BD4B]/10 px-3 py-1 rounded-full border border-[#E8BD4B]/20">
+            <div className="space-y-2 border-b border-[#1A4035] pb-4">
+              <span className="text-xs text-[#E8BD4B] font-semibold bg-[#E8BD4B]/10 px-2.5 py-1 rounded-full border border-[#E8BD4B]/20">
                 {selectedPost.category}
               </span>
-              <h2 className="font-display text-2xl sm:text-3xl font-bold leading-tight">{selectedPost.title}</h2>
-              <div className="flex items-center justify-between text-sm text-noor-muted pt-1 font-medium">
-                <span className="flex items-center gap-2"><User size={15} className="text-[#E8BD4B]" /> {selectedPost.author}</span>
+              <h2 className="font-display text-xl sm:text-2xl font-bold pt-1">{selectedPost.title}</h2>
+              <div className="flex items-center justify-between text-xs text-noor-muted pt-1">
+                <span>By <strong className="text-noor-ivory">{selectedPost.author}</strong></span>
                 <span>{selectedPost.date} • {selectedPost.readTime}</span>
               </div>
             </div>
 
-            <div className="prose prose-invert max-w-none text-sm sm:text-base text-noor-ivory/90 leading-relaxed whitespace-pre-line space-y-4">
+            <div className="prose prose-invert max-w-none text-xs sm:text-sm text-noor-ivory/90 leading-relaxed whitespace-pre-line space-y-3">
               {selectedPost.content}
             </div>
           </div>
         </div>
       )}
 
-      {/* SUBMIT ARTICLE MODAL (Responsive Grid Fixes) */}
+      {/* SUBMIT ARTICLE MODAL */}
       {isSubmitOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0B2820] border border-[#E8BD4B]/30 rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-7 space-y-4 shadow-2xl relative text-noor-ivory scrollbar-thin scrollbar-thumb-[#1A4035]">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0B2820] border border-[#E8BD4B]/30 rounded-2xl max-w-lg w-full p-5 sm:p-7 space-y-4 shadow-2xl relative text-noor-ivory">
             <button
               onClick={() => setIsSubmitOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory"
             >
               <X size={18} />
             </button>
 
-            <div className="space-y-1.5 pb-2 border-b border-[#1A4035]">
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#E8BD4B]">Submit Your Article</h2>
-              <p className="text-noor-muted text-xs sm:text-sm">Share your Islamic thoughts or reflections with the community.</p>
+            <div className="space-y-1">
+              <h2 className="font-display text-lg sm:text-xl font-bold text-[#E8BD4B]">Submit Your Article</h2>
+              <p className="text-noor-muted text-xs">Share your Islamic thoughts or reflections with the community.</p>
             </div>
 
             {submittedSuccess ? (
-              <div className="py-10 text-center space-y-3 text-emerald-400">
-                <Check size={48} className="mx-auto animate-bounce bg-emerald-400/10 p-3 rounded-full border border-emerald-400/20" />
-                <p className="text-base sm:text-lg font-semibold">Article Published Successfully!</p>
+              <div className="py-8 text-center space-y-3 text-emerald-400">
+                <Check size={36} className="mx-auto animate-bounce" />
+                <p className="text-sm font-semibold">Article Published Successfully!</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmitArticle} className="space-y-4">
+              <form onSubmit={handleSubmitArticle} className="space-y-3 text-xs sm:text-sm">
                 <div>
-                  <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium">Article Title *</label>
+                  <label className="block text-noor-muted mb-1 text-xs">Article Title *</label>
                   <input
                     type="text"
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g. Benefits of Giving Charity in Secret"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors"
+                    className="w-full px-3 py-2 rounded-xl bg-[#103329] border border-[#1A4035] focus:outline-none focus:border-[#E8BD4B]"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium">Your Name / Author *</label>
+                    <label className="block text-noor-muted mb-1 text-xs">Your Name / Author *</label>
                     <input
                       type="text"
                       required
                       value={formData.author}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                       placeholder="e.g. Brother Ali"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors"
+                      className="w-full px-3 py-2 rounded-xl bg-[#103329] border border-[#1A4035] focus:outline-none focus:border-[#E8BD4B]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium">Category</label>
+                    <label className="block text-noor-muted mb-1 text-xs">Category</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors"
+                      className="w-full px-3 py-2 rounded-xl bg-[#103329] border border-[#1A4035] text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
                     >
                       {CATEGORIES.filter((c) => c !== 'All').map((c) => (
                         <option key={c} value={c} className="bg-[#0B2820] text-noor-ivory">{c}</option>
@@ -445,35 +442,35 @@ export default function Blog() {
                 </div>
 
                 <div>
-                  <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium flex items-center gap-1.5">
-                    <ImageIcon size={14} /> Image URL (Optional)
+                  <label className="block text-noor-muted mb-1 text-xs flex items-center gap-1">
+                    <ImageIcon size={12} /> Image URL (Optional)
                   </label>
                   <input
                     type="url"
                     value={formData.img}
                     onChange={(e) => setFormData({ ...formData, img: e.target.value })}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors"
+                    className="w-full px-3 py-2 rounded-xl bg-[#103329] border border-[#1A4035] focus:outline-none focus:border-[#E8BD4B]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-noor-muted mb-1.5 text-xs sm:text-sm font-medium">Article Content *</label>
+                  <label className="block text-noor-muted mb-1 text-xs">Article Content *</label>
                   <textarea
-                    rows={5}
+                    rows={4}
                     required
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     placeholder="Write your article body here..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#103329] border border-[#1A4035] text-sm text-noor-ivory focus:outline-none focus:border-[#E8BD4B] transition-colors resize-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#103329] border border-[#1A4035] focus:outline-none focus:border-[#E8BD4B]"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-[#E8BD4B] text-[#061812] font-bold text-sm sm:text-base hover:bg-[#f2ca5c] transition-all shadow-md flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl bg-[#E8BD4B] text-[#061812] font-semibold text-xs sm:text-sm hover:bg-[#f2ca5c] transition-all flex items-center justify-center gap-2"
                 >
-                  <Send size={18} /> Publish Article
+                  <Send size={15} /> Publish Article
                 </button>
               </form>
             )}
@@ -481,49 +478,49 @@ export default function Blog() {
         </div>
       )}
 
-      {/* MODERN PUBLIC CHAT MODAL (Mobile Responsive Fixes) */}
+      {/* MODERN TELEGRAM/DISCORD STYLE PUBLIC CHAT MODAL */}
       {isChatOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-[#081F18] border border-[#1A4035] rounded-2xl sm:rounded-3xl max-w-lg w-full h-[90dvh] sm:h-[85vh] flex flex-col justify-between shadow-2xl relative text-noor-ivory overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-[#081F18] border border-[#1A4035] rounded-3xl max-w-lg w-full h-[88vh] flex flex-col justify-between shadow-2xl relative text-noor-ivory overflow-hidden">
             {/* Header */}
-            <div className="p-3.5 sm:p-5 border-b border-[#1A4035] bg-[#0B2820]/95 backdrop-blur-md flex items-center justify-between z-10 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#E8BD4B]/15 border border-[#E8BD4B]/40 flex items-center justify-center text-[#E8BD4B] shadow-inner">
+            <div className="p-3.5 sm:p-4 border-b border-[#1A4035] bg-[#0B2820]/90 backdrop-blur-md flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#E8BD4B]/15 border border-[#E8BD4B]/40 flex items-center justify-center text-[#E8BD4B] shadow-inner">
                   <Sparkles size={18} />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold text-base sm:text-lg text-noor-ivory flex items-center gap-2">
+                  <h3 className="font-display font-bold text-sm sm:text-base text-noor-ivory flex items-center gap-2">
                     Islamic Community Hub
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   </h3>
-                  <p className="text-xs text-noor-muted">Sharing Knowledge & Authentic Links</p>
+                  <p className="text-[10px] sm:text-[11px] text-noor-muted">Sharing Knowledge & Authentic Links</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsChatOpen(false)}
-                className="p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-all border border-[#1A4035]"
+                className="p-2 rounded-full bg-[#103329] text-noor-muted hover:text-noor-ivory transition-all"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
             {/* Chat Messages Body */}
-            <div className="p-4 flex-1 overflow-y-auto space-y-4 bg-[#061812]/70 scrollbar-thin scrollbar-thumb-[#1A4035]">
+            <div className="p-4 flex-1 overflow-y-auto space-y-3.5 bg-[#061812]/70 scrollbar-thin scrollbar-thumb-[#1A4035]">
               {chatMessages.map((msg) => (
-                <div key={msg.id} className="flex gap-3 items-start">
+                <div key={msg.id} className="flex gap-2.5 items-start">
                   {/* User Avatar */}
-                  <div className="w-8 h-8 rounded-full bg-[#103329] border border-[#1A4035] flex items-center justify-center text-xs sm:text-sm text-[#E8BD4B] font-bold flex-shrink-0 shadow-sm">
+                  <div className="w-7 h-7 rounded-full bg-[#103329] border border-[#1A4035] flex items-center justify-center text-xs text-[#E8BD4B] font-bold flex-shrink-0 mt-0.5">
                     {msg.user.charAt(0).toUpperCase()}
                   </div>
 
                   {/* Message Bubble */}
-                  <div className="flex-1 max-w-[90%] bg-[#0B2820] border border-[#1A4035] rounded-2xl rounded-tl-sm p-3.5 space-y-2 shadow-md">
-                    <div className="flex items-center justify-between text-[11px] sm:text-xs">
-                      <span className="font-bold text-[#E8BD4B]">{msg.user}</span>
-                      <span className="font-medium text-noor-muted/70">{msg.time}</span>
+                  <div className="flex-1 bg-[#0B2820] border border-[#1A4035] rounded-2xl rounded-tl-xs p-3 space-y-1.5 shadow-md">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-[#E8BD4B]">{msg.user}</span>
+                      <span className="text-[10px] text-noor-muted/60">{msg.time}</span>
                     </div>
 
-                    {msg.text && <p className="text-sm text-noor-ivory/95 leading-relaxed break-words">{msg.text}</p>}
+                    {msg.text && <p className="text-xs text-noor-ivory/90 leading-relaxed break-words">{msg.text}</p>}
 
                     {/* Detected Link Attachment Card */}
                     {msg.linkUrl && (
@@ -531,14 +528,14 @@ export default function Blog() {
                         href={msg.linkUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-2 flex items-center gap-3 p-2.5 rounded-xl bg-[#103329] border border-[#E8BD4B]/30 text-[#E8BD4B] hover:bg-[#1A4035] hover:border-[#E8BD4B]/50 transition-all group shadow-sm"
+                        className="mt-1 flex items-center gap-2.5 p-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/30 text-[#E8BD4B] hover:bg-[#1A4035] transition-all group"
                       >
-                        <div className="p-2 rounded-lg bg-[#E8BD4B]/10 text-[#E8BD4B]">
-                          <Share2 size={16} />
+                        <div className="p-1.5 rounded-lg bg-[#E8BD4B]/10 text-[#E8BD4B]">
+                          <Share2 size={14} />
                         </div>
                         <div className="overflow-hidden text-xs truncate flex-1">
-                          <span className="block text-[10px] text-emerald-400 font-bold uppercase tracking-wider mb-0.5">Islamic Reference Link</span>
-                          <span className="text-noor-ivory group-hover:underline truncate block break-all">{msg.linkUrl}</span>
+                          <span className="block text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">Islamic Reference Link</span>
+                          <span className="text-noor-ivory group-hover:underline truncate block">{msg.linkUrl}</span>
                         </div>
                       </a>
                     )}
@@ -549,19 +546,19 @@ export default function Blog() {
             </div>
 
             {/* Bottom Input Controls */}
-            <div className="p-3 sm:p-4 border-t border-[#1A4035] bg-[#0B2820] space-y-3 z-10">
+            <div className="p-3 border-t border-[#1A4035] bg-[#0B2820] space-y-2">
               {chatError && (
-                <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20 font-medium">
-                  <ShieldAlert size={16} /> {chatError}
+                <div className="flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 p-2 rounded-xl border border-red-500/20">
+                  <ShieldAlert size={14} /> {chatError}
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="space-y-2.5">
+              <form onSubmit={handleSendMessage} className="space-y-2">
                 <input
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   placeholder="Your Name (e.g. Brother Ali)"
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#061812] border border-[#1A4035] text-sm text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B] transition-colors"
+                  className="w-full px-3 py-1.5 rounded-xl bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]"
                 />
                 <div className="flex gap-2">
                   <input
@@ -569,13 +566,13 @@ export default function Blog() {
                     value={newMsg}
                     onChange={(e) => setNewMsg(e.target.value)}
                     placeholder="Write a message or paste YouTube/Islamic link..."
-                    className="flex-1 px-3.5 py-3 rounded-xl bg-[#061812] border border-[#1A4035] text-sm text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B] transition-colors"
+                    className="flex-1 px-3 py-2.5 rounded-xl bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]"
                   />
                   <button
                     type="submit"
-                    className="px-5 py-3 rounded-xl bg-[#E8BD4B] text-[#061812] font-bold hover:bg-[#f2ca5c] transition-all shadow-md flex items-center justify-center gap-1"
+                    className="px-4 py-2.5 rounded-xl bg-[#E8BD4B] text-[#061812] font-semibold text-xs hover:bg-[#f2ca5c] transition-all shadow-md flex items-center justify-center gap-1"
                   >
-                    <Send size={18} />
+                    <Send size={14} />
                   </button>
                 </div>
               </form>
@@ -586,4 +583,3 @@ export default function Blog() {
     </div>
   );
 }
-export default Blog;
