@@ -194,7 +194,7 @@ function Hero() {
 
   return (
     <section
-      className="relative min-h-[850px] lg:min-h-0 lg:h-[420px] flex items-start lg:items-center overflow-visible lg:overflow-hidden pt-16 pb-8 lg:pb-0"
+      className="relative min-h-[620px] lg:h-[420px] flex items-center overflow-hidden pt-8 pb-10 lg:py-0"
       style={{ background: '#072018' }}
     >
       <img
@@ -207,46 +207,46 @@ function Hero() {
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(to right, rgba(6,24,18,0.93) 0%, rgba(6,24,18,0.75) 55%, rgba(6,24,18,0.35) 100%)',
+            'linear-gradient(to right, rgba(6,24,18,0.95) 0%, rgba(6,24,18,0.8) 55%, rgba(6,24,18,0.4) 100%)',
         }}
       />
       <div
         className="absolute inset-0"
-        style={{ background: 'linear-gradient(to top, rgba(6,24,18,0.85) 0%, transparent 60%)' }}
+        style={{ background: 'linear-gradient(to top, rgba(6,24,18,0.9) 0%, transparent 60%)' }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 lg:gap-12">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 lg:gap-12">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-10 w-full">
           <div className="flex-1 max-w-2xl">
             <FadeIn delay={0.05}>
-              <p className="text-noor-muted text-xs tracking-[0.3em] uppercase mb-6">
+              <p className="text-noor-muted text-[10px] sm:text-xs tracking-[0.25em] uppercase mb-3 sm:mb-5">
                 GUIDANCE • PRAYER • BETTER YOU
               </p>
             </FadeIn>
             <FadeIn delay={0.15}>
-              <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.08] text-noor-ivory mb-4">
+              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-semibold leading-[1.1] text-noor-ivory mb-3 sm:mb-4">
                 A Brighter Day <br />
                 <span className="text-noor-gold italic">with Allah</span>
               </h1>
             </FadeIn>
             <FadeIn delay={0.25}>
-              <p className="text-noor-muted text-sm sm:text-base leading-relaxed mb-5 max-w-md">
+              <p className="text-noor-muted text-xs sm:text-base leading-relaxed mb-5 max-w-md">
                 Qur'an in your heart, guidance in your life,<br className="hidden sm:block" />
                 and barakah in every step.
               </p>
             </FadeIn>
             <FadeIn delay={0.35}>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5 sm:gap-3">
                 <Link
                   to="/quran"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-105"
+                  className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all hover:scale-105"
                   style={{ background: '#E8BD4B', color: '#061812' }}
                 >
                   Read Qur'an <ArrowRight size={14} />
                 </Link>
                 <Link
                   to="/stories"
-                  className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium border border-noor-ivory/30 text-noor-ivory hover:border-noor-gold/60 hover:text-noor-gold transition-all"
+                  className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium border border-noor-ivory/30 text-noor-ivory hover:border-noor-gold/60 hover:text-noor-gold transition-all"
                 >
                   Explore Islamic Stories
                 </Link>
@@ -254,44 +254,44 @@ function Hero() {
             </FadeIn>
           </div>
 
-          <FadeIn delay={0.3} className="w-full sm:w-auto mt-4 lg:mt-0">
+          <FadeIn delay={0.3} className="w-full sm:w-auto mt-2 lg:mt-0">
             <div
-              className="hero-card-polish rounded-[22px] p-4 sm:p-5 w-full max-w-xs lg:max-w-[300px]"
+              className="hero-card-polish rounded-[20px] p-4 sm:p-5 w-full sm:w-80 lg:max-w-[300px]"
               style={{
                 background: 'rgba(14,47,37,0.92)',
                 backdropFilter: 'blur(16px)',
                 border: '1px solid rgba(232,189,75,0.2)',
               }}
             >
-              <div className="flex items-start gap-2 mb-4 pb-4 border-b border-noor-border/40">
+              <div className="flex items-start gap-2 mb-3 pb-3 border-b border-noor-border/40">
                 <CalendarDays size={16} className="text-noor-gold mt-0.5" />
                 <div>
-                  <p className="text-noor-ivory font-medium text-sm">{displayDate}</p>
-                  <p className="text-noor-muted text-xs mt-0.5">{hijri}</p>
+                  <p className="text-noor-ivory font-medium text-xs sm:text-sm">{displayDate}</p>
+                  <p className="text-noor-muted text-[11px] mt-0.5">{hijri}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-3">
                 <MapPin size={13} className="text-noor-gold" />
                 <span className="text-noor-ivory text-xs font-medium truncate">{loading ? 'Loading location…' : location.name}</span>
               </div>
               <Link
                 to="/calendar"
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-medium border border-noor-gold/30 text-noor-gold hover:bg-noor-gold/10 transition-colors mb-5"
+                className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-medium border border-noor-gold/30 text-noor-gold hover:bg-noor-gold/10 transition-colors mb-4"
               >
                 Islamic Calendar <ArrowRight size={12} />
               </Link>
 
               <div className="text-center">
                 <p
-                  className="font-arabic text-noor-gold text-xl leading-loose mb-2"
+                  className="font-arabic text-noor-gold text-lg sm:text-xl leading-relaxed mb-1"
                   style={{ direction: 'rtl', fontFamily: 'Amiri, serif' }}
                 >
                   وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ
                 </p>
-                <p className="text-noor-ivory/70 text-xs italic">
+                <p className="text-noor-ivory/70 text-[11px] italic">
                   "And my success is only by Allah."
                 </p>
-                <p className="text-noor-muted text-xs mt-1">— Qur'an 11:88</p>
+                <p className="text-noor-muted text-[10px] mt-0.5">— Qur'an 11:88</p>
               </div>
             </div>
           </FadeIn>
@@ -335,26 +335,26 @@ function PrayerTimesSection() {
   const allCities = [...CITY_OPTIONS, ...GLOBAL_LOCATIONS];
 
   return (
-    <section className="py-12" style={{ background: '#0B2820', borderTop: '1px solid rgba(26,64,53,0.5)' }}>
+    <section className="py-8 sm:py-12" style={{ background: '#0B2820', borderTop: '1px solid rgba(26,64,53,0.5)' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2">
-            <div className="rounded-2xl p-5 sm:p-6 h-full flex flex-col justify-between" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}>
-              <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+            <div className="rounded-2xl p-4 sm:p-6 h-full flex flex-col justify-between" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}>
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <Clock size={15} className="text-noor-gold" />
-                    <h2 className="font-display text-noor-ivory text-xl font-semibold">Today's Prayer Times</h2>
+                    <h2 className="font-display text-noor-ivory text-lg sm:text-xl font-semibold">Today's Prayer Times</h2>
                   </div>
                   <p className="text-noor-muted text-xs">Stay connected with your Salah</p>
                   {error && <p className="text-noor-gold text-[10px] mt-1">{error}</p>}
                 </div>
-                <div className="text-right flex flex-col items-end gap-1.5">
+                <div className="flex flex-col items-start sm:items-end gap-1.5">
                   <div className="flex items-center gap-1.5 text-noor-ivory text-xs font-medium">
                     <MapPin size={13} className="text-noor-gold" /> 
                     {loading ? 'Loading location…' : location.name}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button 
                       onClick={useCurrentLocation} 
                       className="text-[11px] font-medium text-noor-gold hover:underline transition-all"
@@ -371,7 +371,7 @@ function PrayerTimesSection() {
                           if (city) setCity(city); 
                         }}
                         placeholder="🌍 Search worldwide"
-                        className="bg-[#072018] text-[11px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2.5 py-1 w-[180px] placeholder:text-noor-muted/60 focus:border-noor-gold/50 transition-colors"
+                        className="bg-[#072018] text-[11px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2.5 py-1 w-[150px] sm:w-[180px] placeholder:text-noor-muted/60 focus:border-noor-gold/50 transition-colors"
                         aria-label="Search a country or city worldwide"
                       />
                       <datalist id="noor-global-locations">
@@ -386,7 +386,7 @@ function PrayerTimesSection() {
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 flex-1 w-full overflow-x-auto">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 flex-1 w-full">
                   {(timings.length ? timings : [
                     { name: 'Fajr', time: '--:--', minutes: 0 }, 
                     { name: 'Sunrise', time: '--:--', minutes: 0 }, 
@@ -397,17 +397,17 @@ function PrayerTimesSection() {
                   ]).map((prayer) => {
                     const isActive = prayer.name === activePrayer?.name;
                     return (
-                      <div key={prayer.name} className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl transition-all min-w-[70px]" style={{ background: isActive ? 'rgba(232,189,75,0.12)' : 'rgba(6,24,18,0.4)', border: isActive ? '1px solid rgba(232,189,75,0.35)' : '1px solid rgba(26,64,53,0.4)' }}>
-                        <span className="text-lg leading-none">{prayer.name === 'Fajr' ? '🌙' : prayer.name === 'Sunrise' ? '🌅' : prayer.name === 'Dhuhr' ? '☀️' : prayer.name === 'Asr' ? '🌤️' : prayer.name === 'Maghrib' ? '🌇' : '🌃'}</span>
-                        <span className={`text-xs font-medium ${isActive ? 'text-noor-gold' : 'text-noor-muted'}`}>{prayer.name}</span>
-                        <span className={`text-sm font-semibold ${isActive ? 'text-noor-gold' : 'text-noor-ivory'}`}>{prayer.time}</span>
+                      <div key={prayer.name} className="flex flex-col items-center gap-1.5 px-1.5 py-2.5 sm:px-2 sm:py-3 rounded-xl transition-all min-w-[65px]" style={{ background: isActive ? 'rgba(232,189,75,0.12)' : 'rgba(6,24,18,0.4)', border: isActive ? '1px solid rgba(232,189,75,0.35)' : '1px solid rgba(26,64,53,0.4)' }}>
+                        <span className="text-base sm:text-lg leading-none">{prayer.name === 'Fajr' ? '🌙' : prayer.name === 'Sunrise' ? '🌅' : prayer.name === 'Dhuhr' ? '☀️' : prayer.name === 'Asr' ? '🌤️' : prayer.name === 'Maghrib' ? '🌇' : '🌃'}</span>
+                        <span className={`text-[11px] sm:text-xs font-medium ${isActive ? 'text-noor-gold' : 'text-noor-muted'}`}>{prayer.name}</span>
+                        <span className={`text-xs sm:text-sm font-semibold ${isActive ? 'text-noor-gold' : 'text-noor-ivory'}`}>{prayer.time}</span>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="flex-shrink-0 flex flex-col items-center">
-                  <div className="relative w-36 h-36 flex items-center justify-center">
+                <div className="flex-shrink-0 flex flex-col items-center mt-2 sm:mt-0">
+                  <div className="relative w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
                     <svg className="absolute inset-0 w-full h-full" style={{ transform: 'rotate(-90deg)' }} viewBox="0 0 120 120">
                       <defs><linearGradient id="cGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#18B98A" /><stop offset="100%" stopColor="#E8BD4B" /></linearGradient></defs>
                       <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(26,64,53,0.6)" strokeWidth="5" />
@@ -415,7 +415,7 @@ function PrayerTimesSection() {
                     </svg>
                     <div className="text-center z-10">
                       <p className="text-noor-gold text-[10px] font-medium tracking-wider uppercase">{nextPrayer?.name ?? 'Prayer'}</p>
-                      <p className="font-display text-noor-ivory text-lg font-bold tabular-nums">{fmtSeconds(countdown)}</p>
+                      <p className="font-display text-noor-ivory text-base sm:text-lg font-bold tabular-nums">{fmtSeconds(countdown)}</p>
                       <p className="text-noor-muted text-[9px]">Time remaining</p>
                     </div>
                   </div>
@@ -426,19 +426,19 @@ function PrayerTimesSection() {
 
           <FadeIn className="xl:col-span-1">
             <div className="rounded-2xl overflow-hidden h-full flex flex-col" style={{ border: '1px solid rgba(26,64,53,0.7)', background: '#103329' }}>
-              <div className="relative h-36 overflow-hidden">
+              <div className="relative h-32 sm:h-36 overflow-hidden">
                 <img src="https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=600&h=300&fit=crop&auto=format" alt="Quran" className="w-full h-full object-cover" loading="lazy" />
                 <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(16,51,41,0.2), rgba(16,51,41,0.85))' }} />
                 <span className="absolute top-3 right-3 text-xs px-2.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(232,189,75,0.2)', color: '#E8BD4B', border: '1px solid rgba(232,189,75,0.3)' }}>Qur'an</span>
               </div>
-              <div className="p-5 flex-1 flex flex-col justify-between">
+              <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                 <div>
                   <h3 className="font-display text-noor-ivory text-base font-semibold mb-2">Verse of the Day</h3>
-                  <p className="font-arabic text-noor-gold text-xl leading-loose mb-2 text-right" style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}>فَإِنَّ مَعَ الْعُسْرِ يُسْرًا</p>
-                  <p className="text-noor-ivory/80 text-sm italic mb-1">"Indeed, with hardship comes ease."</p>
+                  <p className="font-arabic text-noor-gold text-lg sm:text-xl leading-loose mb-2 text-right" style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}>فَإِنَّ مَعَ الْعُسْرِ يُسْرًا</p>
+                  <p className="text-noor-ivory/80 text-xs sm:text-sm italic mb-1">"Indeed, with hardship comes ease."</p>
                   <p className="text-noor-muted text-xs mb-4">— Qur'an 94:6</p>
                 </div>
-                <Link to="/quran" className="flex items-center gap-2 text-sm text-noor-gold hover:underline">Read Full Surah <ArrowRight size={13} /></Link>
+                <Link to="/quran" className="flex items-center gap-2 text-xs sm:text-sm text-noor-gold hover:underline">Read Full Surah <ArrowRight size={13} /></Link>
               </div>
             </div>
           </FadeIn>
@@ -451,41 +451,41 @@ function PrayerTimesSection() {
 const FEATURES = [
   { icon: BookOpen, label: "Qur'an", sub: 'Read, Listen & Learn', to: '/quran' },
   { icon: MessageSquare, label: 'Hadith', sub: 'Authentic Sayings', to: '/hadith' },
-  { icon: Sparkles, label: 'Sunnah Habits', sub: 'Daily Sunnah Practices', to: '/sunnah-habits' },
+  { icon: Sparkles, label: 'Sunnah Habits', sub: 'Daily Practices', to: '/sunnah-habits' },
   { icon: Heart, label: 'Duas', sub: 'For Every Moment', to: '/duas' },
-  { icon: Compass, label: 'Qibla Finder', sub: 'Find Qibla Direction', to: '/qibla' },
-  { icon: CalendarDays, label: 'Islamic Calendar', sub: 'Important Dates', to: '/calendar' },
-  { icon: DollarSign, label: 'Zakat Calculator', sub: 'Calculate with Ease', to: '/zakat' },
+  { icon: Compass, label: 'Qibla Finder', sub: 'Find Direction', to: '/qibla' },
+  { icon: CalendarDays, label: 'Calendar', sub: 'Important Dates', to: '/calendar' },
+  { icon: DollarSign, label: 'Zakat', sub: 'Calculate Ease', to: '/zakat' },
   { icon: RotateCcw, label: 'Tasbeeh', sub: 'Digital Counter', to: '/tasbeeh' },
   { icon: FileText, label: 'Islamic Blog', sub: 'Knowledge & Insights', to: '/blog' },
 ];
 
 function FeatureCards() {
   return (
-    <section className="py-8" style={{ background: '#072018', borderTop: '1px solid rgba(26,64,53,0.4)' }}>
+    <section className="py-6 sm:py-8" style={{ background: '#072018', borderTop: '1px solid rgba(26,64,53,0.4)' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
         <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 sm:gap-3">
           {FEATURES.map((f, i) => (
-            <FadeIn key={f.label} delay={i * 0.03}>
+            <FadeIn key={f.label} delay={i * 0.02}>
               <Link
                 to={f.to}
-                className="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl group transition-all hover:scale-105 h-full"
+                className="flex flex-col items-center gap-1.5 p-2.5 sm:p-4 rounded-xl group transition-all hover:scale-105 h-full"
                 style={{
                   background: 'rgba(16,51,41,0.5)',
                   border: '1px solid rgba(26,64,53,0.5)',
                 }}
               >
                 <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-transform group-hover:rotate-6"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-transform group-hover:rotate-6"
                   style={{ background: 'rgba(232,189,75,0.12)' }}
                 >
-                  <f.icon size={16} className="text-noor-gold" />
+                  <f.icon size={15} className="text-noor-gold" />
                 </div>
                 <div className="text-center">
-                  <p className="text-noor-ivory text-xs font-medium group-hover:text-noor-gold transition-colors">
+                  <p className="text-noor-ivory text-[11px] sm:text-xs font-medium group-hover:text-noor-gold transition-colors leading-tight">
                     {f.label}
                   </p>
-                  <p className="text-noor-muted text-[10px] leading-tight mt-0.5">{f.sub}</p>
+                  <p className="text-noor-muted text-[9px] sm:text-[10px] leading-tight mt-0.5 hidden sm:block">{f.sub}</p>
                 </div>
               </Link>
             </FadeIn>
@@ -498,18 +498,18 @@ function FeatureCards() {
 
 function IslamicStories() {
   return (
-    <section className="py-14" style={{ background: '#0B2820' }}>
+    <section className="py-10 sm:py-14" style={{ background: '#0B2820' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
         <FadeIn>
-          <div className="flex items-center justify-between mb-7">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
+              <div className="flex items-center gap-2 mb-1">
                 <Star size={14} className="text-noor-gold" />
-                <h2 className="font-display text-noor-ivory text-2xl sm:text-3xl font-semibold">
+                <h2 className="font-display text-noor-ivory text-xl sm:text-3xl font-semibold">
                   Islamic Stories
                 </h2>
               </div>
-              <p className="text-noor-muted text-sm">
+              <p className="text-noor-muted text-xs sm:text-sm">
                 Inspiring stories from the lives of the Prophets, Sahaba and righteous people.
               </p>
             </div>
@@ -523,17 +523,17 @@ function IslamicStories() {
         </FadeIn>
 
         <div
-          className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 lg:grid-cols-6 sm:overflow-visible"
+          className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 lg:grid-cols-6 sm:overflow-visible"
           style={{ scrollbarWidth: 'none' }}
         >
           {STORIES.map((s, i) => (
-            <FadeIn key={s.slug || i} delay={i * 0.06} className="flex-shrink-0 w-56 sm:w-auto">
+            <FadeIn key={s.slug || i} delay={i * 0.05} className="flex-shrink-0 w-48 sm:w-auto">
               <Link
                 to={`/stories/${s.slug}`}
                 className="block rounded-xl overflow-hidden group transition-transform hover:-translate-y-1 h-full"
                 style={{ border: '1px solid rgba(26,64,53,0.5)' }}
               >
-                <div className="relative h-44 overflow-hidden bg-[#072018]">
+                <div className="relative h-36 sm:h-44 overflow-hidden bg-[#072018]">
                   <img
                     src={s.img}
                     alt={s.title || 'Islamic Story'}
@@ -547,7 +547,7 @@ function IslamicStories() {
                     className="absolute inset-0"
                     style={{ background: 'linear-gradient(to top, rgba(6,24,18,0.95) 0%, rgba(6,24,18,0.2) 60%)' }}
                   />
-                  <p className="absolute bottom-3 left-3 right-3 text-noor-ivory text-sm font-medium leading-snug whitespace-pre-line group-hover:text-noor-gold transition-colors">
+                  <p className="absolute bottom-2.5 left-2.5 right-2.5 text-noor-ivory text-xs sm:text-sm font-medium leading-snug whitespace-pre-line group-hover:text-noor-gold transition-colors">
                     {s.title}
                   </p>
                 </div>
@@ -557,8 +557,8 @@ function IslamicStories() {
         </div>
 
         <div className="sm:hidden mt-4 text-center">
-          <Link to="/stories" className="text-sm text-noor-gold hover:underline">
-            View All Stories →
+          <Link to="/stories" className="text-xs text-noor-gold hover:underline inline-flex items-center gap-1">
+            View All Stories <ArrowRight size={12} />
           </Link>
         </div>
       </div>
@@ -601,37 +601,37 @@ function HadithDhikrCalendar() {
   };
 
   return (
-    <section className="py-14" style={{ background: '#072018' }}>
+    <section className="py-10 sm:py-14" style={{ background: '#072018' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Islamic Guidance Card */}
           <FadeIn>
             <div
-              className="rounded-2xl p-6 h-full flex flex-col justify-between"
+              className="rounded-2xl p-5 sm:p-6 h-full flex flex-col justify-between"
               style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
             >
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Compass size={18} className="text-noor-gold" />
-                  <h3 className="font-display text-noor-ivory font-semibold text-xl">Islamic Guidance</h3>
+                  <h3 className="font-display text-noor-ivory font-semibold text-lg sm:text-xl">Islamic Guidance</h3>
                 </div>
-                <p className="text-noor-muted text-xs mb-6">Quick access to essential Islamic tools</p>
+                <p className="text-noor-muted text-xs mb-5">Quick access to essential Islamic tools</p>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2.5 sm:gap-3">
                   {GUIDANCE_LINKS.map((item) => (
                     <Link
                       key={item.label}
                       to={item.to}
-                      className="flex items-center justify-between p-3.5 rounded-xl transition-all hover:border-noor-gold/50 group"
+                      className="flex items-center justify-between p-3 rounded-xl transition-all hover:border-noor-gold/50 group"
                       style={{
                         background: 'rgba(6,24,18,0.4)',
                         border: '1px solid rgba(26,64,53,0.5)',
                       }}
                     >
-                      <span className="text-noor-ivory text-sm font-medium group-hover:text-noor-gold transition-colors">
+                      <span className="text-noor-ivory text-xs sm:text-sm font-medium group-hover:text-noor-gold transition-colors">
                         {item.label}
                       </span>
-                      <ArrowRight size={14} className="text-noor-gold transition-transform group-hover:translate-x-1" />
+                      <ArrowRight size={13} className="text-noor-gold transition-transform group-hover:translate-x-1" />
                     </Link>
                   ))}
                 </div>
@@ -642,26 +642,26 @@ function HadithDhikrCalendar() {
           {/* Daily Hadith */}
           <FadeIn delay={0.05}>
             <div
-              className="rounded-2xl p-6 h-full flex flex-col justify-between"
+              className="rounded-2xl p-5 sm:p-6 h-full flex flex-col justify-between"
               style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
             >
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <CalendarDays size={18} className="text-noor-gold" />
-                  <h3 className="font-display text-noor-ivory font-semibold text-xl">Daily Hadith</h3>
+                  <h3 className="font-display text-noor-ivory font-semibold text-lg sm:text-xl">Daily Hadith</h3>
                 </div>
-                <p className="text-noor-muted text-xs mb-5">Today's guidance for a better tomorrow.</p>
+                <p className="text-noor-muted text-xs mb-4">Today's guidance for a better tomorrow.</p>
 
                 <p
-                  className="font-arabic text-noor-gold text-xl leading-loose mb-4 text-right"
+                  className="font-arabic text-noor-gold text-lg sm:text-xl leading-loose mb-3 text-right"
                   style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}
                 >
                   {dailyHadith.arabic}
                 </p>
-                <p className="text-noor-ivory/80 text-sm italic mb-1">
+                <p className="text-noor-ivory/80 text-xs sm:text-sm italic mb-1">
                   "{dailyHadith.english}"
                 </p>
-                <p className="text-noor-muted text-xs mb-5">— {dailyHadith.source} · changes daily</p>
+                <p className="text-noor-muted text-xs mb-4">— {dailyHadith.source} · changes daily</p>
               </div>
 
               <div className="flex items-center gap-3 pt-4 border-t border-[#1A4035]">
@@ -685,34 +685,34 @@ function HadithDhikrCalendar() {
           {/* Dhikr Counter */}
           <FadeIn delay={0.1}>
             <div
-              className="rounded-2xl p-6 h-full flex flex-col justify-between"
+              className="rounded-2xl p-5 sm:p-6 h-full flex flex-col justify-between"
               style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}
             >
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-display text-noor-ivory font-semibold text-xl">Dhikr Counter</h3>
+                    <h3 className="font-display text-noor-ivory font-semibold text-lg sm:text-xl">Dhikr Counter</h3>
                   </div>
                 </div>
-                <p className="text-noor-muted text-xs mb-6">Keep remembering Allah</p>
+                <p className="text-noor-muted text-xs mb-5">Keep remembering Allah</p>
 
-                <div className="flex items-center justify-center gap-6 mb-2">
+                <div className="flex items-center justify-center gap-5 sm:gap-6 mb-2">
                   <button
                     onClick={() => setCount((c) => Math.max(0, c - 1))}
-                    className="w-10 h-10 rounded-full border border-noor-border flex items-center justify-center text-noor-muted hover:border-noor-gold/50 hover:text-noor-gold transition-all"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-noor-border flex items-center justify-center text-noor-muted hover:border-noor-gold/50 hover:text-noor-gold transition-all"
                   >
-                    <Minus size={16} />
+                    <Minus size={15} />
                   </button>
-                  <div className="text-center min-w-[100px]">
-                    <p className="font-display text-noor-gold text-5xl font-bold">{count}</p>
-                    <p className="text-noor-muted text-xs mt-1">{dhikr}</p>
+                  <div className="text-center min-w-[90px]">
+                    <p className="font-display text-noor-gold text-4xl sm:text-5xl font-bold">{count}</p>
+                    <p className="text-noor-muted text-xs mt-0.5">{dhikr}</p>
                   </div>
                   <button
                     onClick={() => setCount((c) => c + 1)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-noor-deep font-bold transition-all hover:scale-110"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-noor-deep font-bold transition-all hover:scale-110"
                     style={{ background: '#E8BD4B' }}
                   >
-                    <Plus size={16} />
+                    <Plus size={15} />
                   </button>
                 </div>
 
@@ -740,7 +740,7 @@ function HadithDhikrCalendar() {
                     <button
                       key={d}
                       onClick={() => { setDhikr(d); setCount(0); }}
-                      className="px-2.5 py-1 rounded-full text-[10px] transition-colors"
+                      className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] transition-colors"
                       style={{
                         background: dhikr === d ? 'rgba(232,189,75,0.15)' : 'rgba(6,24,18,0.5)',
                         border: dhikr === d ? '1px solid rgba(232,189,75,0.35)' : '1px solid rgba(26,64,53,0.5)',
