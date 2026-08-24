@@ -47,7 +47,7 @@ export default function InfoPage() {
       <div className="py-14 text-center relative overflow-hidden bg-noor-bg2 border-b border-noor-border">
         <div className="islamic-pattern absolute inset-0 opacity-50 pointer-events-none" />
         <div className="relative px-4">
-          <p className="font-arabic text-noor-gold text-xl mb-2">نور</p>
+          <p className="font-arabic text-noor-gold text-xl mb-2"></p>
           <h1 className="font-display text-noor-ivory text-4xl font-semibold">{page.title}</h1>
           <p className="text-noor-muted text-sm mt-2 max-w-xl mx-auto">{page.intro}</p>
         </div>
