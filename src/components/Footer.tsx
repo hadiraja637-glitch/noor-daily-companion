@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import NoorLogo from './NoorLogo';
-import { Mail, UsersRound, ArrowRight } from 'lucide-react';
+import { Mail, UsersRound, ArrowRight, Shield, FileText, Info, PhoneCall } from 'lucide-react';
 
 const SOCIAL_ICONS = [
   '<path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/>',
@@ -41,6 +41,7 @@ export default function Footer() {
 
       <div className="relative max-w-[1400px] mx-auto px-4 lg:px-8 pt-6 lg:pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_.8fr] gap-3 mb-8">
+          {/* Subscribe Card */}
           <div className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4"
             style={{ background: 'rgba(16,51,41,0.72)', border: '1px solid rgba(24,185,138,0.28)' }}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(232,189,75,0.12)' }}>
@@ -58,6 +59,8 @@ export default function Footer() {
               </button>
             </form>
           </div>
+
+          {/* Follow Us Card */}
           <div className="rounded-2xl p-4 sm:p-5 flex items-center gap-4"
             style={{ background: 'rgba(16,51,41,0.72)', border: '1px solid rgba(24,185,138,0.28)' }}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(232,189,75,0.12)' }}>
@@ -80,86 +83,70 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Main Footer Section */}
       <div className="relative max-w-[1400px] mx-auto px-4 lg:px-8 pt-2 pb-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 mb-10 lg:mb-12">
-          {/* Brand */}
-          <div>
-            <div className="flex items-center gap-2.5 mb-4">
-              <NoorLogo size={32} />
-              <div className="leading-none">
-                <div className="flex items-end gap-2 leading-none">
-                  <div>
-                    <div className="text-[8px] text-noor-gold tracking-[0.2em] font-arabic leading-none mb-1" style={{ direction: 'rtl' }}></div>
-                    <div className="font-display text-noor-ivory font-semibold text-2xl tracking-wide">Noor</div>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 mb-10">
+          
+          {/* Brand Info */}
+          <div className="flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2.5 mb-3">
+                <NoorLogo size={32} />
+                <div className="font-display text-noor-ivory font-semibold text-2xl tracking-wide">Noor</div>
               </div>
+              <p className="text-noor-muted text-xs leading-relaxed mb-4">
+                Your daily digital companion for Qur'an, prayer timings, Sunnah habits, and spiritual growth.
+              </p>
             </div>
-            <p className="text-noor-muted text-sm leading-relaxed mb-5">
-              Your daily companion for prayer, remembrance & giving.
-            </p>
           </div>
 
-          {/* Quick Links */}
-          <div className="sm:col-span-1">
-            <h4 className="font-display text-noor-ivory font-semibold text-base mb-4 tracking-wide">
-              Quick Links
-            </h4>
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-2.5">
-              {[
-                { to: '/', label: 'Home' },
-                { to: '/quran', label: "Qur'an" },
-                { to: '/hadith', label: 'Hadith' },
-                { to: '/duas', label: 'Duas' },
-                { to: '/calendar', label: 'Islamic Calendar' },
-                { to: '/zakat', label: 'Zakat' },
-                { to: '/stories', label: 'Stories' },
-                { to: '/blog', label: 'Blog' },
-                { to: '/tasbeeh', label: 'Tasbeeh' },
-              ].map((link) => (
-                <li key={link.to}>
-                  <Link
-                    to={link.to}
-                    className="text-noor-muted text-sm hover:text-noor-gold transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal */}
+          {/* Essential Features */}
           <div>
-            <h4 className="font-display text-noor-ivory font-semibold text-base mb-4 tracking-wide">
-              Legal
+            <h4 className="font-display text-noor-ivory font-semibold text-sm mb-3.5 tracking-wide uppercase text-noor-gold/90">
+              Core Features
             </h4>
-            <ul className="space-y-2.5">
-              {[
-                { to: '/privacy', label: 'Privacy Policy' },
-                { to: '/terms', label: 'Terms & Conditions' },
-                { to: '/contact', label: 'Contact Us' },
-                { to: '/about', label: 'About Us' },
-              ].map((item) => (
-                <li key={item.to}>
-                  <Link to={item.to} className="text-noor-muted text-sm hover:text-noor-gold transition-colors">
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+            <ul className="space-y-2 text-xs">
+              <li><Link to="/quran" className="text-noor-muted hover:text-noor-gold transition-colors">Holy Qur'an</Link></li>
+              <li><Link to="/hadith" className="text-noor-muted hover:text-noor-gold transition-colors">Hadith Collection</Link></li>
+              <li><Link to="/duas" className="text-noor-muted hover:text-noor-gold transition-colors">Daily Duas & Azkar</Link></li>
+              <li><Link to="/sunnah-habits" className="text-noor-muted hover:text-noor-gold transition-colors">Sunnah Habits</Link></li>
+              <li><Link to="/qibla" className="text-noor-muted hover:text-noor-gold transition-colors">Qibla Direction</Link></li>
             </ul>
           </div>
+
+          {/* Tools & Knowledge */}
+          <div>
+            <h4 className="font-display text-noor-ivory font-semibold text-sm mb-3.5 tracking-wide uppercase text-noor-gold/90">
+              Tools & Resources
+            </h4>
+            <ul className="space-y-2 text-xs">
+              <li><Link to="/calendar" className="text-noor-muted hover:text-noor-gold transition-colors">Islamic Calendar</Link></li>
+              <li><Link to="/zakat" className="text-noor-muted hover:text-noor-gold transition-colors">Zakat Calculator</Link></li>
+              <li><Link to="/tasbeeh" className="text-noor-muted hover:text-noor-gold transition-colors">Digital Tasbeeh</Link></li>
+              <li><Link to="/stories" className="text-noor-muted hover:text-noor-gold transition-colors">Islamic Stories</Link></li>
+              <li><Link to="/blog" className="text-noor-muted hover:text-noor-gold transition-colors">Articles & Guides</Link></li>
+            </ul>
+          </div>
+
+          {/* Legal & About */}
+          <div>
+            <h4 className="font-display text-noor-ivory font-semibold text-sm mb-3.5 tracking-wide uppercase text-noor-gold/90">
+              Legal & Support
+            </h4>
+            <ul className="space-y-2 text-xs">
+              <li><Link to="/about" className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5"><Info size={13} /> About Us</Link></li>
+              <li><Link to="/privacy" className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5"><Shield size={13} /> Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5"><FileText size={13} /> Terms & Conditions</Link></li>
+              <li><Link to="/contact" className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5"><PhoneCall size={13} /> Contact Support</Link></li>
+            </ul>
+          </div>
+
         </div>
 
-        <div
-          className="border-t border-noor-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-3"
-        >
-          <p className="text-noor-muted text-xs">
-            © 2026 Noor. All rights reserved.
-          </p>
-          <p className="text-noor-muted text-xs">
-            Built with ❤️ for a better Ummah.
-          </p>
+        {/* Bottom Bar */}
+        <div className="border-t border-noor-border/40 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-noor-muted/80">
+          <p>© {new Date().getFullYear()} Noor. All rights reserved.</p>
+          <p>Built with ❤️ for a better Ummah.</p>
         </div>
       </div>
     </footer>
