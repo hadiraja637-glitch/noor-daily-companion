@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 
 const CONTENT: Record<string, { title: string; intro: string; sections: { heading: string; body: string }[] }> = {
   privacy: {
@@ -38,7 +38,8 @@ const CONTENT: Record<string, { title: string; intro: string; sections: { headin
 };
 
 export default function InfoPage() {
-  const slug = window.location.pathname.replace(/^\//, '').split('/')[0] || 'about';
+  const { pathname } = useLocation();
+  const slug = pathname.replace(/^\//, '').split('/')[0] || 'about';
   const page = CONTENT[slug] || CONTENT.about;
 
   return (
@@ -59,7 +60,11 @@ export default function InfoPage() {
               <p className="text-noor-muted text-sm leading-7">{section.body}</p>
             </section>
           ))}
-          <Link to="/" className="inline-flex text-noor-gold text-sm hover:underline">← Back to Noor</Link>
+          <div className="pt-4 border-t border-noor-border/40">
+            <Link to="/" className="inline-flex text-noor-gold text-sm hover:underline font-medium">
+              ← Back to Noor
+            </Link>
+          </div>
         </div>
       </div>
     </div>
