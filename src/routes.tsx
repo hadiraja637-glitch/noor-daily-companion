@@ -1,4 +1,5 @@
-import { createBrowserRouter, Outlet } from 'react-router';
+import { useEffect } from 'react';
+import { createBrowserRouter, Outlet, useLocation } from 'react-router';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -17,6 +18,12 @@ import Blog from './pages/Blog';
 import SunnahHabits from './pages/SunnahHabits';
 
 function Layout() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   return (
     <div className="min-h-screen bg-[#061812] text-noor-ivory">
       <Navbar />
