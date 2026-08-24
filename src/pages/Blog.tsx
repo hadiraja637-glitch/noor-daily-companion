@@ -22,7 +22,7 @@ interface ChatMessage {
   timestamp: string;
 }
 
-export const Blog: React.FC = () => {
+const Blog: React.FC = () => {
   // --- Persistent User Profile ---
   const [userName, setUserName] = useState<string>(() => localStorage.getItem('noor_user_nickname') || '');
   const [userEmail, setUserEmail] = useState<string>(() => localStorage.getItem('noor_user_email') || '');
@@ -284,3 +284,4 @@ export const Blog: React.FC = () => {
     </div>
   );
 };
+export default Blog;
