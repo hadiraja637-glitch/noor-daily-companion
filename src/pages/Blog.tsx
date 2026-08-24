@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare, ShieldAlert, Link as LinkIcon, Image as ImageIcon, Sparkles, Share2 } from 'lucide-react';
+import { Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare, ShieldAlert, Share2, Sparkles, Edit3 } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -85,17 +85,19 @@ export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  
+
   // Modals & Chat
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [isSubmitOpen, setIsSubmitOpen] = useState<boolean>(false);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
 
-  // Chat State
+  // Chat & User Profile State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT);
   const [newMsg, setNewMsg] = useState('');
-  const [userName, setUserName] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [isSettingName, setIsSettingName] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [chatError, setChatError] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -110,7 +112,9 @@ export default function Blog() {
     img: '',
   });
 
+  // Load Saved Data & Setup LocalStorage Listeners
   useEffect(() => {
+    // Load Blogs
     const savedBlogs = localStorage.getItem('noor_user_blogs');
     if (savedBlogs) {
       try {
@@ -122,19 +126,72 @@ export default function Blog() {
       setPosts(DEFAULT_POSTS);
     }
 
+    // Load Saved User Nickname
+    const savedName = localStorage.getItem('noor_user_nickname');
+    if (savedName) {
+      setNickname(savedName);
+    } else {
+      setNickname('Servant of Allah');
+    }
+
+    // Load Chat Messages
     const savedChat = localStorage.getItem('noor_community_chat');
     if (savedChat) {
       try {
-        setChatMessages(JSON.parse(savedChat));
+        const parsed = JSON.parse(savedChat);
+        setChatMessages(parsed);
       } catch (e) {}
+    }
+
+    // Load Unread Count
+    const savedUnread = localStorage.getItem('noor_chat_unread_count');
+    if (savedUnread) {
+      setUnreadCount(parseInt(savedUnread, 10) || 0);
     }
   }, []);
 
+  // Sync Unread Messages across window/tab changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'noor_community_chat' && e.newValue) {
+        try {
+          const newMessages: ChatMessage[] = JSON.parse(e.newValue);
+          setChatMessages(newMessages);
+          if (!isChatOpen) {
+            setUnreadCount((prev) => {
+              const updated = prev + 1;
+              localStorage.setItem('noor_chat_unread_count', updated.toString());
+              return updated;
+            });
+          }
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [isChatOpen]);
+
+  // Scroll to bottom when opening chat or sending msg
   useEffect(() => {
     if (isChatOpen) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, isChatOpen]);
+
+  // Reset Unread Count on Chat Open
+  const handleOpenChat = () => {
+    setIsChatOpen(true);
+    setUnreadCount(0);
+    localStorage.setItem('noor_chat_unread_count', '0');
+  };
+
+  const saveNickname = (name: string) => {
+    const finalName = name.trim() || 'Servant of Allah';
+    setNickname(finalName);
+    localStorage.setItem('noor_user_nickname', finalName);
+    setIsSettingName(false);
+  };
 
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
@@ -166,8 +223,8 @@ export default function Blog() {
 
     const updated = [newPost, ...posts];
     setPosts(updated);
-    localStorage.setItem('noor_user_blogs', JSON.stringify([newPost, ...(JSON.parse(localStorage.getItem('noor_user_blogs') || '[]'))]));
-    
+    localStorage.setItem('noor_user_blogs', JSON.stringify([newPost, ...JSON.parse(localStorage.getItem('noor_user_blogs') || '[]')]));
+
     setSubmittedSuccess(true);
     setTimeout(() => {
       setSubmittedSuccess(false);
@@ -201,10 +258,11 @@ export default function Blog() {
 
     const messageObj: ChatMessage = {
       id: Date.now().toString(),
-      user: userName.trim() || 'Servant of Allah',
+      user: nickname || 'Servant of Allah',
       text: cleanText || (detectedLink ? 'Shared an Islamic Resource Link:' : newMsg),
       linkUrl: detectedLink || undefined,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isSelf: true,
     };
 
     const updatedChat = [...chatMessages, messageObj];
@@ -235,10 +293,15 @@ export default function Blog() {
               <PlusCircle size={16} /> Submit Your Article
             </button>
             <button
-              onClick={() => setIsChatOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/40 text-[#E8BD4B] font-semibold text-xs sm:text-sm hover:bg-[#1A4035] transition-all shadow-md"
+              onClick={handleOpenChat}
+              className="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/40 text-[#E8BD4B] font-semibold text-xs sm:text-sm hover:bg-[#1A4035] transition-all shadow-md"
             >
               <MessageSquare size={16} /> Public Islamic Chat
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full animate-bounce shadow-md">
+                  {unreadCount} New
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -443,7 +506,7 @@ export default function Blog() {
 
                 <div>
                   <label className="block text-noor-muted mb-1 text-xs flex items-center gap-1">
-                    <ImageIcon size={12} /> Image URL (Optional)
+                    Image URL (Optional)
                   </label>
                   <input
                     type="url"
@@ -493,7 +556,15 @@ export default function Blog() {
                     Islamic Community Hub
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   </h3>
-                  <p className="text-[10px] sm:text-[11px] text-noor-muted">Sharing Knowledge & Authentic Links</p>
+                  <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-noor-muted">
+                    <span>Chatting as: <strong className="text-[#E8BD4B] font-semibold">{nickname}</strong></span>
+                    <button
+                      onClick={() => setIsSettingName(!isSettingName)}
+                      className="text-noor-muted hover:text-[#E8BD4B] underline flex items-center gap-0.5 ml-1"
+                    >
+                      <Edit3 size={11} /> Change
+                    </button>
+                  </div>
                 </div>
               </div>
               <button
@@ -503,6 +574,28 @@ export default function Blog() {
                 <X size={16} />
               </button>
             </div>
+
+            {/* Change Profile Nickname Popup Box */}
+            {isSettingName && (
+              <div className="p-3 bg-[#0E3327] border-b border-[#E8BD4B]/30 flex items-center gap-2 text-xs">
+                <input
+                  type="text"
+                  defaultValue={nickname}
+                  placeholder="Enter your Email / Nickname"
+                  id="nicknameInput"
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-[#061812] border border-[#1A4035] text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
+                />
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('nicknameInput') as HTMLInputElement;
+                    if (el) saveNickname(el.value);
+                  }}
+                  className="px-3 py-1.5 bg-[#E8BD4B] text-[#061812] font-semibold rounded-lg hover:bg-[#f2ca5c]"
+                >
+                  Save Profile
+                </button>
+              </div>
+            )}
 
             {/* Chat Messages Body */}
             <div className="p-4 flex-1 overflow-y-auto space-y-3.5 bg-[#061812]/70 scrollbar-thin scrollbar-thumb-[#1A4035]">
@@ -545,36 +638,27 @@ export default function Blog() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Bottom Input Controls */}
+            {/* Bottom Input Controls (Clean Single Input) */}
             <div className="p-3 border-t border-[#1A4035] bg-[#0B2820] space-y-2">
               {chatError && (
                 <div className="flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 p-2 rounded-xl border border-red-500/20">
                   <ShieldAlert size={14} /> {chatError}
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="space-y-2">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
                 <input
                   type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Your Name (e.g. Brother Ali)"
-                  className="w-full px-3 py-1.5 rounded-xl bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]"
+                  value={newMsg}
+                  onChange={(e) => setNewMsg(e.target.value)}
+                  placeholder="Write a message or paste YouTube/Islamic link..."
+                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]"
                 />
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newMsg}
-                    onChange={(e) => setNewMsg(e.target.value)}
-                    placeholder="Write a message or paste YouTube/Islamic link..."
-                    className="flex-1 px-3 py-2.5 rounded-xl bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2.5 rounded-xl bg-[#E8BD4B] text-[#061812] font-semibold text-xs hover:bg-[#f2ca5c] transition-all shadow-md flex items-center justify-center gap-1"
-                  >
-                    <Send size={14} />
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 rounded-xl bg-[#E8BD4B] text-[#061812] font-semibold text-xs hover:bg-[#f2ca5c] transition-all shadow-md flex items-center justify-center gap-1"
+                >
+                  <Send size={14} />
+                </button>
               </form>
             </div>
           </div>
@@ -583,3 +667,4 @@ export default function Blog() {
     </div>
   );
 }
+export default Blog;
