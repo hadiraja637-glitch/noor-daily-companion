@@ -21,22 +21,23 @@ export interface PrayerData {
   timezone?: string;
 }
 
+// Changed Default Location to Islamabad, Pakistan
 export const DEFAULT_LOCATION: PrayerLocation = {
-  name: 'Gujrat, Pakistan',
+  name: 'Islamabad, Pakistan',
   country: 'Pakistan',
-  lat: 32.5739,
-  lon: 74.0796,
+  lat: 33.6844,
+  lon: 73.0479,
 };
 
 export const CITY_OPTIONS: PrayerLocation[] = [
   DEFAULT_LOCATION,
   { name: 'Lahore, Pakistan', country: 'Pakistan', lat: 31.5204, lon: 74.3587 },
-  { name: 'Islamabad, Pakistan', country: 'Pakistan', lat: 33.6844, lon: 73.0479 },
+  { name: 'Karachi, Pakistan', country: 'Pakistan', lat: 24.8607, lon: 67.0011 },
   { name: 'Rawalpindi, Pakistan', country: 'Pakistan', lat: 33.5651, lon: 73.0169 },
   { name: 'Faisalabad, Pakistan', country: 'Pakistan', lat: 31.4504, lon: 73.1350 },
-  { name: 'Karachi, Pakistan', country: 'Pakistan', lat: 24.8607, lon: 67.0011 },
+  { name: 'Gujrat, Pakistan', country: 'Pakistan', lat: 32.5739, lon: 74.0796 },
   { name: 'Multan, Pakistan', country: 'Pakistan', lat: 30.1575, lon: 71.5249 },
-  { name: 'Peshawar, Pakistan', country: 'Pakistan', lat: 34.0151, lon: 71.5249 },
+  { name: 'Peshawar, Pakistan', country: 'Pakistan', lat: 34.0151, lon: 71.5805 }, // Fixed Longitude
   { name: 'Sialkot, Pakistan', country: 'Pakistan', lat: 32.4945, lon: 74.5229 },
   { name: 'Quetta, Pakistan', country: 'Pakistan', lat: 30.1798, lon: 66.9750 },
 ];
@@ -84,9 +85,9 @@ async function requestJson(url: string) {
 }
 
 /**
- * Free Reverse Geocoding API to fetch exact City Name using Lat/Lon coordinates
+ * Returns PrayerLocation object so it seamlessly integrates with your UI components
  */
-export async function getCityFromCoordinates(lat: number, lon: number): Promise<string> {
+export async function getCityFromCoordinates(lat: number, lon: number): Promise<PrayerLocation> {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
@@ -94,18 +95,22 @@ export async function getCityFromCoordinates(lat: number, lon: number): Promise<
     if (!res.ok) throw new Error('Geocoding service unavailable');
     
     const data = await res.json();
-    const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || data.address?.state_district;
-    const country = data.address?.country;
+    const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || data.address?.state_district || 'Current Location';
+    const country = data.address?.country || '';
 
-    if (city && country) {
-      return `${city}, ${country}`;
-    } else if (country) {
-      return country;
-    }
-    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+    return {
+      name: country ? `${city}, ${country}` : city,
+      country: country,
+      lat,
+      lon
+    };
   } catch (error) {
     console.error('Reverse geocoding error:', error);
-    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+    return {
+      name: `Location (${lat.toFixed(2)}, ${lon.toFixed(2)})`,
+      lat,
+      lon
+    };
   }
 }
 
@@ -129,14 +134,14 @@ export async function fetchPrayerData(location: PrayerLocation): Promise<PrayerD
     timings,
     hijriDate: hijriLabel(data.date?.hijri),
     readableDate: data.date?.readable ?? new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
-    timezone: data.meta?.timezone,
+    timezone: data.meta?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 }
 
 export async function fetchPrayerDataByCity(city: PrayerLocation): Promise<PrayerData> {
   const date = dateParam();
   const url = new URL(`https://api.aladhan.com/v1/timingsByCity/${date}`);
-  url.searchParams.set('city', city.name.split(',')[0]);
+  url.searchParams.set('city', city.name.split(',')[0].trim());
   url.searchParams.set('country', city.country ?? 'Pakistan');
   url.searchParams.set('method', '1');
   url.searchParams.set('school', '1');
@@ -153,12 +158,13 @@ export async function fetchPrayerDataByCity(city: PrayerLocation): Promise<Praye
     timings,
     hijriDate: hijriLabel(data.date?.hijri),
     readableDate: data.date?.readable ?? new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
-    timezone: data.meta?.timezone,
+    timezone: data.meta?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 }
 
 export function getCurrentAndNextPrayer(timings: PrayerTiming[], now = new Date(), timeZone?: string) {
   let mins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+
   if (timeZone) {
     try {
       const parts = new Intl.DateTimeFormat('en-GB', {
@@ -174,20 +180,28 @@ export function getCurrentAndNextPrayer(timings: PrayerTiming[], now = new Date(
       const second = Number(parts.find((p) => p.type === 'second')?.value ?? 0);
       mins = hour * 60 + minute + second / 60;
     } catch {
-      /* fallback to browser time */
+      /* fallback to local browser time */
     }
   }
 
   const active = timings.filter((p) => p.name !== 'Sunrise');
-  let current = active[active.length - 1];
-  let next = active[0];
+  let current = active[active.length - 1]; // Isha by default
+  let next = active[0]; // Fajr by default
 
+  let foundNext = false;
   for (let i = 0; i < active.length; i++) {
-    if (mins >= active[i].minutes) current = active[i];
     if (mins < active[i].minutes) {
       next = active[i];
+      current = i === 0 ? active[active.length - 1] : active[i - 1];
+      foundNext = true;
       break;
     }
+  }
+
+  // After Isha before midnight transition handler
+  if (!foundNext) {
+    current = active[active.length - 1];
+    next = active[0];
   }
 
   return { current, next, mins };
