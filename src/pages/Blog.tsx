@@ -73,7 +73,7 @@ const DEFAULT_POSTS: BlogPost[] = [
 const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar', 'Community & Life'];
 
  const Blog: React.FC = () => {
-  // --- Persistent User Profile ---
+  // Persistent User Profile State
   const [userName, setUserName] = useState<string>(() => localStorage.getItem('noor_user_nickname') || '');
   const [userEmail, setUserEmail] = useState<string>(() => localStorage.getItem('noor_user_email') || '');
   const [isProfileSet, setIsProfileSet] = useState<boolean>(() => !!localStorage.getItem('noor_user_nickname'));
@@ -83,7 +83,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
   const [tempNickname, setTempNickname] = useState('');
   const [tempEmail, setTempEmail] = useState('');
 
-  // --- Real-time Public Chat State ---
+  // Real-time Public Chat State
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = localStorage.getItem('noor_public_chat_messages');
@@ -96,13 +96,13 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // --- Blog & Search State ---
+  // Blog & Search State
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
-  // --- Article Submit Modal State ---
+  // Submit Article Modal State
   const [isSubmitOpen, setIsSubmitOpen] = useState<boolean>(false);
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
   const [formData, setFormData] = useState({
@@ -134,7 +134,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
     }
   }, []);
 
-  // --- Broadcast Channel Hook ---
+  // Broadcast Channel Hook
   useEffect(() => {
     const channel = new BroadcastChannel('noor_public_chat_channel');
 
@@ -153,12 +153,10 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
     };
   }, []);
 
-  // Auto-scroll on new message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Handle Profile Save
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tempNickname.trim()) return;
@@ -174,7 +172,6 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
     setShowProfileModal(false);
   };
 
-  // Handle Send Message
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -207,7 +204,6 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
     setNewMessage('');
   };
 
-  // Filter Posts
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
       const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
@@ -220,7 +216,6 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
     });
   }, [posts, activeCategory, searchQuery]);
 
-  // Submit Article Handler
   const handleSubmitArticle = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.content.trim() || !formData.author.trim()) return;
@@ -264,15 +259,15 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
   };
 
   return (
-    <div className="min-h-screen bg-[#03221b] text-emerald-100 py-6 px-4 sm:px-6 lg:px-8 font-sans">
+    <div className="min-h-screen bg-[#021814] text-slate-100 py-6 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* --- NOOR HERO BANNER --- */}
-        <div className="text-center py-10 px-4 rounded-3xl bg-[#052b22]/90 border border-emerald-900/40 shadow-xl relative overflow-hidden">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#031d17] border border-amber-500/30 text-amber-400 text-xs font-medium mb-5">
+        {/* --- DEEP AESTHETIC NOOR HERO BANNER --- */}
+        <div className="text-center py-10 px-4 rounded-3xl bg-gradient-to-b from-[#042821] via-[#03201a] to-[#021814] border border-[#0d4a3c]/60 shadow-2xl relative overflow-hidden">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#021511] border border-amber-500/30 text-amber-400 text-xs font-medium mb-5">
             <BookOpen size={13} /> Islamic Insights & Knowledge Portal
           </div>
-          <h1 className="text-3xl sm:text-5xl font-serif font-normal tracking-wide text-amber-50 mb-3">
+          <h1 className="text-3xl sm:text-5xl font-serif font-normal tracking-wide text-[#f7e8cf] drop-shadow-sm mb-3">
             Knowledge & Reflections
           </h1>
           <p className="text-emerald-200/70 max-w-2xl mx-auto text-xs sm:text-sm leading-relaxed mb-8">
@@ -282,14 +277,14 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => setIsSubmitOpen(true)}
-              className="px-6 py-2.5 rounded-full bg-amber-400 text-[#03221b] font-semibold text-xs sm:text-sm hover:bg-amber-300 transition shadow-md flex items-center gap-2"
+              className="px-6 py-2.5 rounded-full bg-amber-400 text-[#021814] font-semibold text-xs sm:text-sm hover:bg-amber-300 transition shadow-lg active:scale-95 flex items-center gap-2"
             >
               <PlusCircle size={15} /> Submit Your Article
             </button>
 
             <a
               href="#lounge"
-              className="px-6 py-2.5 rounded-full bg-[#031d17]/80 text-emerald-300 border border-emerald-800/60 hover:bg-[#031d17] font-medium text-xs sm:text-sm transition flex items-center gap-2"
+              className="px-6 py-2.5 rounded-full bg-[#021511]/90 text-emerald-300 border border-[#0a4034]/80 hover:bg-[#03201a] font-medium text-xs sm:text-sm transition flex items-center gap-2"
             >
               <MessageSquare size={15} /> Public Islamic Chat
             </a>
@@ -305,7 +300,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search articles or authors..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#052b22] border border-emerald-900/60 text-xs sm:text-sm text-emerald-100 placeholder-emerald-600 focus:outline-none focus:border-emerald-500 transition"
+              className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#04241d] border border-[#0a4034]/70 text-xs sm:text-sm text-slate-100 placeholder-emerald-600 focus:outline-none focus:border-amber-400/80 transition"
             />
           </div>
 
@@ -316,8 +311,8 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                 onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition ${
                   activeCategory === cat
-                    ? 'bg-amber-400 text-[#03221b] font-semibold'
-                    : 'bg-[#052b22] text-emerald-200 border border-emerald-900/50 hover:bg-[#08382c]'
+                    ? 'bg-amber-400 text-[#021814] font-semibold shadow-md'
+                    : 'bg-[#04241d] text-emerald-200/80 border border-[#0a4034]/60 hover:bg-[#063329]'
                 }`}
               >
                 {cat}
@@ -339,13 +334,13 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                 return (
                   <div
                     onClick={() => setSelectedPost(feat)}
-                    className="cursor-pointer group relative rounded-3xl overflow-hidden bg-[#052b22] border border-emerald-900/60 hover:border-emerald-700/60 transition grid grid-cols-1 md:grid-cols-12 shadow-lg"
+                    className="cursor-pointer group relative rounded-3xl overflow-hidden bg-[#04241d] border border-[#0a4034]/70 hover:border-amber-400/40 transition grid grid-cols-1 md:grid-cols-12 shadow-xl"
                   >
-                    <div className="md:col-span-5 h-52 md:h-auto overflow-hidden relative">
+                    <div className="md:col-span-5 h-52 md:h-auto overflow-hidden relative bg-[#021511]">
                       <img
                         src={feat.img}
                         alt={feat.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90"
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-85"
                       />
                     </div>
                     <div className="md:col-span-7 p-6 flex flex-col justify-between space-y-4">
@@ -358,12 +353,12 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                             <Clock size={12} /> {feat.readTime}
                           </span>
                         </div>
-                        <h2 className="font-serif font-normal text-xl sm:text-2xl text-amber-50 group-hover:text-amber-300 transition leading-snug">
+                        <h2 className="font-serif font-normal text-xl sm:text-2xl text-[#f7e8cf] group-hover:text-amber-300 transition leading-snug">
                           {feat.title}
                         </h2>
                         <p className="text-emerald-200/70 text-xs sm:text-sm line-clamp-2 leading-relaxed">{feat.excerpt}</p>
                       </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-emerald-900/50 text-xs text-emerald-400/80">
+                      <div className="flex items-center justify-between pt-4 border-t border-[#093d31]/80 text-xs text-emerald-400/80">
                         <span className="flex items-center gap-1.5">
                           <User size={13} className="text-amber-400" /> {feat.author}
                         </span>
@@ -377,7 +372,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
 
             {/* BLOGS GRID */}
             {filteredPosts.length === 0 ? (
-              <div className="text-center py-12 text-emerald-400 text-xs sm:text-sm bg-[#052b22] rounded-3xl border border-emerald-900/60">
+              <div className="text-center py-12 text-emerald-400/80 text-xs sm:text-sm bg-[#04241d] rounded-3xl border border-[#0a4034]/60">
                 No articles found matching your criteria.
               </div>
             ) : (
@@ -386,16 +381,16 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                   <div
                     key={post.id}
                     onClick={() => setSelectedPost(post)}
-                    className="cursor-pointer group rounded-3xl bg-[#052b22] border border-emerald-900/60 hover:border-emerald-700/60 transition flex flex-col justify-between overflow-hidden shadow-lg"
+                    className="cursor-pointer group rounded-3xl bg-[#04241d] border border-[#0a4034]/70 hover:border-amber-400/40 transition flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-2xl"
                   >
                     <div>
-                      <div className="h-44 overflow-hidden relative bg-[#031d17]">
+                      <div className="h-44 overflow-hidden relative bg-[#021511]">
                         <img
                           src={post.img}
                           alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90"
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-85"
                         />
-                        <span className="absolute top-3 left-3 text-[10px] font-semibold text-amber-300 bg-[#03221b]/90 backdrop-blur-md px-3 py-0.5 rounded-full border border-amber-400/20">
+                        <span className="absolute top-3 left-3 text-[10px] font-semibold text-amber-300 bg-[#021814]/90 backdrop-blur-md px-3 py-0.5 rounded-full border border-amber-400/20">
                           {post.category}
                         </span>
                       </div>
@@ -406,14 +401,14 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                           </span>
                           <span>{post.date}</span>
                         </div>
-                        <h3 className="font-serif font-normal text-base sm:text-lg text-amber-50 group-hover:text-amber-300 transition line-clamp-2">
+                        <h3 className="font-serif font-normal text-base sm:text-lg text-[#f7e8cf] group-hover:text-amber-300 transition line-clamp-2">
                           {post.title}
                         </h3>
                         <p className="text-emerald-200/70 text-xs line-clamp-2 leading-relaxed">{post.excerpt}</p>
                       </div>
                     </div>
 
-                    <div className="p-5 pt-0 border-t border-emerald-900/40 mt-3 flex items-center justify-between text-xs text-emerald-400/80">
+                    <div className="p-5 pt-0 border-t border-[#093d31]/60 mt-3 flex items-center justify-between text-xs text-emerald-400/80">
                       <span className="truncate max-w-[140px] flex items-center gap-1">
                         <User size={12} className="text-amber-400" /> {post.author}
                       </span>
@@ -427,16 +422,16 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
 
           {/* CHAT LOUNGE SIDEBAR */}
           <div id="lounge" className="lg:col-span-1">
-            <div className="bg-[#052b22] rounded-3xl shadow-xl border border-emerald-900/60 flex flex-col h-[580px] overflow-hidden sticky top-6">
+            <div className="bg-[#04241d] rounded-3xl shadow-2xl border border-[#0a4034]/80 flex flex-col h-[580px] overflow-hidden sticky top-6">
               
               {/* Header */}
-              <div className="p-4 bg-[#031d17] text-emerald-100 flex justify-between items-center border-b border-emerald-900/60">
+              <div className="p-4 bg-[#021511] text-slate-100 flex justify-between items-center border-b border-[#0a4034]/80">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-[#052b22] rounded-xl text-amber-400 border border-amber-400/20">
+                  <div className="p-2 bg-[#04241d] rounded-xl text-amber-400 border border-amber-400/20">
                     <MessageSquare className="w-4 h-4" />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-xs sm:text-sm tracking-wide text-amber-50">Public Islamic Lounge</h2>
+                    <h2 className="font-semibold text-xs sm:text-sm tracking-wide text-[#f7e8cf]">Public Islamic Lounge</h2>
                     <span className="text-[10px] text-emerald-400/80 font-medium flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync Active
                     </span>
@@ -447,7 +442,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                   {unreadCount > 0 && (
                     <button
                       onClick={() => setUnreadCount(0)}
-                      className="bg-amber-400 text-[#03221b] text-[10px] font-bold px-2 py-0.5 rounded-full shadow"
+                      className="bg-amber-400 text-[#021814] text-[10px] font-bold px-2 py-0.5 rounded-full shadow"
                     >
                       +{unreadCount} new
                     </button>
@@ -456,7 +451,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                   {isProfileSet && (
                     <button
                       onClick={() => setShowProfileModal(true)}
-                      className="text-xs bg-[#052b22] hover:bg-[#08382c] text-emerald-200 px-2.5 py-1 rounded-lg border border-emerald-800/60 transition"
+                      className="text-xs bg-[#04241d] hover:bg-[#063329] text-emerald-200 px-2.5 py-1 rounded-lg border border-[#0a4034]/70 transition"
                     >
                       👤 {userName}
                     </button>
@@ -465,7 +460,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
               </div>
 
               {/* Messages Area */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#031d17]/40" onClick={() => setUnreadCount(0)}>
+              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#021511]/50" onClick={() => setUnreadCount(0)}>
                 {messages.length === 0 ? (
                   <div className="text-center text-emerald-500/60 text-xs mt-20">
                     No messages yet. Start the conversation!
@@ -481,12 +476,12 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                         <div
                           className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs shadow-sm ${
                             isMe
-                              ? 'bg-amber-400 text-[#03221b] font-medium rounded-tr-none'
-                              : 'bg-[#08382c] text-emerald-100 border border-emerald-800/40 rounded-tl-none'
+                              ? 'bg-amber-400 text-[#021814] font-medium rounded-tr-none'
+                              : 'bg-[#07362c] text-slate-100 border border-[#0b4a3c]/60 rounded-tl-none'
                           }`}
                         >
                           <p className="leading-relaxed">{msg.message}</p>
-                          <span className={`text-[9px] block text-right mt-1 ${isMe ? 'text-[#03221b]/70' : 'text-emerald-400/60'}`}>
+                          <span className={`text-[9px] block text-right mt-1 ${isMe ? 'text-[#021814]/70' : 'text-emerald-400/60'}`}>
                             {msg.timestamp}
                           </span>
                         </div>
@@ -498,17 +493,17 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
               </div>
 
               {/* Input Form */}
-              <form onSubmit={handleSendMessage} className="p-3 bg-[#031d17] border-t border-emerald-900/60 flex gap-2">
+              <form onSubmit={handleSendMessage} className="p-3 bg-[#021511] border-t border-[#0a4034]/80 flex gap-2">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder={isProfileSet ? 'Type a public message...' : 'Set nickname to start chatting...'}
-                  className="flex-1 px-3.5 py-2 bg-[#052b22] border border-emerald-900/60 rounded-xl text-xs text-emerald-100 placeholder-emerald-600 focus:outline-none focus:border-emerald-500 transition"
+                  className="flex-1 px-3.5 py-2 bg-[#04241d] border border-[#0a4034]/70 rounded-xl text-xs text-slate-100 placeholder-emerald-600 focus:outline-none focus:border-amber-400/80 transition"
                 />
                 <button
                   type="submit"
-                  className="bg-amber-400 hover:bg-amber-300 text-[#03221b] p-2 rounded-xl transition shadow font-bold"
+                  className="bg-amber-400 hover:bg-amber-300 text-[#021814] p-2 rounded-xl transition shadow font-bold active:scale-95"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -521,13 +516,13 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
       {/* --- PROFILE SETUP MODAL --- */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#052b22] rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-emerald-800/60">
+          <div className="bg-[#04241d] rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-[#0a4034]/80">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-amber-50 text-sm flex items-center gap-2">
+              <h3 className="font-semibold text-[#f7e8cf] text-sm flex items-center gap-2">
                 <User className="text-amber-400" size={16} /> Set Your Display Profile
               </h3>
               {isProfileSet && (
-                <button onClick={() => setShowProfileModal(false)} className="text-emerald-400 hover:text-emerald-100">
+                <button onClick={() => setShowProfileModal(false)} className="text-emerald-400 hover:text-slate-100">
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -546,7 +541,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                   value={tempNickname}
                   onChange={(e) => setTempNickname(e.target.value)}
                   placeholder="e.g. Ali Ahmed"
-                  className="w-full px-3 py-2 bg-[#031d17] border border-emerald-900/60 rounded-xl text-xs text-emerald-100 focus:outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 bg-[#021511] border border-[#0a4034]/70 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-400"
                 />
               </div>
 
@@ -557,13 +552,13 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                   value={tempEmail}
                   onChange={(e) => setTempEmail(e.target.value)}
                   placeholder="ali@example.com"
-                  className="w-full px-3 py-2 bg-[#031d17] border border-emerald-900/60 rounded-xl text-xs text-emerald-100 focus:outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 bg-[#021511] border border-[#0a4034]/70 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-amber-400 hover:bg-amber-300 text-[#03221b] font-semibold py-2.5 rounded-xl text-xs transition mt-2 shadow"
+                className="w-full bg-amber-400 hover:bg-amber-300 text-[#021814] font-semibold py-2.5 rounded-xl text-xs transition mt-2 shadow"
               >
                 Save & Continue
               </button>
@@ -575,23 +570,23 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
       {/* --- FULL ARTICLE VIEW MODAL --- */}
       {selectedPost && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#052b22] rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative text-emerald-100 border border-emerald-800/60">
+          <div className="bg-[#04241d] rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative text-slate-100 border border-[#0a4034]/80">
             <button
               onClick={() => setSelectedPost(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-[#031d17] text-emerald-400 hover:text-amber-400 transition"
+              className="absolute top-4 right-4 p-2 rounded-full bg-[#021511] text-emerald-400 hover:text-amber-400 transition"
             >
               <X size={16} />
             </button>
 
-            <div className="h-52 sm:h-64 rounded-2xl overflow-hidden bg-[#031d17]">
+            <div className="h-52 sm:h-64 rounded-2xl overflow-hidden bg-[#021511]">
               <img src={selectedPost.img} alt={selectedPost.title} className="w-full h-full object-cover" />
             </div>
 
-            <div className="space-y-2 border-b border-emerald-900/60 pb-4">
+            <div className="space-y-2 border-b border-[#0a4034]/80 pb-4">
               <span className="text-xs text-amber-300 font-medium bg-amber-400/10 px-3 py-0.5 rounded-full border border-amber-400/20">
                 {selectedPost.category}
               </span>
-              <h2 className="text-xl sm:text-2xl font-serif font-normal pt-2 text-amber-50">{selectedPost.title}</h2>
+              <h2 className="text-xl sm:text-2xl font-serif font-normal pt-2 text-[#f7e8cf]">{selectedPost.title}</h2>
               <div className="flex items-center justify-between text-xs text-emerald-400/80 pt-1">
                 <span>
                   By <strong className="text-amber-400 font-medium">{selectedPost.author}</strong>
@@ -612,16 +607,16 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
       {/* --- SUBMIT ARTICLE MODAL --- */}
       {isSubmitOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#052b22] rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative text-emerald-100 border border-emerald-800/60">
+          <div className="bg-[#04241d] rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative text-slate-100 border border-[#0a4034]/80">
             <button
               onClick={() => setIsSubmitOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-[#031d17] text-emerald-400 hover:text-amber-400 transition"
+              className="absolute top-4 right-4 p-2 rounded-full bg-[#021511] text-emerald-400 hover:text-amber-400 transition"
             >
               <X size={16} />
             </button>
 
             <div className="space-y-1">
-              <h2 className="text-lg sm:text-xl font-serif font-normal text-amber-50">Submit Your Article</h2>
+              <h2 className="text-lg sm:text-xl font-serif font-normal text-[#f7e8cf]">Submit Your Article</h2>
               <p className="text-emerald-300/70 text-xs">Share your beneficial knowledge and thoughts with the community.</p>
             </div>
 
@@ -640,7 +635,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g. Benefits of Giving Charity in Secret"
-                    className="w-full px-3 py-2 rounded-xl bg-[#031d17] border border-emerald-900/60 text-emerald-100 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
@@ -653,7 +648,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                       value={formData.author}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                       placeholder="e.g. Brother Ali"
-                      className="w-full px-3 py-2 rounded-xl bg-[#031d17] border border-emerald-900/60 text-emerald-100 focus:outline-none focus:border-amber-400"
+                      className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
                     />
                   </div>
 
@@ -662,7 +657,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-[#031d17] border border-emerald-900/60 text-emerald-100 focus:outline-none focus:border-amber-400"
+                      className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
                     >
                       {CATEGORIES.filter((c) => c !== 'All').map((c) => (
                         <option key={c} value={c}>
@@ -682,7 +677,7 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                     value={formData.img}
                     onChange={(e) => setFormData({ ...formData, img: e.target.value })}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3 py-2 rounded-xl bg-[#031d17] border border-emerald-900/60 text-emerald-100 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
@@ -694,13 +689,13 @@ const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar',
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     placeholder="Write your main article text here..."
-                    className="w-full px-3 py-2 rounded-xl bg-[#031d17] border border-emerald-900/60 text-emerald-100 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-[#021511] border border-[#0a4034]/70 text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#03221b] font-semibold text-xs sm:text-sm transition shadow flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#021814] font-semibold text-xs sm:text-sm transition shadow flex items-center justify-center gap-2"
                 >
                   <Send size={14} /> Publish Article
                 </button>
