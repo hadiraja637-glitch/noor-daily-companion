@@ -143,7 +143,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
       } catch {
         setData(null);
       }
-    } finally {
+    } flex {
       setLoading(false);
     }
   };
@@ -352,7 +352,6 @@ function PrayerTimesSection() {
   const timings = data?.timings ?? [];
   const [now, setNow] = useState(() => new Date());
 
-  // Dynamic Verse Selection based on Day of Year
   const dailyVerse = useMemo(() => {
     const today = new Date();
     const start = new Date(today.getFullYear(), 0, 0);
@@ -479,7 +478,6 @@ function PrayerTimesSection() {
             </div>
           </div>
 
-          {/* VERSE OF THE DAY CARD WITH DYNAMIC QURANIC VERSE */}
           <FadeIn className="xl:col-span-1">
             <div className="rounded-2xl overflow-hidden h-full flex flex-col shadow-lg" style={{ border: '1px solid rgba(232,189,75,0.3)', background: '#103329' }}>
               <div className="relative h-36 sm:h-40 overflow-hidden">
@@ -819,8 +817,6 @@ function HadithDhikrCalendar() {
                       }}
                     >
                       {d}
-                    </button>
-                   recommendation
                     </button>
                   ))}
                 </div>
