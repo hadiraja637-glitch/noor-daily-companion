@@ -39,31 +39,42 @@ export default function Footer() {
         }}
       />
 
+      {/* Top Bar - Single Full Width Subscribe Card */}
       <div className="relative max-w-[1400px] mx-auto px-4 lg:px-8 pt-6 lg:pt-10">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_.8fr] gap-3 mb-8">
-     {/* Top Bar - Single Full Width Subscribe Card */}
-<div className="max-w-[1400px] mx-auto px-4 lg:px-8 pt-6 lg:pt-10">
-  <div className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
-    style={{ background: 'rgba(16,51,41,0.72)', border: '1px solid rgba(24,185,138,0.28)' }}>
-    <div className="flex items-center gap-3.5">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(232,189,75,0.12)' }}>
-        <Mail size={20} className="text-noor-gold" />
-      </div>
-      <div>
-        <p className="text-noor-ivory text-sm font-semibold">Stay Connected</p>
-        <p className="text-noor-muted text-[11px]">Get the latest Islamic content, reminders and updates.</p>
-      </div>
-    </div>
-    
-    <form className="flex w-full sm:w-auto sm:min-w-[340px]" onSubmit={handleSubscribe}>
-      <input aria-label="Email address" type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSubscribed(false); }} placeholder="Enter your email address"
-        className="min-w-0 flex-1 rounded-l-full px-4 py-2.5 text-xs text-noor-ivory bg-transparent border border-noor-border outline-none focus:border-noor-gold/60" />
-      <button type="submit" className="rounded-r-full px-5 py-2.5 text-xs font-semibold whitespace-nowrap" style={{ background: '#E8BD4B', color: '#061812' }}>
-        {subscribed ? 'Saved ✓' : <>Subscribe <ArrowRight size={13} className="inline ml-1" /></>}
-      </button>
-    </form>
-  </div>
-</div>       
+        <div
+          className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+          style={{ background: 'rgba(16,51,41,0.72)', border: '1px solid rgba(24,185,138,0.28)' }}
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(232,189,75,0.12)' }}>
+              <Mail size={20} className="text-noor-gold" />
+            </div>
+            <div>
+              <p className="text-noor-ivory text-sm font-semibold">Stay Connected</p>
+              <p className="text-noor-muted text-[11px]">Get the latest Islamic content, reminders and updates.</p>
+            </div>
+          </div>
+          
+          <form className="flex w-full sm:w-auto sm:min-w-[340px]" onSubmit={handleSubscribe}>
+            <input
+              aria-label="Email address"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setSubscribed(false); }}
+              placeholder="Enter your email address"
+              className="min-w-0 flex-1 rounded-l-full px-4 py-2.5 text-xs text-noor-ivory bg-transparent border border-noor-border outline-none focus:border-noor-gold/60"
+            />
+            <button
+              type="submit"
+              className="rounded-r-full px-5 py-2.5 text-xs font-semibold whitespace-nowrap"
+              style={{ background: '#E8BD4B', color: '#061812' }}
+            >
+              {subscribed ? 'Saved ✓' : <>Subscribe <ArrowRight size={13} className="inline ml-1" /></>}
+            </button>
+          </form>
+        </div>
+      </div>       
       
       {/* Main Footer Section */}
       <div className="relative max-w-[1400px] mx-auto px-4 lg:px-8 pt-2 pb-8">
