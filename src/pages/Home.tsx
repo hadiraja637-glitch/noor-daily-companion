@@ -143,7 +143,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
       } catch {
         setData(null);
       }
-    } flex {
+    } finally {
       setLoading(false);
     }
   };
