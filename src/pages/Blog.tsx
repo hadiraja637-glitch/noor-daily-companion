@@ -72,7 +72,7 @@ const DEFAULT_POSTS: BlogPost[] = [
 
 const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar', 'Community & Life'];
 
-export const Blog: React.FC = () => {
+const Blog: React.FC = () => {
   // --- Persistent User Profile ---
   const [userName, setUserName] = useState<string>(() => localStorage.getItem('noor_user_nickname') || '');
   const [userEmail, setUserEmail] = useState<string>(() => localStorage.getItem('noor_user_email') || '');
@@ -694,3 +694,4 @@ export const Blog: React.FC = () => {
     </div>
   );
 };
+export default Blog;
