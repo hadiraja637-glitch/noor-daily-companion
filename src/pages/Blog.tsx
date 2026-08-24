@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Search, PlusCircle, Clock, Tag, X, Check, BookOpen, Send, User } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare, ShieldAlert, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -14,6 +14,14 @@ interface BlogPost {
   featured?: boolean;
 }
 
+interface ChatMessage {
+  id: string;
+  user: string;
+  text: string;
+  time: string;
+  isIslamicLink?: boolean;
+}
+
 const DEFAULT_POSTS: BlogPost[] = [
   {
     id: '1',
@@ -24,7 +32,7 @@ const DEFAULT_POSTS: BlogPost[] = [
     author: 'Sheikh Omar Al-Sayed',
     date: 'Aug 18, 2026',
     readTime: '5 min read',
-    img: 'https://images.unsplash.com/photo-1577214407836-1f609e23298e?auto=format&fit=crop&w=800&q=80',
+    img: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=1000&q=80',
     featured: true,
   },
   {
@@ -51,17 +59,44 @@ const DEFAULT_POSTS: BlogPost[] = [
   },
 ];
 
+const INITIAL_CHAT: ChatMessage[] = [
+  {
+    id: '1',
+    user: 'Brother Hamza',
+    text: 'Assalamu Alaikum everyone! Share your favorite Islamic lecture or Youtube link here.',
+    time: '10:15 AM',
+  },
+  {
+    id: '2',
+    user: 'Sister Ayesha',
+    text: 'Wa Alaikum Assalam! Check this beautiful Quran recitation: https://youtube.com/watch?v=sample',
+    time: '10:18 AM',
+    isIslamicLink: true,
+  },
+];
+
 const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar', 'Community & Life'];
+
+// Banned keywords filter (dating, bad words, non-islamic social networking)
+const BANNED_KEYWORDS = ['bf', 'gf', 'dating', 'relationship', 'love u', 'sexy', 'number', 'whatsapp', 'fuck', 'shit', 'abuse'];
 
 export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Modals
+  // Modals & Chat
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [isSubmitOpen, setIsSubmitOpen] = useState<boolean>(false);
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
+
+  // Chat State
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT);
+  const [newMsg, setNewMsg] = useState('');
+  const [userName, setUserName] = useState('');
+  const [chatError, setChatError] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Form State for User CMS
   const [formData, setFormData] = useState({
@@ -71,21 +106,35 @@ export default function Blog() {
     readTime: '3 min read',
     excerpt: '',
     content: '',
+    img: '',
   });
 
-  // Load posts from LocalStorage or default
+  // Load posts & chat from LocalStorage
   useEffect(() => {
-    const saved = localStorage.getItem('noor_user_blogs');
-    if (saved) {
+    const savedBlogs = localStorage.getItem('noor_user_blogs');
+    if (savedBlogs) {
       try {
-        setPosts([...JSON.parse(saved), ...DEFAULT_POSTS]);
+        setPosts([...JSON.parse(savedBlogs), ...DEFAULT_POSTS]);
       } catch (e) {
         setPosts(DEFAULT_POSTS);
       }
     } else {
       setPosts(DEFAULT_POSTS);
     }
+
+    const savedChat = localStorage.getItem('noor_community_chat');
+    if (savedChat) {
+      try {
+        setChatMessages(JSON.parse(savedChat));
+      } catch (e) {}
+    }
   }, []);
+
+  useEffect(() => {
+    if (isChatOpen) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isChatOpen]);
 
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
@@ -107,12 +156,12 @@ export default function Blog() {
       id: Date.now().toString(),
       title: formData.title,
       category: formData.category,
-      excerpt: formData.excerpt || formData.content.slice(0, 100) + '...',
+      excerpt: formData.excerpt || formData.content.slice(0, 110) + '...',
       content: formData.content,
       author: formData.author,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
       readTime: formData.readTime,
-      img: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=800&q=80',
+      img: formData.img.trim() || 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=800&q=80',
     };
 
     const updated = [newPost, ...posts];
@@ -123,8 +172,38 @@ export default function Blog() {
     setTimeout(() => {
       setSubmittedSuccess(false);
       setIsSubmitOpen(false);
-      setFormData({ title: '', category: 'Spiritual Growth', author: '', readTime: '3 min read', excerpt: '', content: '' });
+      setFormData({ title: '', category: 'Spiritual Growth', author: '', readTime: '3 min read', excerpt: '', content: '', img: '' });
     }, 1800);
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    setChatError('');
+
+    if (!newMsg.trim()) return;
+
+    const lowerMsg = newMsg.toLowerCase();
+    const containsBadWords = BANNED_KEYWORDS.some((word) => lowerMsg.includes(word));
+
+    if (containsBadWords) {
+      setChatError('Message rejected! Only polite, respectful Islamic discussions and links are allowed.');
+      return;
+    }
+
+    const isLink = lowerMsg.includes('http://') || lowerMsg.includes('https://') || lowerMsg.includes('youtube.com') || lowerMsg.includes('youtu.be');
+
+    const messageObj: ChatMessage = {
+      id: Date.now().toString(),
+      user: userName.trim() || 'Anonymous Servant',
+      text: newMsg.trim(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isIslamicLink: isLink,
+    };
+
+    const updatedChat = [...chatMessages, messageObj];
+    setChatMessages(updatedChat);
+    localStorage.setItem('noor_community_chat', JSON.stringify(updatedChat));
+    setNewMsg('');
   };
 
   return (
@@ -138,20 +217,28 @@ export default function Blog() {
           </div>
           <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-wide">Knowledge & Reflections</h1>
           <p className="text-noor-muted text-xs sm:text-sm max-w-xl mx-auto">
-            Explore articles on spiritual growth, Islamic guidance, and contribute your own writings to the community.
+            Explore Islamic guidance, contribute articles, and join our public Islamic community chat.
           </p>
 
-          <button
-            onClick={() => setIsSubmitOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 mt-2 rounded-xl bg-[#E8BD4B] text-[#061812] font-semibold text-xs sm:text-sm hover:bg-[#f2ca5c] transition-all shadow-md"
-          >
-            <PlusCircle size={16} /> Submit Your Article
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => setIsSubmitOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E8BD4B] text-[#061812] font-semibold text-xs sm:text-sm hover:bg-[#f2ca5c] transition-all shadow-md"
+            >
+              <PlusCircle size={16} /> Submit Your Article
+            </button>
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/40 text-[#E8BD4B] font-semibold text-xs sm:text-sm hover:bg-[#1A4035] transition-all"
+            >
+              <MessageSquare size={16} /> Public Islamic Chat
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 lg:px-8 space-y-6">
-        {/* Controls Bar: Search & Categories */}
+        {/* Search & Categories Controls */}
         <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
           <div className="relative w-full sm:w-72">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-noor-muted" />
@@ -190,7 +277,7 @@ export default function Blog() {
                 onClick={() => setSelectedPost(feat)}
                 className="cursor-pointer group relative rounded-2xl overflow-hidden bg-[#103329] border border-[#E8BD4B]/40 hover:border-[#E8BD4B] transition-all grid grid-cols-1 md:grid-cols-12 shadow-xl"
               >
-                <div className="md:col-span-5 h-48 md:h-auto overflow-hidden">
+                <div className="md:col-span-5 h-52 md:h-auto overflow-hidden relative">
                   <img src={feat.img} alt={feat.title} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
                 </div>
                 <div className="md:col-span-7 p-5 sm:p-6 flex flex-col justify-between space-y-3">
@@ -216,7 +303,7 @@ export default function Blog() {
           })()
         )}
 
-        {/* Blog Grid */}
+        {/* Blog Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredPosts.map((post) => (
             <div
@@ -225,7 +312,7 @@ export default function Blog() {
               className="cursor-pointer group rounded-2xl bg-[#103329] border border-[#1A4035] hover:border-[#E8BD4B]/40 transition-all flex flex-col justify-between overflow-hidden shadow-md"
             >
               <div>
-                <div className="h-40 overflow-hidden relative">
+                <div className="h-44 overflow-hidden relative bg-[#0B2820]">
                   <img src={post.img} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
                   <span className="absolute top-3 left-3 text-[10px] font-semibold text-noor-ivory bg-[#061812]/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#1A4035]">
                     {post.category}
@@ -263,11 +350,15 @@ export default function Blog() {
               <X size={18} />
             </button>
 
+            <div className="h-48 sm:h-64 rounded-xl overflow-hidden">
+              <img src={selectedPost.img} alt={selectedPost.title} className="w-full h-full object-cover" />
+            </div>
+
             <div className="space-y-2 border-b border-[#1A4035] pb-4">
               <span className="text-xs text-[#E8BD4B] font-semibold bg-[#E8BD4B]/10 px-2.5 py-1 rounded-full border border-[#E8BD4B]/20">
                 {selectedPost.category}
               </span>
-              <h2 className="font-display text-xl sm:text-2xl font-bold pt-2">{selectedPost.title}</h2>
+              <h2 className="font-display text-xl sm:text-2xl font-bold pt-1">{selectedPost.title}</h2>
               <div className="flex items-center justify-between text-xs text-noor-muted pt-1">
                 <span>By <strong className="text-noor-ivory">{selectedPost.author}</strong></span>
                 <span>{selectedPost.date} • {selectedPost.readTime}</span>
@@ -281,7 +372,7 @@ export default function Blog() {
         </div>
       )}
 
-      {/* USER SUBMISSION CMS MODAL */}
+      {/* SUBMIT ARTICLE MODAL */}
       {isSubmitOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#0B2820] border border-[#E8BD4B]/30 rounded-2xl max-w-lg w-full p-5 sm:p-7 space-y-4 shadow-2xl relative text-noor-ivory">
@@ -294,13 +385,13 @@ export default function Blog() {
 
             <div className="space-y-1">
               <h2 className="font-display text-lg sm:text-xl font-bold text-[#E8BD4B]">Submit Your Article</h2>
-              <p className="text-noor-muted text-xs">Share your thoughts, Islamic articles, or reflections with the community.</p>
+              <p className="text-noor-muted text-xs">Share your Islamic thoughts or reflections with the community.</p>
             </div>
 
             {submittedSuccess ? (
               <div className="py-8 text-center space-y-3 text-emerald-400">
                 <Check size={36} className="mx-auto animate-bounce" />
-                <p className="text-sm font-semibold">Article Submitted & Published Successfully!</p>
+                <p className="text-sm font-semibold">Article Published Successfully!</p>
               </div>
             ) : (
               <form onSubmit={handleSubmitArticle} className="space-y-3 text-xs sm:text-sm">
@@ -344,12 +435,14 @@ export default function Blog() {
                 </div>
 
                 <div>
-                  <label className="block text-noor-muted mb-1 text-xs">Short Excerpt / Summary</label>
+                  <label className="block text-noor-muted mb-1 text-xs flex items-center gap-1">
+                    <ImageIcon size={12} /> Image URL (Optional)
+                  </label>
                   <input
-                    type="text"
-                    value={formData.excerpt}
-                    onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                    placeholder="Brief 1-2 sentence preview..."
+                    type="url"
+                    value={formData.img}
+                    onChange={(e) => setFormData({ ...formData, img: e.target.value })}
+                    placeholder="https://images.unsplash.com/..."
                     className="w-full px-3 py-2 rounded-xl bg-[#103329] border border-[#1A4035] focus:outline-none focus:border-[#E8BD4B]"
                   />
                 </div>
@@ -374,6 +467,81 @@ export default function Blog() {
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* PUBLIC ISLAMIC COMMUNITY CHAT MODAL */}
+      {isChatOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-[#0B2820] border border-[#1A4035] rounded-2xl max-w-lg w-full h-[85vh] flex flex-col justify-between shadow-2xl relative text-noor-ivory overflow-hidden">
+            {/* Chat Header */}
+            <div className="p-4 border-b border-[#1A4035] bg-[#103329] flex items-center justify-between">
+              <div>
+                <h3 className="font-display font-bold text-sm sm:text-base text-[#E8BD4B] flex items-center gap-2">
+                  <MessageSquare size={16} /> Public Islamic Community
+                </h3>
+                <p className="text-[11px] text-noor-muted">Share Islamic reminders, Youtube links & knowledge only.</p>
+              </div>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="p-1.5 rounded-full bg-[#061812] text-noor-muted hover:text-noor-ivory"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Chat Body */}
+            <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-[#061812]/50">
+              {chatMessages.map((msg) => (
+                <div key={msg.id} className="bg-[#103329] border border-[#1A4035] p-3 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-[#E8BD4B]">{msg.user}</span>
+                    <span className="text-noor-muted/60">{msg.time}</span>
+                  </div>
+                  <p className="text-xs text-noor-ivory/90 leading-relaxed break-words">{msg.text}</p>
+                  {msg.isIslamicLink && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 pt-1">
+                      <LinkIcon size={10} /> Verified Islamic / Video Link
+                    </span>
+                  )}
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Chat Input */}
+            <div className="p-3 border-t border-[#1A4035] bg-[#103329] space-y-2">
+              {chatError && (
+                <div className="flex items-center gap-1.5 text-[11px] text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                  <ShieldAlert size={14} /> {chatError}
+                </div>
+              )}
+              <form onSubmit={handleSendMessage} className="space-y-2">
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="Your Name (e.g. Brother Ahmad)"
+                  className="w-full px-3 py-1.5 rounded-lg bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMsg}
+                    onChange={(e) => setNewMsg(e.target.value)}
+                    placeholder="Type Islamic message or YouTube link..."
+                    className="flex-1 px-3 py-2 rounded-lg bg-[#061812] border border-[#1A4035] text-xs text-noor-ivory focus:outline-none focus:border-[#E8BD4B]"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3.5 py-2 rounded-lg bg-[#E8BD4B] text-[#061812] font-semibold text-xs hover:bg-[#f2ca5c] transition-all"
+                  >
+                    <Send size={14} />
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
