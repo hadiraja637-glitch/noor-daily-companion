@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router';
 import {
   BookOpen, MessageSquare, Heart, Compass, CalendarDays, DollarSign,
@@ -12,6 +12,52 @@ import {
 } from '../services/prayer';
 import { GLOBAL_LOCATIONS } from '../services/globalLocations';
 import { getDailyHadith } from '../data/dailyHadith';
+
+// Dynamic Verses List (Rotates Daily Based on Day of Year)
+const DAILY_VERSES = [
+  {
+    arabic: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
+    english: '"Indeed, with hardship comes ease."',
+    reference: "Qur'an 94:6",
+    surahLink: "/quran"
+  },
+  {
+    arabic: "وَقُل رَّبِّ زِدْنِي عِلْمًا",
+    english: '"And say: My Lord, increase me in knowledge."',
+    reference: "Qur'an 20:114",
+    surahLink: "/quran"
+  },
+  {
+    arabic: "إِنَّ اللَّهَ مَعَ الصَّابِرِينَ",
+    english: '"Indeed, Allah is with the patient."',
+    reference: "Qur'an 2:153",
+    surahLink: "/quran"
+  },
+  {
+    arabic: "فَاذْكُرُونِي أَذْكُرْكُمْ",
+    english: '"So remember Me; I will remember you."',
+    reference: "Qur'an 2:152",
+    surahLink: "/quran"
+  },
+  {
+    arabic: "حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ",
+    english: '"Sufficient for us is Allah, and He is the best Disposer of affairs."',
+    reference: "Qur'an 3:173",
+    surahLink: "/quran"
+  },
+  {
+    arabic: "وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ",
+    english: '"And He is with you wherever you are."',
+    reference: "Qur'an 57:4",
+    surahLink: "/quran"
+  },
+  {
+    arabic: "لَئِن شَكَرْتُمْ لأَزِيدَنَّكُمْ",
+    english: '"If you are grateful, I will surely increase you."',
+    reference: "Qur'an 14:7",
+    surahLink: "/quran"
+  }
+];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -306,6 +352,15 @@ function PrayerTimesSection() {
   const timings = data?.timings ?? [];
   const [now, setNow] = useState(() => new Date());
 
+  // Dynamic Verse Selection based on Day of Year
+  const dailyVerse = useMemo(() => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), 0, 0);
+    const diff = today.getTime() - start.getTime();
+    const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+    return DAILY_VERSES[dayOfYear % DAILY_VERSES.length];
+  }, []);
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
@@ -424,21 +479,37 @@ function PrayerTimesSection() {
             </div>
           </div>
 
+          {/* VERSE OF THE DAY CARD WITH DYNAMIC QURANIC VERSE */}
           <FadeIn className="xl:col-span-1">
-            <div className="rounded-2xl overflow-hidden h-full flex flex-col" style={{ border: '1px solid rgba(26,64,53,0.7)', background: '#103329' }}>
-              <div className="relative h-32 sm:h-36 overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=600&h=300&fit=crop&auto=format" alt="Quran" className="w-full h-full object-cover" loading="lazy" />
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(16,51,41,0.2), rgba(16,51,41,0.85))' }} />
-                <span className="absolute top-3 right-3 text-xs px-2.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(232,189,75,0.2)', color: '#E8BD4B', border: '1px solid rgba(232,189,75,0.3)' }}>Qur'an</span>
+            <div className="rounded-2xl overflow-hidden h-full flex flex-col shadow-lg" style={{ border: '1px solid rgba(232,189,75,0.3)', background: '#103329' }}>
+              <div className="relative h-36 sm:h-40 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=800&q=80" 
+                  alt="Quran Holy Book" 
+                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" 
+                  loading="lazy" 
+                />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(16,51,41,0.25), rgba(16,51,41,0.95))' }} />
+                <span className="absolute top-3 right-3 text-xs px-2.5 py-1 rounded-full font-semibold shadow-md backdrop-blur-md" style={{ background: 'rgba(232,189,75,0.25)', color: '#E8BD4B', border: '1px solid rgba(232,189,75,0.4)' }}>
+                  ✨ Daily Qur'an
+                </span>
               </div>
-              <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+              <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
                 <div>
-                  <h3 className="font-display text-noor-ivory text-base font-semibold mb-2">Verse of the Day</h3>
-                  <p className="font-arabic text-noor-gold text-lg sm:text-xl leading-loose mb-2 text-right" style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}>فَإِنَّ مَعَ الْعُسْرِ يُسْرًا</p>
-                  <p className="text-noor-ivory/80 text-xs sm:text-sm italic mb-1">"Indeed, with hardship comes ease."</p>
-                  <p className="text-noor-muted text-xs mb-4">— Qur'an 94:6</p>
+                  <h3 className="font-display text-noor-ivory text-base font-semibold mb-2 flex items-center gap-1.5">
+                    Verse of the Day
+                  </h3>
+                  <p className="font-arabic text-noor-gold text-xl sm:text-2xl leading-loose mb-2 text-right" style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}>
+                    {dailyVerse.arabic}
+                  </p>
+                  <p className="text-noor-ivory/90 text-xs sm:text-sm italic mb-1 leading-relaxed">
+                    {dailyVerse.english}
+                  </p>
+                  <p className="text-noor-muted text-xs font-medium">— {dailyVerse.reference}</p>
                 </div>
-                <Link to="/quran" className="flex items-center gap-2 text-xs sm:text-sm text-noor-gold hover:underline">Read Full Surah <ArrowRight size={13} /></Link>
+                <Link to={dailyVerse.surahLink} className="flex items-center gap-2 text-xs sm:text-sm text-noor-gold hover:underline font-semibold pt-2 border-t border-[#1A4035]/60">
+                  Read Full Surah <ArrowRight size={13} />
+                </Link>
               </div>
             </div>
           </FadeIn>
@@ -748,6 +819,8 @@ function HadithDhikrCalendar() {
                       }}
                     >
                       {d}
+                    </button>
+                   recommendation
                     </button>
                   ))}
                 </div>
