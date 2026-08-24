@@ -77,13 +77,6 @@ export default function Stories() {
                 className="w-full bg-[#072018] text-noor-ivory text-xs sm:text-sm pl-9 pr-4 py-2.5 rounded-xl border border-noor-border outline-none focus:border-noor-gold/60 transition-colors placeholder:text-noor-muted/60"
               />
             </div>
-            <button
-              onClick={() => setLang(lang === 'en' ? 'ur' : 'en')}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium border border-noor-gold/40 text-noor-gold hover:bg-noor-gold/10 transition-colors w-full sm:w-auto justify-center"
-            >
-              <Languages size={14} />
-              {lang === 'en' ? 'اردو میں پڑھیں' : 'Switch to English'}
-            </button>
           </div>
         </div>
       </div>
