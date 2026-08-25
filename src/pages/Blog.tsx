@@ -61,7 +61,7 @@ export const Blog: React.FC = () => {
   const [profileInput, setProfileInput] = useState({ name: '', email: '' });
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [hasNewMessage, setHasNewMessage] = useState<boolean>(false);
   const [newMsg, setNewMsg] = useState('');
   const [chatError, setChatError] = useState('');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -134,7 +134,9 @@ export const Blog: React.FC = () => {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'public_chat' },
           (payload: any) => {
-            if (payload.eventType === 'INSERT') {
+            if (!isChatOpen) {
+                setHasNewMessage(true);
+              }
               const newItem = payload.new;
               const newMsgObj: ChatMessage = {
                 id: newItem.id.toString(),
@@ -327,13 +329,13 @@ export const Blog: React.FC = () => {
             <button
               onClick={() => {
                 setIsChatOpen(true);
-                setUnreadCount(0);
+                setHasNewMessage(false);
               }}
               className="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/40 text-[#E8BD4B] font-semibold text-xs sm:text-sm hover:bg-[#1A4035] transition-all shadow-md"
             >
               <MessageSquare size={16} /> Public Live Chat
-              {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#061812] animate-ping shadow-lg" />
+              {hasNewMessage && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#061812] animate-ping" />
               )}
             </button>
           </div>
