@@ -333,9 +333,7 @@ export const Blog: React.FC = () => {
             >
               <MessageSquare size={16} /> Public Live Chat
               {unreadCount > 0 && (
-                <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-[10px] font-bold shadow-lg border border-white/20 animate-pulse">
-                  +{unreadCount} new
-                </span>
+                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#061812] animate-ping shadow-lg" />
               )}
             </button>
           </div>
