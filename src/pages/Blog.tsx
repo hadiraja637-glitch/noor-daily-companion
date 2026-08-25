@@ -41,17 +41,6 @@ const DEFAULT_POSTS: BlogPost[] = [
     img: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=1000&q=80',
     featured: true,
   },
-  {
-    id: '2',
-    title: 'Understanding Tahajjud: The Miracle Prayer of the Night',
-    category: 'Salah & Prayer',
-    excerpt: 'Discover the immense blessings, spiritual tranquility, and steps to wake up for Tahajjud prayer.',
-    content: `Tahajjud is considered one of the most powerful voluntary prayers in Islam. Allah descends to the lowest heaven during the last third of the night, asking: "Who is calling upon Me so that I may answer him?"\n\n**Tips to Wake Up for Tahajjud:**\n- Sleep early with Wudu.\n- Set an intention (Niyyah) before sleeping.\n- Keep your alarm out of arm's reach.`,
-    author: 'Fatima Noor',
-    date: 'Aug 12, 2026',
-    readTime: '4 min read',
-    img: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80',
-  },
 ];
 
 const CATEGORIES = ['All', 'Spiritual Growth', 'Salah & Prayer', 'Duas & Azkar', 'Community & Life'];
@@ -62,18 +51,15 @@ export const Blog: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Modals & Chat
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [isSubmitOpen, setIsSubmitOpen] = useState<boolean>(false);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
 
-  // Profile Gate Modal & User State
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileInput, setProfileInput] = useState({ name: '', email: '' });
 
-  // Chat & Unread Badge State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [newMsg, setNewMsg] = useState('');
@@ -81,9 +67,7 @@ export const Blog: React.FC = () => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const chatChannelRef = useRef<BroadcastChannel | null>(null);
 
-  // Submit Article Form State
   const [formData, setFormData] = useState({
     title: '',
     category: 'Spiritual Growth',
@@ -94,7 +78,6 @@ export const Blog: React.FC = () => {
     img: '',
   });
 
-  // Load Saved Storage & Profile
   useEffect(() => {
     const savedBlogs = localStorage.getItem('noor_user_blogs');
     if (savedBlogs) {
@@ -107,13 +90,6 @@ export const Blog: React.FC = () => {
       setPosts(DEFAULT_POSTS);
     }
 
-    const savedChat = localStorage.getItem('noor_community_chat');
-    if (savedChat) {
-      try {
-        setChatMessages(JSON.parse(savedChat));
-      } catch (e) {}
-    }
-
     const savedProfile = localStorage.getItem('noor_user_profile');
     if (savedProfile) {
       try {
@@ -122,48 +98,77 @@ export const Blog: React.FC = () => {
     }
   }, []);
 
-  // Dual Live Sync: BroadcastChannel + Storage Event Listener
+  // Supabase CDN Realtime Connection Setup
   useEffect(() => {
-    // 1. BroadcastChannel API setup
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      const channel = new BroadcastChannel('noor_chat_broadcast_v2');
-      chatChannelRef.current = channel;
+    const initSupabaseChat = async () => {
+      const supWindow = (window as any).supabase;
+      if (!supWindow) return;
 
-      channel.onmessage = (event) => {
-        if (event.data && event.data.type === 'SYNC_MESSAGES') {
-          const incomingMsgs: ChatMessage[] = event.data.messages;
-          setChatMessages(incomingMsgs);
-          if (!isChatOpen) {
-            setUnreadCount((prev) => prev + 1);
+      const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
+      const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
+
+      const supabaseClient = supWindow.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Fetch existing messages
+      const { data, error } = await supabaseClient
+        .from('public_chat')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        const formatted: ChatMessage[] = data.map((item: any) => ({
+          id: item.id.toString(),
+          user: item.user_name,
+          email: item.email,
+          text: item.text,
+          linkUrl: item.link_url || undefined,
+          time: item.time,
+        }));
+        setChatMessages(formatted);
+      }
+
+      // Realtime subscription (YouTube live style)
+      const channel = supabaseClient
+        .channel('public_chat_room')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'public_chat' },
+          (payload: any) => {
+            if (payload.eventType === 'INSERT') {
+              const newItem = payload.new;
+              const newMsgObj: ChatMessage = {
+                id: newItem.id.toString(),
+                user: newItem.user_name,
+                email: newItem.email,
+                text: newItem.text,
+                linkUrl: newItem.link_url || undefined,
+                time: newItem.time,
+              };
+
+              setChatMessages((prev) => {
+                if (prev.some((m) => m.id === newMsgObj.id)) return prev;
+                return [...prev, newMsgObj];
+              });
+
+              if (!isChatOpen) {
+                setUnreadCount((prev) => prev + 1);
+              }
+            } else if (payload.eventType === 'DELETE') {
+              const deletedId = payload.old.id.toString();
+              setChatMessages((prev) => prev.filter((m) => m.id !== deletedId));
+            }
           }
-        }
+        )
+        .subscribe();
+
+      return () => {
+        supabaseClient.removeChannel(channel);
       };
-    }
-
-    // 2. Storage Event Listener (Cross-tab live sync fallback)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'noor_community_chat' && e.newValue) {
-        try {
-          const parsed: ChatMessage[] = JSON.parse(e.newValue);
-          setChatMessages(parsed);
-          if (!isChatOpen) {
-            setUnreadCount((prev) => prev + 1);
-          }
-        } catch (err) {}
-      }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      if (chatChannelRef.current) {
-        chatChannelRef.current.close();
-      }
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    initSupabaseChat();
   }, [isChatOpen]);
 
-  // Auto Reset Unread & Scroll on Chat Open
   useEffect(() => {
     if (isChatOpen) {
       setUnreadCount(0);
@@ -259,32 +264,26 @@ export const Blog: React.FC = () => {
     executeSendMessage(userProfile);
   };
 
-  const executeSendMessage = (profile: UserProfile) => {
+  const executeSendMessage = async (profile: UserProfile) => {
+    const supWindow = (window as any).supabase;
+    if (!supWindow) return;
+
+    const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
+    const supabaseClient = supWindow.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const detectedLink = extractUrl(newMsg);
     const cleanText = newMsg.replace(/(https?:\/\/[^\s]+)/g, '').trim();
 
-    const messageObj: ChatMessage = {
-      id: Date.now().toString(),
-      user: profile.name,
+    const messageData = {
+      user_name: profile.name,
       email: profile.email,
       text: cleanText || (detectedLink ? 'Shared an Islamic Resource Link:' : newMsg),
-      linkUrl: detectedLink || undefined,
+      link_url: detectedLink || null,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    const updatedChat = [...chatMessages, messageObj];
-    setChatMessages(updatedChat);
-    
-    // Save to localStorage immediately so storage event fires for other tabs/IDs
-    localStorage.setItem('noor_community_chat', JSON.stringify(updatedChat));
-
-    // Broadcast instantly via BroadcastChannel
-    if (chatChannelRef.current) {
-      chatChannelRef.current.postMessage({
-        type: 'SYNC_MESSAGES',
-        messages: updatedChat,
-      });
-    }
+    await supabaseClient.from('public_chat').insert([messageData]);
 
     setNewMsg('');
     setTimeout(() => {
@@ -292,16 +291,13 @@ export const Blog: React.FC = () => {
     }, 100);
   };
 
-  const handleDeleteMessage = (id: string) => {
-    const updated = chatMessages.filter((m) => m.id !== id);
-    setChatMessages(updated);
-    localStorage.setItem('noor_community_chat', JSON.stringify(updated));
-
-    if (chatChannelRef.current) {
-      chatChannelRef.current.postMessage({
-        type: 'SYNC_MESSAGES',
-        messages: updated,
-      });
+  const handleDeleteMessage = async (id: string) => {
+    const supWindow = (window as any).supabase;
+    if (supWindow) {
+      const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
+      const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
+      const supabaseClient = supWindow.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      await supabaseClient.from('public_chat').delete().eq('id', id);
     }
     setActiveMenuId(null);
   };
@@ -317,7 +313,7 @@ export const Blog: React.FC = () => {
           </div>
           <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-wide">Knowledge & Reflections</h1>
           <p className="text-noor-muted text-xs sm:text-sm max-w-xl mx-auto">
-            Read verified Islamic posts, publish your reflections, and participate in our moderated Islamic chat room.
+            Read verified Islamic posts, publish your reflections, and participate in our live moderated Islamic chat room.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -335,7 +331,7 @@ export const Blog: React.FC = () => {
               }}
               className="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#103329] border border-[#E8BD4B]/40 text-[#E8BD4B] font-semibold text-xs sm:text-sm hover:bg-[#1A4035] transition-all shadow-md"
             >
-              <MessageSquare size={16} /> Public Islamic Chat
+              <MessageSquare size={16} /> Public Live Chat
               {unreadCount > 0 && (
                 <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-[10px] font-bold shadow-lg border border-white/20 animate-pulse">
                   +{unreadCount} new
@@ -579,7 +575,7 @@ export const Blog: React.FC = () => {
         </div>
       )}
 
-      {/* FIRST-TIME REQUIRED PROFILE MODAL */}
+      {/* REQUIRED PROFILE MODAL */}
       {isProfileModalOpen && (
         <div className="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0B2820] border border-[#E8BD4B]/40 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative text-noor-ivory animate-in fade-in zoom-in-95">
@@ -589,7 +585,7 @@ export const Blog: React.FC = () => {
               </div>
               <h3 className="font-display text-xl font-bold text-[#E8BD4B]">Setup Your Profile</h3>
               <p className="text-noor-muted text-xs leading-relaxed">
-                Please enter your details once before joining the public Islamic conversation.
+                Please enter your details once before joining the public live chat.
               </p>
             </div>
 
@@ -626,14 +622,14 @@ export const Blog: React.FC = () => {
                 type="submit"
                 className="w-full py-3 rounded-xl bg-[#E8BD4B] text-[#061812] font-bold text-sm hover:bg-[#f2ca5c] transition-all shadow-md mt-2"
               >
-                Save & Continue to Chat
+                Save & Continue to Live Chat
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODERN PUBLIC CHAT MODAL */}
+      {/* YOUTUBE STYLE REALTIME LIVE CHAT MODAL */}
       {isChatOpen && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
           <div className="bg-[#081F18] border border-[#1A4035] rounded-2xl sm:rounded-3xl max-w-lg w-full h-[90dvh] sm:h-[85vh] flex flex-col justify-between shadow-2xl relative text-noor-ivory overflow-hidden">
@@ -646,8 +642,8 @@ export const Blog: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-display font-bold text-base text-noor-ivory flex items-center gap-2">
-                    Islamic Community Hub
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Islamic Live Stream Chat
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                   </h3>
                   
                   <div className="flex items-center gap-2 text-[11px] text-noor-muted">
@@ -656,7 +652,7 @@ export const Blog: React.FC = () => {
                     ) : (
                       <span className="text-amber-400 font-medium">Profile Pending</span>
                     )}
-                    <span className="text-emerald-400 font-semibold">• Live Stream Active</span>
+                    <span className="text-emerald-400 font-semibold">• Supabase Realtime</span>
                   </div>
                 </div>
               </div>
@@ -680,15 +676,15 @@ export const Blog: React.FC = () => {
               {chatMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2 text-noor-muted/60">
                   <MessageSquare size={36} className="text-[#E8BD4B]/40 mb-1" />
-                  <p className="text-sm font-semibold text-noor-ivory">No Community Messages Yet</p>
-                  <p className="text-xs max-w-xs">Be the first to share an Islamic reminder or reference link with everyone!</p>
+                  <p className="text-sm font-semibold text-noor-ivory">Live Chat is Ready!</p>
+                  <p className="text-xs max-w-xs">Send a message below and watch it sync instantly via Supabase Realtime.</p>
                 </div>
               ) : (
                 chatMessages.map((msg) => {
                   const isMyMessage = userProfile && msg.email === userProfile.email;
 
                   return (
-                    <div key={msg.id} className="flex gap-3 items-start group relative">
+                    <div key={msg.id} className="flex gap-3 items-start group relative animate-in fade-in duration-200">
                       <div className="w-8 h-8 rounded-full bg-[#103329] border border-[#1A4035] flex items-center justify-center text-xs text-[#E8BD4B] font-bold flex-shrink-0 shadow-sm mt-1">
                         {msg.user.charAt(0).toUpperCase()}
                       </div>
@@ -718,7 +714,6 @@ export const Blog: React.FC = () => {
                           </a>
                         )}
 
-                        {/* Delete option only shown for sender's message */}
                         {isMyMessage && (
                           <div className="absolute top-2 right-2">
                             <button
@@ -763,7 +758,7 @@ export const Blog: React.FC = () => {
                   type="text"
                   value={newMsg}
                   onChange={(e) => setNewMsg(e.target.value)}
-                  placeholder="Write a message or paste Islamic link..."
+                  placeholder="Say something in live chat..."
                   className="flex-1 px-3.5 py-3 rounded-xl bg-[#061812] border border-[#1A4035] text-sm text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B] transition-colors"
                 />
                 <button
