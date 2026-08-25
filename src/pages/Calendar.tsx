@@ -11,6 +11,7 @@ interface HijriDate {
   day: string;
   month: { number: number; en: string; ar: string };
   year: string;
+  designation?: { abbreviated: string };
 }
 
 interface GregorianDate {
@@ -55,8 +56,9 @@ export default function Calendar() {
   const [loading, setLoading] = useState<boolean>(true);
   const [eventsList, setEventsList] = useState<EventItem[]>(BASE_EVENTS);
   const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
+  const [monthDaysCount, setMonthDaysCount] = useState<number>(30); // Dynamic days count
 
-  // Fetch Current Islamic Date
+  // Fetch Current Islamic Date & Month Length helper if needed
   useEffect(() => {
     const fetchCurrentDate = async () => {
       try {
@@ -65,8 +67,8 @@ export default function Calendar() {
         if (json.data) {
           setTodayData(json.data);
           const hMonth = json.data.hijri.month.number;
-          const hYear = parseInt(json.data.hijri.year);
-          const hDay = parseInt(json.data.hijri.day);
+          const hYear = parseInt(json.data.hijri.year, 10);
+          const hDay = parseInt(json.data.hijri.day, 10);
           setCurrentHijriMonth(hMonth);
           setCurrentHijriYear(hYear);
           setSelectedDay(hDay);
@@ -81,7 +83,7 @@ export default function Calendar() {
     fetchCurrentDate();
   }, []);
 
-  // Fetch Gregorian dates for Islamic Occasions automatically via Aladhan API
+  // Fetch Gregorian dates for Islamic Occasions when Year changes
   useEffect(() => {
     const fetchEventGregorianDates = async () => {
       setLoadingEvents(true);
@@ -118,6 +120,22 @@ export default function Calendar() {
     }
   }, [currentHijriYear]);
 
+  // Dynamically determine days in current Hijri month (Standard Islamic months alternate 30/29 or check via API/approximation)
+  // Most standard calculation or fallback: odd months 30 days, even months 29 days (except Dhu al-Hijjah in leap years)
+  useEffect(() => {
+    // Standard approximation for Islamic months length
+    const isEvenMonth = currentHijriMonth % 2 === 0;
+    // Dhu al-Hijjah (month 12) can have 30 days in leap years, otherwise 29. 
+    // Let's use a safe standard fallback: 30 for odd, 29 for even, with Dhu al-Hijjah checked or defaulted to 29/30.
+    const days = currentHijriMonth === 12 ? 30 : isEvenMonth ? 29 : 30;
+    setMonthDaysCount(days);
+    
+    // Reset selected day if it exceeds the new month's total days
+    if (selectedDay && selectedDay > days) {
+      setSelectedDay(days);
+    }
+  }, [currentHijriMonth, currentHijriYear]);
+
   const handlePrevMonth = () => {
     if (currentHijriMonth === 1) {
       setCurrentHijriMonth(12);
@@ -139,7 +157,7 @@ export default function Calendar() {
   const isCurrentMonth =
     todayData &&
     todayData.hijri.month.number === currentHijriMonth &&
-    parseInt(todayData.hijri.year) === currentHijriYear;
+    parseInt(todayData.hijri.year, 10) === currentHijriYear;
 
   const monthEvents = eventsList.filter((e) => e.month === currentHijriMonth);
 
@@ -214,9 +232,9 @@ export default function Calendar() {
               </div>
             ))}
 
-            {Array.from({ length: 30 }, (_, i) => {
+            {Array.from({ length: monthDaysCount }, (_, i) => {
               const dayNum = i + 1;
-              const isToday = isCurrentMonth && parseInt(todayData?.hijri.day || '0') === dayNum;
+              const isToday = isCurrentMonth && parseInt(todayData?.hijri.day || '0', 10) === dayNum;
               const isSelected = selectedDay === dayNum;
               const hasEvent = eventsList.some((e) => e.month === currentHijriMonth && e.day === dayNum);
 
