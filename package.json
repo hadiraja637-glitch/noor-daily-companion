@@ -1,5 +1,5 @@
 {
-  "name": "figma-make-app",
+  "name": "noor-daily-companion",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -8,14 +8,18 @@
     "build": "vite build",
     "preview": "vite preview",
     "format": "oxfmt",
-    "predev": "node scripts/ensure-dependencies.cjs"
+    "predev": "node scripts/ensure-dependencies.cjs",
+    "start": "node server.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
     "lucide-react": "0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^8.3.0",
-    "react-router-dom": "^7.18.2"
+    "react-router-dom": "^7.18.2",
+    "socket.io": "^4.7.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
