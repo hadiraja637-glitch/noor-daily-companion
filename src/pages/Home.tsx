@@ -351,6 +351,12 @@ function PrayerTimesSection() {
   const { data, location, loading, error, setCity, useCurrentLocation } = usePrayerContext();
   const timings = data?.timings ?? [];
   const [now, setNow] = useState(() => new Date());
+  const [inputValue, setInputValue] = useState(location.name);
+
+  // Sync input value whenever location changes
+  useEffect(() => {
+    setInputValue(location.name);
+  }, [location.name]);
 
   const dailyVerse = useMemo(() => {
     const today = new Date();
@@ -388,6 +394,23 @@ function PrayerTimesSection() {
 
   const allCities = [...CITY_OPTIONS, ...GLOBAL_LOCATIONS];
 
+  const handleLocationSubmit = (searchName: string) => {
+    if (!searchName.trim()) return;
+    const foundCity = allCities.find((c) => c.name.toLowerCase() === searchName.toLowerCase().trim());
+    
+    if (foundCity) {
+      setCity(foundCity);
+    } else {
+      const customLoc = {
+        name: searchName,
+        country: '',
+        lat: 32.5731, 
+        lon: 74.0755
+      };
+      setCity(customLoc);
+    }
+  };
+
   return (
     <section className="py-8 sm:py-12" style={{ background: '#0B2820', borderTop: '1px solid rgba(26,64,53,0.5)' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
@@ -417,12 +440,17 @@ function PrayerTimesSection() {
                     </button>
                     <div className="relative">
                       <input
+                        type="text"
                         list="noor-global-locations"
-                        value={location.name}
-                        onChange={(e) => { 
-                          const value = e.target.value; 
-                          const city = allCities.find((c) => c.name.toLowerCase() === value.toLowerCase()); 
-                          if (city) setCity(city); 
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleLocationSubmit(inputValue);
+                          }
+                        }}
+                        onBlur={() => {
+                          handleLocationSubmit(inputValue);
                         }}
                         placeholder="🌍 Search worldwide"
                         className="bg-[#072018] text-[11px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2.5 py-1 w-[150px] sm:w-[180px] placeholder:text-noor-muted/60 focus:border-noor-gold/50 transition-colors"
@@ -516,7 +544,6 @@ function PrayerTimesSection() {
     </section>
   );
 }
-
 const FEATURES = [
   { icon: BookOpen, label: "Qur'an", sub: 'Read, Listen & Learn', to: '/quran' },
   { icon: MessageSquare, label: 'Hadith', sub: 'Authentic Sayings', to: '/hadith' },
