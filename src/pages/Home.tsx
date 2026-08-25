@@ -172,23 +172,33 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(true);
     setError('');
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        
-        const cityName = await getCityFromCoordinates(lat, lon);
-        
-        const currentLoc: PrayerLocation = {
-          name: cityName,
-          country: cityName.split(',')[1]?.trim() || '',
-          lat: lat,
-          lon: lon,
-        };
-        
-        setLocation(currentLoc);
-        setLocationMode('current');
         try {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          
+          // Safe city fetch with fallback
+          let cityName = 'Current Location';
+          try {
+            const fetchedName = await getCityFromCoordinates(lat, lon);
+            if (fetchedName) cityName = fetchedName;
+          } catch {
+            // Fallback if reverse geocoding fails
+            cityName = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+          }
+          
+          const currentLoc: PrayerLocation = {
+            name: cityName,
+            country: cityName.split(',')[1]?.trim() || '',
+            lat: lat,
+            lon: lon,
+          };
+          
+          setLocation(currentLoc);
+          setLocationMode('current');
+          
           const next = await fetchPrayerData(currentLoc);
           setData(next);
           localStorage.setItem('noor-prayer-location', JSON.stringify(currentLoc));
@@ -198,9 +208,10 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
         }
       },
-      () => { 
+      (err) => { 
+        console.error(err);
         setLoading(false); 
-        setError('Location permission was denied. Showing your saved city.'); 
+        setError('Location permission was denied or unavailable. Showing your saved city.'); 
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 15 * 60 * 1000 },
     );
