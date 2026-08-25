@@ -122,35 +122,45 @@ export const Blog: React.FC = () => {
     }
   }, []);
 
-  // Real-time Event Broadcast Sync (BroadcastChannel API)
+  // Dual Live Sync: BroadcastChannel + Storage Event Listener
   useEffect(() => {
+    // 1. BroadcastChannel API setup
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      const channel = new BroadcastChannel('noor_chat_broadcast');
+      const channel = new BroadcastChannel('noor_chat_broadcast_v2');
       chatChannelRef.current = channel;
 
       channel.onmessage = (event) => {
-        if (event.data) {
-          if (event.data.type === 'NEW_CHAT_MESSAGE') {
-            const incomingMsg: ChatMessage = event.data.message;
-            setChatMessages((prev) => {
-              if (prev.some((m) => m.id === incomingMsg.id)) return prev;
-              return [...prev, incomingMsg];
-            });
-
-            if (!isChatOpen) {
-              setUnreadCount((prev) => prev + 1);
-            }
-          } else if (event.data.type === 'DELETE_CHAT_MESSAGE') {
-            const deleteId = event.data.id;
-            setChatMessages((prev) => prev.filter((m) => m.id !== deleteId));
+        if (event.data && event.data.type === 'SYNC_MESSAGES') {
+          const incomingMsgs: ChatMessage[] = event.data.messages;
+          setChatMessages(incomingMsgs);
+          if (!isChatOpen) {
+            setUnreadCount((prev) => prev + 1);
           }
         }
       };
-
-      return () => {
-        channel.close();
-      };
     }
+
+    // 2. Storage Event Listener (Cross-tab live sync fallback)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'noor_community_chat' && e.newValue) {
+        try {
+          const parsed: ChatMessage[] = JSON.parse(e.newValue);
+          setChatMessages(parsed);
+          if (!isChatOpen) {
+            setUnreadCount((prev) => prev + 1);
+          }
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      if (chatChannelRef.current) {
+        chatChannelRef.current.close();
+      }
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [isChatOpen]);
 
   // Auto Reset Unread & Scroll on Chat Open
@@ -264,16 +274,22 @@ export const Blog: React.FC = () => {
 
     const updatedChat = [...chatMessages, messageObj];
     setChatMessages(updatedChat);
+    
+    // Save to localStorage immediately so storage event fires for other tabs/IDs
     localStorage.setItem('noor_community_chat', JSON.stringify(updatedChat));
 
+    // Broadcast instantly via BroadcastChannel
     if (chatChannelRef.current) {
       chatChannelRef.current.postMessage({
-        type: 'NEW_CHAT_MESSAGE',
-        message: messageObj,
+        type: 'SYNC_MESSAGES',
+        messages: updatedChat,
       });
     }
 
     setNewMsg('');
+    setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   const handleDeleteMessage = (id: string) => {
@@ -283,8 +299,8 @@ export const Blog: React.FC = () => {
 
     if (chatChannelRef.current) {
       chatChannelRef.current.postMessage({
-        type: 'DELETE_CHAT_MESSAGE',
-        id: id,
+        type: 'SYNC_MESSAGES',
+        messages: updated,
       });
     }
     setActiveMenuId(null);
@@ -640,7 +656,7 @@ export const Blog: React.FC = () => {
                     ) : (
                       <span className="text-amber-400 font-medium">Profile Pending</span>
                     )}
-                    <span className="text-emerald-400 font-semibold">• Live Sync Active</span>
+                    <span className="text-emerald-400 font-semibold">• Live Stream Active</span>
                   </div>
                 </div>
               </div>
