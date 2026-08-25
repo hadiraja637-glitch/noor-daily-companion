@@ -127,16 +127,14 @@ export const Blog: React.FC = () => {
         setChatMessages(formatted);
       }
 
-      // Realtime subscription (YouTube live style)
+      // Realtime subscription
       const channel = supabaseClient
         .channel('public_chat_room')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'public_chat' },
           (payload: any) => {
-            if (!isChatOpen) {
-                setHasNewMessage(true);
-              }
+            if (payload.eventType === 'INSERT') {
               const newItem = payload.new;
               const newMsgObj: ChatMessage = {
                 id: newItem.id.toString(),
@@ -153,7 +151,7 @@ export const Blog: React.FC = () => {
               });
 
               if (!isChatOpen) {
-                setUnreadCount((prev) => prev + 1);
+                setHasNewMessage(true);
               }
             } else if (payload.eventType === 'DELETE') {
               const deletedId = payload.old.id.toString();
@@ -173,7 +171,7 @@ export const Blog: React.FC = () => {
 
   useEffect(() => {
     if (isChatOpen) {
-      setUnreadCount(0);
+      setHasNewMessage(false);
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, isChatOpen]);
@@ -335,7 +333,7 @@ export const Blog: React.FC = () => {
             >
               <MessageSquare size={16} /> Public Live Chat
               {hasNewMessage && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#061812] animate-ping" />
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#061812] animate-ping shadow-lg" />
               )}
             </button>
           </div>
@@ -668,7 +666,7 @@ export const Blog: React.FC = () => {
             {/* Chat Messages Feed */}
             <div 
               onClick={() => {
-                setUnreadCount(0);
+                setHasNewMessage(false);
                 setActiveMenuId(null);
               }}
               className="p-4 flex-1 overflow-y-auto space-y-4 bg-[#061812]/70 scrollbar-thin scrollbar-thumb-[#1A4035]"
