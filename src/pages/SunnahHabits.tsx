@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Flame } from 'lucide-react';
-
-/**
- * SunnahHabits page
- * Dark emerald + gold theme (matches the Zakat calculator design).
- * Colors are applied via inline styles / hex values rather than the
- * project's `noor-*` Tailwind tokens, so the look is guaranteed
- * regardless of Tailwind theme/build configuration.
- */
+import { Flame, Trophy, CheckCircle2 } from 'lucide-react';
 
 const THEME = {
   bgPage: '#061812',
@@ -44,14 +36,14 @@ const SUNNAH_HABITS: Habit[] = [
 ];
 
 const STREAK_THRESHOLD = 70;
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const WEEKDAY_LABELS = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'];
 
 const KEYS = {
   daily: (dateKey: string) => `noor_habits_${dateKey}`,
   streak: 'noor_user_streak',
   lastStreakDate: 'noor_last_streak_date',
   monthly: 'noor_monthly_records',
+  totalAchieved: 'noor_total_achieved_days',
 };
 
 function readJSON<T>(key: string, fallback: T): T {
@@ -67,100 +59,48 @@ function writeJSON(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* ignore quota / privacy-mode errors */
+    /* ignore */
   }
 }
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function colorForScore(score: number) {
-  if (score >= 80) return THEME.gold;
-  if (score >= 50) return THEME.goldMid;
-  if (score > 0) return THEME.goldDim;
-  return THEME.bgPanelAlt;
-}
-
-function MonthGrid({
-  year,
-  monthIndex,
-  monthlyRecord,
-  isCurrentMonth,
-}: {
-  year: number;
-  monthIndex: number;
-  monthlyRecord: Record<string, number>;
-  isCurrentMonth: boolean;
-}) {
-  const firstDay = new Date(year, monthIndex, 1);
-  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-  const leadingBlanks = firstDay.getDay();
-  const cells: (number | null)[] = [
-    ...Array.from({ length: leadingBlanks }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
-
-  return (
-    <div
-      className="rounded-2xl p-3"
-      style={{ background: THEME.bgPanel, border: `1px solid ${isCurrentMonth ? THEME.gold : THEME.border}` }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold" style={{ color: THEME.cream }}>
-          {MONTH_NAMES[monthIndex]}
-        </span>
-        {isCurrentMonth && (
-          <span
-            className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-            style={{ background: THEME.gold, color: THEME.deep }}
-          >
-            NOW
-          </span>
-        )}
-      </div>
-      <div className="grid grid-cols-7 gap-[3px] mb-1">
-        {WEEKDAY_LABELS.map((w, i) => (
-          <span key={`${w}-${i}`} className="text-[8px] text-center font-mono" style={{ color: THEME.creamMuted }}>
-            {w}
-          </span>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-[3px]">
-        {cells.map((day, idx) => {
-          if (day === null) return <div key={`b-${idx}`} />;
-          const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const score = monthlyRecord[dateStr] || 0;
-          const bg = colorForScore(score);
-          const textDark = score >= 50;
-          return (
-            <div
-              key={dateStr}
-              title={`${dateStr}: ${score}% completed`}
-              className="aspect-square rounded-[4px] flex items-center justify-center"
-              style={{ background: bg }}
-            >
-              <span className="text-[7px] font-mono" style={{ color: textDark ? THEME.deep : THEME.creamMuted }}>
-                {day}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+// Get past 7 days keys and labels for the modern recent view
+function getRecentDays() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    const dayLabel = WEEKDAY_LABELS[d.getDay()];
+    days.push({ dateStr, dayLabel, dayNum: d.getDate() });
+  }
+  return days;
 }
 
 export default function SunnahHabits() {
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [streak, setStreak] = useState(0);
   const [monthlyRecord, setMonthlyRecord] = useState<Record<string, number>>({});
+  const [totalAchieved, setTotalAchieved] = useState(0);
+
+  const recentDays = useMemo(() => getRecentDays(), []);
 
   useEffect(() => {
     const today = todayKey();
     setCompleted(readJSON(KEYS.daily(today), {}));
     setStreak(parseInt(localStorage.getItem(KEYS.streak) || '0', 10));
     setMonthlyRecord(readJSON(KEYS.monthly, {}));
+    setTotalAchieved(parseInt(localStorage.getItem(KEYS.totalAchieved) || '0', 10));
   }, []);
 
   const toggleHabit = useCallback(
@@ -177,6 +117,7 @@ export default function SunnahHabits() {
       setMonthlyRecord(updatedMonthly);
       writeJSON(KEYS.monthly, updatedMonthly);
 
+      // Check if today crossed threshold for the first time today
       if (progressPercent >= STREAK_THRESHOLD) {
         const lastStreakDate = localStorage.getItem(KEYS.lastStreakDate);
         if (lastStreakDate !== today) {
@@ -184,10 +125,14 @@ export default function SunnahHabits() {
           setStreak(newStreak);
           localStorage.setItem(KEYS.streak, String(newStreak));
           localStorage.setItem(KEYS.lastStreakDate, today);
+
+          const newTotal = totalAchieved + 1;
+          setTotalAchieved(newTotal);
+          localStorage.setItem(KEYS.totalAchieved, String(newTotal));
         }
       }
     },
-    [completed, monthlyRecord, streak]
+    [completed, monthlyRecord, streak, totalAchieved]
   );
 
   const progressPercent = useMemo(() => {
@@ -195,58 +140,155 @@ export default function SunnahHabits() {
     return Math.round((completedCount / SUNNAH_HABITS.length) * 100);
   }, [completed]);
 
-  const year = new Date().getFullYear();
-  const currentMonth = new Date().getMonth();
+  // Badge progress calculation (Target: e.g. 30 days milestone)
+  const badgeTarget = 30;
+  const badgeProgress = Math.min(totalAchieved, badgeTarget);
+  const badgePercent = Math.round((badgeProgress / badgeTarget) * 100);
 
   return (
     <div className="min-h-screen pt-20 pb-24" style={{ background: THEME.bgPage }}>
-      <div className="py-14 text-center relative overflow-hidden" style={{ background: THEME.bgHero, borderBottom: `1px solid ${THEME.border}` }}>
-        <div className="islamic-pattern absolute inset-0 opacity-50 pointer-events-none" />
+      {/* Header */}
+      <div className="py-12 text-center relative overflow-hidden" style={{ background: THEME.bgHero, borderBottom: `1px solid ${THEME.border}` }}>
+        <div className="absolute inset-0 opacity-20 pointer-events-none" />
         <div className="relative max-w-3xl mx-auto px-4">
-          <p className="text-xs tracking-[.25em] uppercase mb-3" style={{ color: THEME.gold }}>
+          <p className="text-xs tracking-[.25em] uppercase mb-2" style={{ color: THEME.gold }}>
             Daily Practice
           </p>
-          <h1 className="font-display text-4xl sm:text-5xl font-semibold mb-3" style={{ color: THEME.cream }}>
+          <h1 className="text-3xl sm:text-4xl font-semibold mb-2" style={{ color: THEME.cream }}>
             Sunnah & Daily Habits
           </h1>
-          <p className="max-w-2xl mx-auto" style={{ color: THEME.creamMuted }}>
-            Track your daily acts of worship & Sunnahs, one habit at a time.
+          <p className="text-sm max-w-xl mx-auto" style={{ color: THEME.creamMuted }}>
+            Build consistent acts of worship with a clean, peaceful daily routine.
           </p>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 lg:px-8 py-10">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        
+        {/* Top Stats Cards: Today Progress & Streak */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           <div className="rounded-2xl p-4" style={{ background: THEME.bgPanel, border: `1px solid ${THEME.border}` }}>
-            <p className="text-[10px] uppercase tracking-wider" style={{ color: THEME.creamMuted }}>
+            <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: THEME.creamMuted }}>
               Today's Progress
             </p>
-            <p className="font-display text-2xl font-semibold mt-1" style={{ color: THEME.cream }}>
-              {progressPercent}%
-            </p>
+            <div className="flex items-baseline justify-between mt-1">
+              <p className="text-2xl font-semibold" style={{ color: THEME.cream }}>
+                {progressPercent}%
+              </p>
+              <span className="text-xs" style={{ color: progressPercent >= 70 ? THEME.gold : THEME.creamMuted }}>
+                {progressPercent >= 70 ? 'Target Met ✨' : 'Keep Going'}
+              </span>
+            </div>
             <div className="h-2 rounded-full overflow-hidden mt-3" style={{ background: THEME.bgTrack }}>
-              <div className="h-full transition-all" style={{ width: `${progressPercent}%`, background: THEME.gold }} />
+              <div className="h-full transition-all duration-300" style={{ width: `${progressPercent}%`, background: THEME.gold }} />
             </div>
           </div>
+
           <div
-            className="rounded-2xl p-4 flex items-center gap-3"
+            className="rounded-2xl p-4 flex items-center gap-4"
             style={{ background: `linear-gradient(135deg,${THEME.bgPanel},${THEME.bgPanelAlt})`, border: `1px solid ${THEME.goldSoft}` }}
           >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(232,189,75,.10)' }}>
-              <Flame size={18} style={{ color: THEME.gold }} />
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(232,189,75,.12)' }}>
+              <Flame size={22} style={{ color: THEME.gold }} />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider" style={{ color: THEME.creamMuted }}>
-                Current streak
+              <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: THEME.creamMuted }}>
+                Current Streak
               </p>
-              <p className="font-display text-2xl font-semibold mt-1" style={{ color: THEME.gold }}>
-                {streak} day{streak === 1 ? '' : 's'}
+              <p className="text-2xl font-semibold mt-0.5" style={{ color: THEME.gold }}>
+                {streak} day{streak === 1 ? '' : 's'} 🔥
               </p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl p-6 mb-6" style={{ background: THEME.bgPanel, border: `1px solid ${THEME.border}` }}>
+        {/* Modern Recent Days & Milestone Bar (Inspired by your reference) */}
+        <div className="rounded-2xl p-5 mb-6 shadow-lg" style={{ background: THEME.bgPanel, border: `1px solid ${THEME.border}` }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold tracking-wider uppercase" style={{ color: THEME.gold }}>
+              Recent Days & Milestones
+            </h3>
+            <span className="text-[10px]" style={{ color: THEME.creamMuted }}>
+              Tap habits below to log today
+            </span>
+          </div>
+
+          {/* Recent 7 Days Squares */}
+          <div className="grid grid-cols-7 gap-2 mb-6">
+            {recentDays.map((d) => {
+              const score = monthlyRecord[d.dateStr] || 0;
+              const isToday = d.dateStr === todayKey();
+              const isCompletedGood = score >= 70;
+              
+              let bgCol = THEME.bgTrack;
+              let textCol = THEME.creamMuted;
+              if (score >= 80) { bgCol = THEME.gold; textCol = THEME.deep; }
+              else if (score >= 40) { bgCol = THEME.goldMid; textCol = THEME.deep; }
+              else if (score > 0) { bgCol = THEME.goldDim; textCol = THEME.cream; }
+
+              return (
+                <div
+                  key={d.dateStr}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl transition-all"
+                  style={{ 
+                    background: isToday ? THEME.bgPanelAlt : 'transparent',
+                    border: isToday ? `1px solid ${THEME.gold}` : `1px solid ${THEME.borderSoft}`
+                  }}
+                >
+                  <span className="text-[10px] font-medium mb-1" style={{ color: isToday ? THEME.gold : THEME.creamMuted }}>
+                    {d.dayLabel}
+                  </span>
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold shadow-sm"
+                    style={{ background: bgCol, color: textCol }}
+                    title={`${d.dateStr}: ${score}%`}
+                  >
+                    {isCompletedGood ? <CheckCircle2 size={14} /> : d.dayNum}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Milestone Progress Bar */}
+          <div className="pt-4 border-t" style={{ borderColor: THEME.borderSoft }}>
+            <div className="flex items-center justify-between text-xs mb-2">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg" style={{ background: 'rgba(232,189,75,.1)', color: THEME.gold }}>
+                  <Trophy size={16} />
+                </span>
+                <span className="font-semibold" style={{ color: THEME.cream }}>
+                  {totalAchieved} Total Days Achieved
+                </span>
+              </div>
+              <span className="font-mono text-[11px]" style={{ color: THEME.gold }}>
+                {badgeProgress} of {badgeTarget} days
+              </span>
+            </div>
+
+            {/* Custom Sleek Progress Bar */}
+            <div className="h-3 rounded-full overflow-hidden p-0.5 relative" style={{ background: THEME.bgTrack, border: `1px solid ${THEME.border}` }}>
+              <div
+                className="h-full rounded-full transition-all duration-500 shadow-inner"
+                style={{ width: `${badgePercent}%`, background: `linear-gradient(90deg, ${THEME.goldMid}, ${THEME.gold})` }}
+              />
+            </div>
+            <div className="flex justify-between items-center mt-2">
+              <span className="text-[10px]" style={{ color: THEME.creamMuted }}>
+                Current Badge Progress (Consistent Habit Seeker)
+              </span>
+              <span className="text-[10px] font-semibold" style={{ color: THEME.cream }}>
+                0 Badges Earned
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Habit Checklist */}
+        <div className="rounded-2xl p-5" style={{ background: THEME.bgPanel, border: `1px solid ${THEME.border}` }}>
+          <h3 className="text-xs font-semibold tracking-wider uppercase mb-4" style={{ color: THEME.gold }}>
+            Today's Checklist
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {SUNNAH_HABITS.map((habit) => {
               const checked = !!completed[habit.id];
@@ -255,13 +297,19 @@ export default function SunnahHabits() {
                   key={habit.id}
                   onClick={() => toggleHabit(habit.id)}
                   aria-pressed={checked}
-                  className="w-full text-left rounded-xl p-3 flex items-center justify-between transition-colors hover:bg-white/5"
-                  style={{ border: `1px solid ${THEME.borderSoft}`, background: checked ? 'rgba(232,189,75,.06)' : 'transparent' }}
+                  className="w-full text-left rounded-xl p-3 flex items-center justify-between transition-all hover:translate-y-[-1px]"
+                  style={{
+                    border: `1px solid ${checked ? THEME.goldSoft : THEME.borderSoft}`,
+                    background: checked ? 'rgba(232,189,75,.05)' : 'transparent',
+                  }}
                 >
                   <span className="flex items-center gap-3">
                     <span
-                      className="w-5 h-5 rounded flex items-center justify-center border flex-shrink-0"
-                      style={{ background: checked ? THEME.gold : 'transparent', borderColor: checked ? THEME.gold : THEME.creamMuted }}
+                      className="w-5 h-5 rounded-md flex items-center justify-center border flex-shrink-0 transition-colors"
+                      style={{
+                        background: checked ? THEME.gold : 'transparent',
+                        borderColor: checked ? THEME.gold : THEME.creamMuted,
+                      }}
                     >
                       {checked && (
                         <svg viewBox="0 0 20 20" className="w-3.5 h-3.5" fill={THEME.deep}>
@@ -271,7 +319,10 @@ export default function SunnahHabits() {
                     </span>
                     <span
                       className="text-sm font-medium"
-                      style={{ color: checked ? THEME.creamMuted : THEME.cream, textDecoration: checked ? 'line-through' : 'none' }}
+                      style={{
+                        color: checked ? THEME.creamMuted : THEME.cream,
+                        textDecoration: checked ? 'line-through' : 'none',
+                      }}
                     >
                       {habit.title}
                     </span>
@@ -288,25 +339,6 @@ export default function SunnahHabits() {
           </div>
         </div>
 
-        <div className="rounded-2xl p-6" style={{ background: THEME.bgPanel, border: `1px solid ${THEME.border}` }}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-xl font-semibold" style={{ color: THEME.cream }}>
-              {year} Activity Calendar
-            </h2>
-            <div className="flex items-center gap-1.5 text-[9px]" style={{ color: THEME.creamMuted }}>
-              <span>Less</span>
-              {[THEME.bgPanelAlt, THEME.goldDim, THEME.goldMid, THEME.gold].map((c) => (
-                <span key={c} className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: c }} />
-              ))}
-              <span>More</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {MONTH_NAMES.map((_, monthIndex) => (
-              <MonthGrid key={monthIndex} year={year} monthIndex={monthIndex} monthlyRecord={monthlyRecord} isCurrentMonth={monthIndex === currentMonth} />
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
