@@ -14,121 +14,155 @@ export default function NoorLogo({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const image = new Image();
+    const img = new Image();
 
-    image.onload = () => {
+    img.onload = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const ctx = canvas.getContext("2d", {
+        willReadFrequently: true,
+      });
+
       if (!ctx) return;
 
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
+      const width = img.naturalWidth;
+      const height = img.naturalHeight;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0);
+      canvas.width = width;
+      canvas.height = height;
 
-      const imageData = ctx.getImageData(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0);
 
-      const pixels = imageData.data;
+      const data = ctx.getImageData(0, 0, width, height);
+      const pixels = data.data;
 
-      // Background color taken from the dark-green area
-      // around the Noor logo.
-      const background = {
-        r: 6,
-        g: 25,
-        b: 19,
-      };
+      /*
+       * Detect the REAL background directly from
+       * the corners of the uploaded logo image.
+       */
+      const cornerPoints = [
+        [0, 0],
+        [width - 1, 0],
+        [0, height - 1],
+        [width - 1, height - 1],
+      ];
 
-      // Only remove pixels connected to the outside edges.
-      // This protects the dark details inside the Islamic logo.
-      const visited = new Uint8Array(canvas.width * canvas.height);
+      let bgR = 0;
+      let bgG = 0;
+      let bgB = 0;
+
+      for (const [x, y] of cornerPoints) {
+        const i = (y * width + x) * 4;
+
+        bgR += pixels[i];
+        bgG += pixels[i + 1];
+        bgB += pixels[i + 2];
+      }
+
+      bgR /= cornerPoints.length;
+      bgG /= cornerPoints.length;
+      bgB /= cornerPoints.length;
+
+      /*
+       * Flood fill ONLY the outside background.
+       * This means dark areas INSIDE the Noor emblem
+       * will not be removed.
+       */
+
+      const visited = new Uint8Array(width * height);
       const queue: number[] = [];
 
-      const isBackground = (index: number) => {
-        const r = pixels[index];
-        const g = pixels[index + 1];
-        const b = pixels[index + 2];
+      const colorDifference = (i: number) => {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
 
-        const distance =
-          Math.abs(r - background.r) +
-          Math.abs(g - background.g) +
-          Math.abs(b - background.b);
-
-        // Slight tolerance for compression / anti-aliasing.
-        return distance < 55;
+        return (
+          Math.abs(r - bgR) +
+          Math.abs(g - bgG) +
+          Math.abs(b - bgB)
+        );
       };
 
-      const addPixel = (x: number, y: number) => {
+      /*
+       * Higher tolerance because the screenshot/image
+       * background may have slight gradients/compression.
+       */
+      const BACKGROUND_TOLERANCE = 85;
+
+      const isBackground = (position: number) => {
+        const i = position * 4;
+
+        // Already transparent
+        if (pixels[i + 3] === 0) return true;
+
+        return colorDifference(i) <= BACKGROUND_TOLERANCE;
+      };
+
+      const add = (x: number, y: number) => {
         if (
           x < 0 ||
           y < 0 ||
-          x >= canvas.width ||
-          y >= canvas.height
+          x >= width ||
+          y >= height
         ) {
           return;
         }
 
-        const position = y * canvas.width + x;
+        const position = y * width + x;
 
         if (visited[position]) return;
 
-        const index = position * 4;
-
-        if (!isBackground(index)) return;
+        if (!isBackground(position)) return;
 
         visited[position] = 1;
         queue.push(position);
       };
 
-      // Start from all four edges.
-      for (let x = 0; x < canvas.width; x++) {
-        addPixel(x, 0);
-        addPixel(x, canvas.height - 1);
+      // Start from all four edges
+      for (let x = 0; x < width; x++) {
+        add(x, 0);
+        add(x, height - 1);
       }
 
-      for (let y = 0; y < canvas.height; y++) {
-        addPixel(0, y);
-        addPixel(canvas.width - 1, y);
+      for (let y = 0; y < height; y++) {
+        add(0, y);
+        add(width - 1, y);
       }
 
-      // Flood-fill the actual outer background.
-      let current = 0;
+      // Flood fill
+      let index = 0;
 
-      while (current < queue.length) {
-        const position = queue[current++];
-        const x = position % canvas.width;
-        const y = Math.floor(position / canvas.width);
+      while (index < queue.length) {
+        const position = queue[index++];
 
-        const index = position * 4;
+        const x = position % width;
+        const y = Math.floor(position / width);
 
-        // Make background transparent.
-        pixels[index + 3] = 0;
+        // Make this pixel transparent
+        pixels[position * 4 + 3] = 0;
 
-        addPixel(x + 1, y);
-        addPixel(x - 1, y);
-        addPixel(x, y + 1);
-        addPixel(x, y - 1);
+        add(x + 1, y);
+        add(x - 1, y);
+        add(x, y + 1);
+        add(x, y - 1);
       }
 
-      ctx.putImageData(imageData, 0, 0);
+      ctx.putImageData(data, 0, 0);
+
       setReady(true);
     };
 
-    image.src = logo;
+    img.src = logo;
   }, []);
 
   return (
     <canvas
       ref={canvasRef}
-      aria-label="Noor — Islamic Daily Companion"
       role="img"
+      aria-label="Noor — Islamic Daily Companion"
       className={className}
       draggable={false}
       style={{
