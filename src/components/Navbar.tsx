@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router';
-import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House, Languages, Check, BookOpen, HandHeart, Compass, MoreHorizontal } from 'lucide-react';
+import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House, Languages, Check } from 'lucide-react';
 import NoorLogo from './NoorLogo';
 import { getTranslation, LanguageCode, TranslationKeys } from '../locales/translations';
 
@@ -444,23 +444,18 @@ useEffect(() => {
                 }`
               }
             >
-              <span
-                className={`flex h-6 w-6 items-center justify-center transition-colors ${
-                  isActive ? 'text-noor-gold' : 'text-noor-muted'
-                }`}
-                aria-hidden="true"
-              >
+              <span className="text-base leading-none">
                 {link.to === '/' ? (
-                  <House size={20} strokeWidth={1.8} />
-                ) : link.to === '/quran' ? (
-                  <BookOpen size={20} strokeWidth={1.8} />
-                ) : link.to === '/duas' ? (
-                  <HandHeart size={20} strokeWidth={1.8} />
-                ) : link.to === '/qibla' ? (
-                  <Compass size={20} strokeWidth={1.8} />
-                ) : (
-                  <MoreHorizontal size={20} strokeWidth={1.8} />
-                )}
+  <House className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
+) : link.to === '/quran' ? (
+  <BookOpen className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
+) : link.to === '/duas' ? (
+  <HandHeart className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
+) : link.to === '/qibla' ? (
+  <Compass className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
+) : (
+  <MoreHorizontal className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
+)}
               </span>
               {t(link.key)}
             </NavLink>
