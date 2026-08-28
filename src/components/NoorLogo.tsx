@@ -1,4 +1,4 @@
-export default function NoorLogo({ size = 36 }: { size?: number }) {
+export default function NoorLogo({ size = 40 }: { size?: number }) {
   const s = size;
   return (
     <img 
@@ -7,10 +7,11 @@ export default function NoorLogo({ size = 36 }: { size?: number }) {
       style={{ 
         height: `${s}px`, 
         width: 'auto',
-        maxHeight: '100%',
-        objectFit: 'contain',
+        borderRadius: '8px',
+        objectFit: 'cover',
         display: 'inline-block',
-        verticalAlign: 'middle'
+        verticalAlign: 'middle',
+        boxShadow: '0 0 8px rgba(232, 189, 75, 0.3)'
       }} 
     />
   );
