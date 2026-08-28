@@ -2,25 +2,29 @@ import React from "react";
 import logo from "./Noorlogo-transparent.png";
 
 interface NoorLogoProps {
+  size?: number | string;
   className?: string;
-  width?: number | string;
 }
 
 export default function NoorLogo({
+  size = 64,
   className = "",
-  width = 150,
 }: NoorLogoProps) {
   return (
     <img
       src={logo}
-      alt="Noor - Islamic Daily Companion"
-      width={width}
-      className={`noor-logo ${className}`}
+      alt="Noor — Islamic Daily Companion"
+      className={className}
       draggable={false}
       style={{
-        height: "auto",
-        display: "block",
+        width: size,
+        height: size,
+        maxWidth: "100%",
+        maxHeight: "100%",
         objectFit: "contain",
+        objectPosition: "center",
+        display: "block",
+        flexShrink: 0,
       }}
     />
   );
