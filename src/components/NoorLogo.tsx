@@ -15,6 +15,7 @@ export default function NoorLogo({
 
   useEffect(() => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
 
     img.onload = () => {
       const canvas = canvasRef.current;
@@ -33,81 +34,83 @@ export default function NoorLogo({
       canvas.height = height;
 
       ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, width, height);
 
-      const data = ctx.getImageData(0, 0, width, height);
-      const pixels = data.data;
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const pixels = imageData.data;
 
       /*
-       * Detect the REAL background directly from
-       * the corners of the uploaded logo image.
+       * Get the average color of the outer corners.
+       * This detects the actual background color automatically.
        */
-      const cornerPoints = [
+      const samplePoints = [
         [0, 0],
         [width - 1, 0],
         [0, height - 1],
         [width - 1, height - 1],
+
+        [Math.floor(width * 0.03), Math.floor(height * 0.03)],
+        [Math.floor(width * 0.97), Math.floor(height * 0.03)],
+        [Math.floor(width * 0.03), Math.floor(height * 0.97)],
+        [Math.floor(width * 0.97), Math.floor(height * 0.97)],
       ];
 
       let bgR = 0;
       let bgG = 0;
       let bgB = 0;
 
-      for (const [x, y] of cornerPoints) {
+      samplePoints.forEach(([x, y]) => {
         const i = (y * width + x) * 4;
 
         bgR += pixels[i];
         bgG += pixels[i + 1];
         bgB += pixels[i + 2];
-      }
+      });
 
-      bgR /= cornerPoints.length;
-      bgG /= cornerPoints.length;
-      bgB /= cornerPoints.length;
+      bgR /= samplePoints.length;
+      bgG /= samplePoints.length;
+      bgB /= samplePoints.length;
 
       /*
-       * Flood fill ONLY the outside background.
-       * This means dark areas INSIDE the Noor emblem
-       * will not be removed.
+       * Color distance from detected background.
        */
+      const colorDistance = (pixelIndex: number) => {
+        const r = pixels[pixelIndex];
+        const g = pixels[pixelIndex + 1];
+        const b = pixels[pixelIndex + 2];
 
-      const visited = new Uint8Array(width * height);
-      const queue: number[] = [];
-
-      const colorDifference = (i: number) => {
-        const r = pixels[i];
-        const g = pixels[i + 1];
-        const b = pixels[i + 2];
-
-        return (
-          Math.abs(r - bgR) +
-          Math.abs(g - bgG) +
-          Math.abs(b - bgB)
+        return Math.sqrt(
+          (r - bgR) ** 2 +
+            (g - bgG) ** 2 +
+            (b - bgB) ** 2
         );
       };
 
       /*
-       * Higher tolerance because the screenshot/image
-       * background may have slight gradients/compression.
+       * Lower = more aggressive background removal.
+       * 55–70 is usually ideal for dark backgrounds
+       * while keeping the gold logo intact.
        */
-      const BACKGROUND_TOLERANCE = 85;
+      const BACKGROUND_TOLERANCE = 60;
 
       const isBackground = (position: number) => {
         const i = position * 4;
 
-        // Already transparent
         if (pixels[i + 3] === 0) return true;
 
-        return colorDifference(i) <= BACKGROUND_TOLERANCE;
+        return colorDistance(i) < BACKGROUND_TOLERANCE;
       };
 
-      const add = (x: number, y: number) => {
-        if (
-          x < 0 ||
-          y < 0 ||
-          x >= width ||
-          y >= height
-        ) {
+      /*
+       * Flood-fill only from the outside edges.
+       * Important: dark areas trapped INSIDE the logo
+       * will remain untouched.
+       */
+      const visited = new Uint8Array(width * height);
+      const queue: number[] = [];
+
+      const addPixel = (x: number, y: number) => {
+        if (x < 0 || y < 0 || x >= width || y >= height) {
           return;
         }
 
@@ -121,36 +124,36 @@ export default function NoorLogo({
         queue.push(position);
       };
 
-      // Start from all four edges
+      // Start from every outer edge
       for (let x = 0; x < width; x++) {
-        add(x, 0);
-        add(x, height - 1);
+        addPixel(x, 0);
+        addPixel(x, height - 1);
       }
 
       for (let y = 0; y < height; y++) {
-        add(0, y);
-        add(width - 1, y);
+        addPixel(0, y);
+        addPixel(width - 1, y);
       }
 
-      // Flood fill
-      let index = 0;
+      // Flood fill connected background
+      let queueIndex = 0;
 
-      while (index < queue.length) {
-        const position = queue[index++];
+      while (queueIndex < queue.length) {
+        const position = queue[queueIndex++];
 
         const x = position % width;
         const y = Math.floor(position / width);
 
-        // Make this pixel transparent
+        // Make outside background transparent
         pixels[position * 4 + 3] = 0;
 
-        add(x + 1, y);
-        add(x - 1, y);
-        add(x, y + 1);
-        add(x, y - 1);
+        addPixel(x + 1, y);
+        addPixel(x - 1, y);
+        addPixel(x, y + 1);
+        addPixel(x, y - 1);
       }
 
-      ctx.putImageData(data, 0, 0);
+      ctx.putImageData(imageData, 0, 0);
 
       setReady(true);
     };
@@ -162,17 +165,17 @@ export default function NoorLogo({
     <canvas
       ref={canvasRef}
       role="img"
-      aria-label="Noor — Islamic Daily Companion"
+      aria-label="Noor"
       className={className}
       draggable={false}
       style={{
         width: size,
         height: size,
-        maxWidth: "100%",
-        maxHeight: "100%",
+        display: ready ? "block" : "none",
         objectFit: "contain",
         objectPosition: "center",
-        display: ready ? "block" : "none",
+        maxWidth: "100%",
+        maxHeight: "100%",
         flexShrink: 0,
       }}
     />
