@@ -445,17 +445,7 @@ useEffect(() => {
               }
             >
               <span className="text-base leading-none">
-                {link.to === '/' ? (
-  <House className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
-) : link.to === '/quran' ? (
-  <BookOpen className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
-) : link.to === '/duas' ? (
-  <HandHeart className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
-) : link.to === '/qibla' ? (
-  <Compass className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
-) : (
-  <MoreHorizontal className="w-5 h-5 text-[#D4AF37]" strokeWidth={2} />
-)}
+                {link.to === '/' ? '🏠' : link.to === '/quran' ? '📖' : link.to === '/duas' ? '🤲' : link.to === '/qibla' ? '🧭' : '⋯'}
               </span>
               {t(link.key)}
             </NavLink>
