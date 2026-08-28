@@ -9,8 +9,8 @@ export default function NoorLogo({ size = 45 }: { size?: number }) {
         width: 'auto',
         display: 'inline-block',
         verticalAlign: 'middle',
-        mixBlendMode: 'screen',
-        filter: 'drop-shadow(0 0 6px rgba(232, 189, 75, 0.5))',
+        filter: 'brightness(1.15) contrast(1.25) grayscale(10%)',
+        mixBlendMode: 'color-dodge',
         objectFit: 'contain'
       }} 
     />
