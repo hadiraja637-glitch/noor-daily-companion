@@ -1,4 +1,4 @@
-export default function NoorLogo({ size = 45 }: { size?: number }) {
+export default function NoorLogo({ size = 40 }: { size?: number }) {
   const s = size;
   return (
     <img 
@@ -9,6 +9,7 @@ export default function NoorLogo({ size = 45 }: { size?: number }) {
         width: 'auto',
         display: 'inline-block',
         verticalAlign: 'middle',
+        mixBlendMode: 'lighten', // Ye gray background ko poora blend/remove kar dega
         objectFit: 'contain'
       }} 
     />
