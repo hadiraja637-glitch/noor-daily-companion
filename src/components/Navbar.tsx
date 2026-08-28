@@ -173,7 +173,7 @@ useEffect(() => {
       >
         <div className="max-w-[1400px] mx-auto px-4 lg:px-5 flex items-center h-[58px] gap-3">
           <Link to="/" className="flex items-center gap-2.5 shrink-0">
-            <NoorLogo size={36} />
+            <NoorLogo variant="navbar" />
             <div className="leading-none">
               <div className="flex items-end gap-2 leading-none">
                 <div>
