@@ -1,17 +1,15 @@
-export default function NoorLogo({ size = 40 }: { size?: number }) {
+export default function NoorLogo({ size = 45 }: { size?: number }) {
   const s = size;
   return (
     <img 
-      src="/images/noor-logo.png.jfif" 
+      src="/images/Gemini_Generated_Image_hwgnv7hwgnv7hwgn.jfif" 
       alt="Noor Logo" 
       style={{ 
         height: `${s}px`, 
         width: 'auto',
-        borderRadius: '8px',
-        objectFit: 'cover',
         display: 'inline-block',
         verticalAlign: 'middle',
-        boxShadow: '0 0 8px rgba(232, 189, 75, 0.3)'
+        objectFit: 'contain'
       }} 
     />
   );
