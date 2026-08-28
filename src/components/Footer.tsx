@@ -114,8 +114,7 @@ export default function Footer() {
         {/*
           MOBILE:
           Brand = full width
-          Core Features + Tools = 2 columns
-          Legal = hidden
+          Tools + Legal = 2 columns
 
           DESKTOP:
           Brand + Core + Tools + Legal = 4 columns
@@ -141,7 +140,7 @@ export default function Footer() {
           </div>
 
           {/* Essential Features */}
-          <div>
+          <div className="hidden lg:block">
             <h4 className="font-display text-noor-ivory font-semibold text-[11px] sm:text-sm mb-3 tracking-wide uppercase text-noor-gold/90">
               Core Features
             </h4>
@@ -248,8 +247,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Legal & Support — Hidden on mobile, visible on laptop */}
-          <div className="hidden lg:block">
+          {/* Legal & Support */}
+          <div>
             <h4 className="font-display text-noor-ivory font-semibold text-sm mb-3.5 tracking-wide uppercase text-noor-gold/90">
               Legal & Support
             </h4>
