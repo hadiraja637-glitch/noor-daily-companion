@@ -84,7 +84,7 @@ export default function Footer() {
           <div className="flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2.5 mb-3">
-                <NoorLogo size={32} />
+                <NoorLogo variant="footer" />
                 <div className="font-display text-noor-ivory font-semibold text-2xl tracking-wide">Noor</div>
               </div>
               <p className="text-noor-muted text-xs leading-relaxed mb-4">
