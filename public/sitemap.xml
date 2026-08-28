@@ -1,6 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
   <url>
     <loc>https://noor-daily-companion.vercel.app/</loc>
   </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/quran</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/hadith</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/duas</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/calendar</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/zakat</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/stories</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/blog</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/qibla</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/sunnah-habits</loc>
+  </url>
+  
+  <url>
+    <loc>https://noor-daily-companion.vercel.app/tasbeeh</loc>
+  </url>
+
 </urlset>
