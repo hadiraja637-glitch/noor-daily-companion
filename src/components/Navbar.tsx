@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router';
-import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House, Languages, Check } from 'lucide-react';
+import { Search, Sun, Moon, User, Menu, X, ChevronDown, LogOut, UserRound, House, Languages, Check, BookOpen, HandHeart, Compass, MoreHorizontal } from 'lucide-react';
 import NoorLogo from './NoorLogo';
 import { getTranslation, LanguageCode, TranslationKeys } from '../locales/translations';
 
@@ -444,9 +444,19 @@ useEffect(() => {
                 }`
               }
             >
-              <span className="text-base leading-none">
-                {link.to === '/' ? '🏠' : link.to === '/quran' ? '📖' : link.to === '/duas' ? '🤲' : link.to === '/qibla' ? '🧭' : '⋯'}
-              </span>
+              <span className="leading-none text-noor-gold">
+               {link.to === '/' ? (
+                 <House size={18} strokeWidth={2} />
+               ) : link.to === '/quran' ? (
+                <BookOpen size={18} strokeWidth={2} />
+               ) : link.to === '/duas' ? (
+                <HandHeart size={18} strokeWidth={2} />
+               ) : link.to === '/qibla' ? (
+               <Compass size={18} strokeWidth={2} />
+               ) : (
+                <MoreHorizontal size={18} strokeWidth={2} />
+                )}
+               </span>
               {t(link.key)}
             </NavLink>
           ))}
