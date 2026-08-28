@@ -14,30 +14,40 @@ const NoorLogo: React.FC<NoorLogoProps> = ({
   const logoSrc =
     "/images/ChatGPT%20Image%20Aug%2028%2C%202026%2C%2006_31_11%20PM.png";
 
-  const sizeClasses = {
-    navbar:
-      "h-14 sm:h-[58px] lg:h-[62px]",
-    footer:
-      "h-12 sm:h-[52px] lg:h-[56px]",
+  const containerSize = {
+    // Navbar: narrow + slightly taller
+    navbar: "w-[32px] h-[44px] sm:w-[34px] sm:h-[46px]",
+
+    // Footer: same balanced proportion, slightly smaller
+    footer: "w-[30px] h-[40px] sm:w-[32px] sm:h-[42px]",
   };
 
   return (
-    <img
-      src={logoSrc}
-      alt="Noor"
-      draggable={false}
+    <div
       className={[
-        "block",
-        "w-auto",
-        "max-w-none",
-        "object-contain",
+        "flex",
         "shrink-0",
+        "items-center",
+        "justify-center",
         "bg-transparent",
-        "select-none",
-        sizeClasses[variant],
+        containerSize[variant],
         className,
       ].join(" ")}
-    />
+    >
+      <img
+        src={logoSrc}
+        alt="Noor"
+        draggable={false}
+        className="
+          block
+          max-h-full
+          max-w-full
+          object-contain
+          bg-transparent
+          select-none
+        "
+      />
+    </div>
   );
 };
 
