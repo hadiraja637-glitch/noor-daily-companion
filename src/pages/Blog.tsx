@@ -91,7 +91,10 @@ interface ChatMessage {
 interface UserProfile {
   name: string;
   email: string;
+  avatarUrl?: string;
 }
+
+const PROFILE_STORAGE_KEY = 'noor_user_profile';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=1200&q=82';
@@ -345,6 +348,27 @@ export const Blog: React.FC = () => {
   useEffect(() => {
     let mounted = true;
 
+    const loadSavedProfile = () => {
+      try {
+        const saved = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        if (parsed?.name && parsed?.email) {
+          setUserProfile({ name: String(parsed.name), email: String(parsed.email).toLowerCase(), avatarUrl: parsed.avatarUrl });
+          setProfileInput({ name: String(parsed.name), email: String(parsed.email).toLowerCase() });
+        }
+      } catch (error) {
+        console.warn('Noor: saved profile could not be read.', error);
+      }
+    };
+
+    loadSavedProfile();
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== PROFILE_STORAGE_KEY) return;
+      loadSavedProfile();
+    };
+    window.addEventListener('storage', handleStorage);
+
     (async () => {
       const client = await getSupabaseClient();
       if (!mounted) return;
@@ -377,6 +401,7 @@ export const Blog: React.FC = () => {
 
     return () => {
       mounted = false;
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 
@@ -593,8 +618,18 @@ export const Blog: React.FC = () => {
 
     if (!name || !email) return;
 
-    const profile = { name, email };
+    const profile: UserProfile = {
+      name,
+      email,
+      avatarUrl: userProfile?.avatarUrl,
+    };
+
     setUserProfile(profile);
+    try {
+      window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    } catch (error) {
+      console.warn('Noor: profile could not be saved locally.', error);
+    }
     setIsProfileModalOpen(false);
     setIsChatOpen(true);
   };
@@ -730,6 +765,10 @@ export const Blog: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setSubmitError('');
+                  setFormData((current) => ({
+                    ...current,
+                    author: userProfile?.name || current.author,
+                  }));
                   setIsSubmitOpen(true);
                 }}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D4AF37]/50 bg-[#D4AF37] px-4 py-2.5 text-xs sm:text-sm font-bold text-[#061913] shadow-[0_8px_25px_rgba(0,0,0,0.18)] transition hover:bg-[#e0bf55] active:scale-[0.98]"
@@ -792,25 +831,6 @@ export const Blog: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-            {CATEGORIES.map((category) => {
-              const active = activeCategory === category;
-              return (
-                <button
-                  type="button"
-                  key={category}
-                  onClick={() => setActiveCategory(category)}
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold transition ${
-                    active
-                      ? 'border border-[#D4AF37] bg-[#D4AF37]/12 text-[#D4AF37]'
-                      : 'border border-[#234538] bg-[#0B241B] text-[#94AAA1] hover:border-[#345A49] hover:text-[#E8EFEA]'
-                  }`}
-                >
-                  {category}
-                </button>
-              );
-            })}
-          </div>
         </div>
       </section>
 
@@ -1120,8 +1140,12 @@ export const Blog: React.FC = () => {
           <div className="w-full max-w-md rounded-2xl border border-[#34503F] bg-[#0B241B] p-5 sm:p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[#D4AF37]">
-                  <User size={18} />
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 text-sm font-bold text-[#D4AF37]">
+                  {userProfile?.avatarUrl ? (
+                    <img src={userProfile.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                  ) : (
+                    userProfile?.name?.slice(0, 1).toUpperCase() || <User size={18} />
+                  )}
                 </div>
                 <h3 className="mt-4 font-serif text-xl font-semibold text-[#FAF8F5]">
                   Join Noor Community
