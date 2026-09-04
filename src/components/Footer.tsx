@@ -18,40 +18,48 @@ interface NoorProfile {
 const PROFILE_STORAGE_KEY = 'noor_user_profile';
 
 const getSavedProfile = (): NoorProfile | null => {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
 
   try {
     const saved = window.localStorage.getItem(
       PROFILE_STORAGE_KEY
     );
 
-    if (!saved) return null;
+    if (!saved) {
+      return null;
+    }
 
     const parsed = JSON.parse(saved);
 
-    if (
-      parsed?.name &&
-      parsed?.email
-    ) {
-      return {
-        name: String(parsed.name).trim(),
-        email: String(parsed.email)
-          .trim()
-          .toLowerCase(),
-      };
+    const name = String(parsed?.name || '').trim();
+    const email = String(parsed?.email || '')
+      .trim()
+      .toLowerCase();
+
+    if (!name || !email) {
+      return null;
     }
+
+    return {
+      name,
+      email,
+    };
   } catch (error) {
     console.warn(
       'Noor: saved profile could not be read.',
       error
     );
-  }
 
-  return null;
+    return null;
+  }
 };
 
 const saveProfile = (profile: NoorProfile) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
 
   try {
     window.localStorage.setItem(
@@ -59,7 +67,6 @@ const saveProfile = (profile: NoorProfile) => {
       JSON.stringify(profile)
     );
 
-    // Tell Blog and any other Noor component immediately.
     window.dispatchEvent(
       new CustomEvent('noor-profile-updated', {
         detail: profile,
@@ -73,97 +80,105 @@ const saveProfile = (profile: NoorProfile) => {
   }
 };
 
-const createNameFromEmail = (
-  email: string
-) => {
+const createNameFromEmail = (email: string) => {
   const localPart =
-    email.split('@')[0]?.trim() ||
-    'Noor User';
+    email.split('@')[0]?.trim() || 'Noor User';
 
   return localPart
     .replace(/[._-]+/g, ' ')
     .replace(/\s+/g, ' ')
-    .replace(/\b\w/g, (char) =>
-      char.toUpperCase()
-    );
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 export default function Footer() {
-  const savedProfile = getSavedProfile();
+  const [profile, setProfile] =
+    useState<NoorProfile | null>(() =>
+      getSavedProfile()
+    );
 
   const [email, setEmail] = useState(
-    savedProfile?.email || ''
+    () => getSavedProfile()?.email || ''
   );
 
   const [subscribed, setSubscribed] =
     useState(false);
 
   /*
-   * Keep Footer automatically connected
-   * with the same profile used by Blog.
+   * Keep Footer connected to the same profile
+   * used by the Blog / Noor Community.
    */
   useEffect(() => {
     const syncProfile = () => {
-      const profile = getSavedProfile();
+      const savedProfile = getSavedProfile();
 
-      if (profile?.email) {
-        setEmail(profile.email);
-      }
+      setProfile(savedProfile);
+      setEmail(savedProfile?.email || '');
     };
 
+    // Load the latest profile when Footer mounts.
     syncProfile();
 
-    window.addEventListener(
-      'storage',
-      syncProfile
-    );
-
+    // Same-tab profile updates.
     window.addEventListener(
       'noor-profile-updated',
       syncProfile
     );
 
+    // Cross-tab profile updates.
+    window.addEventListener(
+      'storage',
+      syncProfile
+    );
+
     return () => {
       window.removeEventListener(
-        'storage',
+        'noor-profile-updated',
         syncProfile
       );
 
       window.removeEventListener(
-        'noor-profile-updated',
+        'storage',
         syncProfile
       );
     };
   }, []);
 
   const handleSubscribe = (
-    event: React.FormEvent
+    event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
 
-    const clean = email
+    const cleanEmail = email
       .trim()
       .toLowerCase();
 
-    if (!clean) return;
-
-    const currentProfile =
-      getSavedProfile();
+    if (!cleanEmail) {
+      return;
+    }
 
     /*
-     * If Blog already has a real name,
-     * NEVER overwrite it with an email-derived name.
+     * If the user already has a Noor profile,
+     * preserve the real profile name.
+     *
+     * Only create a name from the email when
+     * there is no existing profile yet.
      */
+    const existingProfile = getSavedProfile();
+
     const name =
-      currentProfile?.name?.trim() ||
-      createNameFromEmail(clean);
+      existingProfile?.name?.trim() ||
+      profile?.name?.trim() ||
+      createNameFromEmail(cleanEmail);
 
-    saveProfile({
+    const updatedProfile: NoorProfile = {
       name,
-      email: clean,
-    });
+      email: cleanEmail,
+    };
 
-    setEmail(clean);
+    saveProfile(updatedProfile);
+
+    setProfile(updatedProfile);
+    setEmail(cleanEmail);
     setSubscribed(true);
   };
 
@@ -231,9 +246,7 @@ export default function Footer() {
               required
               value={email}
               onChange={(event) => {
-                setEmail(
-                  event.target.value
-                );
+                setEmail(event.target.value);
                 setSubscribed(false);
               }}
               placeholder="Enter your email address"
