@@ -873,32 +873,12 @@ useEffect(() => {
   };
 
   const handleSaveProfile = (
-    event: React.FormEvent
-  ) => {
-    event.preventDefault();
-
-    const name =
-      profileInput.name.trim();
-
-    const email =
-      profileInput.email
-        .trim()
-        .toLowerCase();
-
-    if (!name || !email) return;
-
-    const handleSaveProfile = (
   event: React.FormEvent
 ) => {
   event.preventDefault();
 
-  const name =
-    profileInput.name.trim();
-
-  const email =
-    profileInput.email
-      .trim()
-      .toLowerCase();
+  const name = profileInput.name.trim();
+  const email = profileInput.email.trim().toLowerCase();
 
   if (!name || !email) return;
 
@@ -910,18 +890,15 @@ useEffect(() => {
   setUserProfile(profile);
 
   try {
-    window.localStorage.setItem(
+    localStorage.setItem(
       'noor_user_profile',
       JSON.stringify(profile)
     );
 
     window.dispatchEvent(
-      new CustomEvent(
-        'noor-profile-updated',
-        {
-          detail: profile,
-        }
-      )
+      new CustomEvent('noor-profile-updated', {
+        detail: profile,
+      })
     );
   } catch (error) {
     console.warn(
