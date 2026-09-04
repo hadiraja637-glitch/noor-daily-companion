@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare,
-  ShieldAlert, Image as ImageIcon, Sparkles, Share2, MoreVertical, Trash2, Mail
+  ShieldAlert
 } from 'lucide-react';
 
 interface BlogPost {
@@ -53,6 +53,16 @@ const BANNED_KEYWORDS = [
   'fuck', 'shit', 'abuse', 'single', 'meet me'
 ];
 
+const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
+
+// Helper function to safely get Supabase Client
+const getSupabaseClient = () => {
+  const supWindow = (window as unknown as { supabase?: any }).supabase;
+  if (!supWindow) return null;
+  return supWindow.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+};
+
 export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -70,9 +80,7 @@ export const Blog: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
   const [linkInput, setLinkInput] = useState<string>('');
-  const [showLinkField, setShowLinkField] = useState<boolean>(false);
   const [bannedAlert, setBannedAlert] = useState<boolean>(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -100,21 +108,20 @@ export const Blog: React.FC = () => {
     }
   }, []);
 
-  // Fetch Supabase Blogs (Ultra Fast & No Blank Page)
+  // Fetch Supabase Blogs
   useEffect(() => {
     let isMounted = true;
 
     const fetchBlogs = async () => {
       try {
-        const supWindow = (window as any).supabase;
-        if (!supWindow) {
-          if (isMounted) setIsLoading(false);
+        const supabaseClient = getSupabaseClient();
+        if (!supabaseClient) {
+          if (isMounted) {
+            setPosts(DEFAULT_POSTS);
+            setIsLoading(false);
+          }
           return;
         }
-
-        const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
-        const supabaseClient = supWindow.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const { data, error } = await supabaseClient
           .from('blogs')
@@ -150,17 +157,43 @@ export const Blog: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
+  // Fetch Live Chat Messages from Supabase
+  useEffect(() => {
+    if (!isChatOpen) return;
+
+    const fetchChatMessages = async () => {
+      const supabaseClient = getSupabaseClient();
+      if (!supabaseClient) return;
+
+      const { data, error } = await supabaseClient
+        .from('chat_messages')
+        .select('id, user, email, text, time, link_url')
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        const formattedMsgs: ChatMessage[] = data.map((m: any) => ({
+          id: m.id.toString(),
+          user: m.user,
+          email: m.email,
+          text: m.text,
+          time: m.time,
+          linkUrl: m.link_url,
+        }));
+        setChatMessages(formattedMsgs);
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      }
+    };
+
+    fetchChatMessages();
+  }, [isChatOpen]);
+
   // Submit Article Live to Supabase
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.author) return;
 
-    const supWindow = (window as any).supabase;
-    if (!supWindow) return;
-
-    const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
-    const supabaseClient = supWindow.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = getSupabaseClient();
+    if (!supabaseClient) return;
 
     const newPostData = {
       title: formData.title,
@@ -198,9 +231,10 @@ export const Blog: React.FC = () => {
     setUserProfile(profile);
     localStorage.setItem('noor_user_profile', JSON.stringify(profile));
     setIsProfileModalOpen(false);
+    setIsChatOpen(true);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() && !linkInput.trim()) return;
     if (!userProfile) {
@@ -217,19 +251,36 @@ export const Blog: React.FC = () => {
       return;
     }
 
-    const msg: ChatMessage = {
-      id: Date.now().toString(),
-      user: userProfile.name,
-      email: userProfile.email,
-      text: newMessage.trim(),
-      linkUrl: linkInput.trim() || undefined,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const supabaseClient = getSupabaseClient();
 
-    setChatMessages((prev) => [...prev, msg]);
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient
+        .from('chat_messages')
+        .insert([{
+          user: userProfile.name,
+          email: userProfile.email,
+          text: newMessage.trim(),
+          link_url: linkInput.trim() || null,
+          time: timeStr
+        }])
+        .select();
+
+      if (!error && data && data.length > 0) {
+        const msg: ChatMessage = {
+          id: data[0].id.toString(),
+          user: userProfile.name,
+          email: userProfile.email,
+          text: newMessage.trim(),
+          linkUrl: linkInput.trim() || undefined,
+          time: timeStr,
+        };
+        setChatMessages((prev) => [...prev, msg]);
+      }
+    }
+
     setNewMessage('');
     setLinkInput('');
-    setShowLinkField(false);
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
@@ -274,7 +325,7 @@ export const Blog: React.FC = () => {
         </div>
       </div>
 
-      {/* ADSENSE CLS RESERVED SLOT (90px) */}
+      {/* ADSENSE CLS RESERVED SLOT */}
       <div className="max-w-6xl mx-auto px-4 mb-6">
         <div className="w-full min-h-[90px] bg-[#0B2820]/40 border border-[#1A4035]/40 rounded-xl flex items-center justify-center text-noor-muted text-xs">
           <span>Ad Advertisement Slot (90px Reserved Height - Zero CLS)</span>
@@ -309,7 +360,7 @@ export const Blog: React.FC = () => {
           </div>
         </div>
 
-        {/* LOADING SKELETON (Prevents Layout Shift) */}
+        {/* LOADING SKELETON */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -378,7 +429,6 @@ export const Blog: React.FC = () => {
               </div>
             </div>
 
-            {/* IN-ARTICLE AD SLOT FOR HIGH RPM */}
             <div className="w-full min-h-[250px] bg-[#103329]/60 border border-[#1A4035] rounded-xl flex items-center justify-center text-noor-muted text-xs">
               <span>In-Article Ad Slot (250px Height Reserved)</span>
             </div>
@@ -482,3 +532,5 @@ export const Blog: React.FC = () => {
     </div>
   );
 };
+
+export default Blog;
