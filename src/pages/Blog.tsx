@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Search, PlusCircle, Clock, X, Check, BookOpen, Send, User, MessageSquare,
+  Search, PlusCircle, Clock, X, Check, BookOpen, MessageSquare,
   ShieldAlert
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 
-// Supabase Direct Connection Setup
 const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const getSupabaseClient = () => {
+  const supWindow = (window as unknown as { supabase?: any }).supabase;
+  if (!supWindow) return null;
+  return supWindow.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+};
 
 interface BlogPost {
   id: string;
@@ -90,6 +93,15 @@ export const Blog: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!(window as any).supabase) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
     const saved = localStorage.getItem('noor_user_profile');
     if (saved) {
       try {
@@ -100,12 +112,20 @@ export const Blog: React.FC = () => {
     }
   }, []);
 
-  // Fetch blogs directly from Supabase
   useEffect(() => {
     let isMounted = true;
     const fetchBlogs = async () => {
       try {
-        const { data, error } = await supabase
+        const client = getSupabaseClient();
+        if (!client) {
+          if (isMounted) {
+            setPosts(DEFAULT_POSTS);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        const { data, error } = await client
           .from('blogs')
           .select('*')
           .order('created_at', { ascending: false });
@@ -138,11 +158,13 @@ export const Blog: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
-  // Fetch public_chat messages from Supabase
   useEffect(() => {
     if (!isChatOpen) return;
     const fetchChatMessages = async () => {
-      const { data, error } = await supabase
+      const client = getSupabaseClient();
+      if (!client) return;
+
+      const { data, error } = await client
         .from('public_chat')
         .select('*')
         .order('created_at', { ascending: true });
@@ -164,10 +186,12 @@ export const Blog: React.FC = () => {
     fetchChatMessages();
   }, [isChatOpen]);
 
-  // Insert live article into Supabase
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.author) return;
+
+    const client = getSupabaseClient();
+    if (!client) return;
 
     const newPostData = {
       title: formData.title,
@@ -180,7 +204,7 @@ export const Blog: React.FC = () => {
       img: formData.img.trim() || 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=800&q=80',
     };
 
-    const { data, error } = await supabase.from('blogs').insert([newPostData]).select();
+    const { data, error } = await client.from('blogs').insert([newPostData]).select();
 
     if (!error && data && data.length > 0) {
       const createdPost: BlogPost = {
@@ -224,28 +248,31 @@ export const Blog: React.FC = () => {
     }
 
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const client = getSupabaseClient();
 
-    const { data, error } = await supabase
-      .from('public_chat')
-      .insert([{
-        user: userProfile.name,
-        email: userProfile.email,
-        text: newMessage.trim(),
-        link_url: linkInput.trim() || null,
-        time: timeStr
-      }])
-      .select();
+    if (client) {
+      const { data, error } = await client
+        .from('public_chat')
+        .insert([{
+          user: userProfile.name,
+          email: userProfile.email,
+          text: newMessage.trim(),
+          link_url: linkInput.trim() || null,
+          time: timeStr
+        }])
+        .select();
 
-    if (!error && data && data.length > 0) {
-      const msg: ChatMessage = {
-        id: String(data[0].id),
-        user: userProfile.name,
-        email: userProfile.email,
-        text: newMessage.trim(),
-        linkUrl: linkInput.trim() || undefined,
-        time: timeStr,
-      };
-      setChatMessages((prev) => [...prev, msg]);
+      if (!error && data && data.length > 0) {
+        const msg: ChatMessage = {
+          id: String(data[0].id),
+          user: userProfile.name,
+          email: userProfile.email,
+          text: newMessage.trim(),
+          linkUrl: linkInput.trim() || undefined,
+          time: timeStr,
+        };
+        setChatMessages((prev) => [...prev, msg]);
+      }
     }
 
     setNewMessage('');
