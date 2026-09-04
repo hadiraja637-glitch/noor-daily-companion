@@ -17,8 +17,7 @@ import {
   Wifi,
   Sparkles,
   Loader2,
-  Circle,
-  ChevronDown
+  Circle
 } from 'lucide-react';
 
 const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
