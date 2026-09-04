@@ -1,190 +1,178 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import NoorLogo from './NoorLogo';
-import { Mail, ArrowRight, Shield, FileText, Info, PhoneCall } from 'lucide-react';
+import {
+  Mail,
+  ArrowRight,
+  Shield,
+  FileText,
+  Info,
+  PhoneCall,
+} from 'lucide-react';
 
-const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
+interface NoorProfile {
+  name: string;
+  email: string;
+}
 
-let supabaseLoadPromise: Promise<any> | null = null;
+const PROFILE_STORAGE_KEY = 'noor_user_profile';
 
-const loadSupabase = (): Promise<any> => {
-  const supWindow = window as unknown as { supabase?: any };
+const getSavedProfile = (): NoorProfile | null => {
+  if (typeof window === 'undefined') return null;
 
-  if (supWindow.supabase?.createClient) {
-    return Promise.resolve(supWindow.supabase);
-  }
-
-  if (supabaseLoadPromise) return supabaseLoadPromise;
-
-  supabaseLoadPromise = new Promise((resolve, reject) => {
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      'script[data-noor-supabase="true"]'
+  try {
+    const saved = window.localStorage.getItem(
+      PROFILE_STORAGE_KEY
     );
 
-    if (existingScript) {
-      existingScript.addEventListener(
-        'load',
-        () => {
-          if (supWindow.supabase?.createClient) {
-            resolve(supWindow.supabase);
-          } else {
-            reject(new Error('Supabase loaded but client is unavailable.'));
-          }
-        },
-        { once: true }
-      );
+    if (!saved) return null;
 
-      existingScript.addEventListener(
-        'error',
-        () => reject(new Error('Failed to load Supabase.')),
-        { once: true }
-      );
+    const parsed = JSON.parse(saved);
 
-      return;
+    if (
+      parsed?.name &&
+      parsed?.email
+    ) {
+      return {
+        name: String(parsed.name).trim(),
+        email: String(parsed.email)
+          .trim()
+          .toLowerCase(),
+      };
     }
+  } catch (error) {
+    console.warn(
+      'Noor: saved profile could not be read.',
+      error
+    );
+  }
 
-    const script = document.createElement('script');
-
-    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-    script.async = true;
-    script.dataset.noorSupabase = 'true';
-
-    script.onload = () => {
-      if (supWindow.supabase?.createClient) {
-        resolve(supWindow.supabase);
-      } else {
-        reject(new Error('Supabase client unavailable.'));
-      }
-    };
-
-    script.onerror = () => reject(new Error('Failed to load Supabase.'));
-
-    document.head.appendChild(script);
-  });
-
-  return supabaseLoadPromise;
+  return null;
 };
 
-const getSupabaseClient = () => {
-  const supWindow = window as unknown as { supabase?: any };
+const saveProfile = (profile: NoorProfile) => {
+  if (typeof window === 'undefined') return;
 
-  if (!supWindow.supabase?.createClient) return null;
-
-  return supWindow.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-};
-
-export default function Footer() {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const clean = email.trim().toLowerCase();
-
-    if (!clean) return;
-
-    const localPart = clean.split('@')[0] || 'Noor User';
-
-    const name = localPart
-      .replace(/[._-]+/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-
-    const profile = {
-      name,
-      email: clean,
-    };
-
-    // -----------------------------------------
-    // SAME PROFILE KEY USED BY BLOG
-    // -----------------------------------------
-    localStorage.setItem(
-      'noor_user_profile',
+  try {
+    window.localStorage.setItem(
+      PROFILE_STORAGE_KEY,
       JSON.stringify(profile)
     );
 
-    // Tell Blog / other Noor components immediately
-    window.dispatchEvent(new Event('noor-profile-updated'));
+    // Tell Blog and any other Noor component immediately.
+    window.dispatchEvent(
+      new CustomEvent('noor-profile-updated', {
+        detail: profile,
+      })
+    );
+  } catch (error) {
+    console.warn(
+      'Noor: profile could not be saved.',
+      error
+    );
+  }
+};
 
-    try {
-      await loadSupabase();
+const createNameFromEmail = (
+  email: string
+) => {
+  const localPart =
+    email.split('@')[0]?.trim() ||
+    'Noor User';
 
-      const client = getSupabaseClient();
+  return localPart
+    .replace(/[._-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (char) =>
+      char.toUpperCase()
+    );
+};
 
-      if (!client) {
-        setSubscribed(true);
-        return;
+export default function Footer() {
+  const savedProfile = getSavedProfile();
+
+  const [email, setEmail] = useState(
+    savedProfile?.email || ''
+  );
+
+  const [subscribed, setSubscribed] =
+    useState(false);
+
+  /*
+   * Keep Footer automatically connected
+   * with the same profile used by Blog.
+   */
+  useEffect(() => {
+    const syncProfile = () => {
+      const profile = getSavedProfile();
+
+      if (profile?.email) {
+        setEmail(profile.email);
       }
+    };
 
-      // -----------------------------------------
-      // SAVE / UPDATE PROFILE
-      // -----------------------------------------
-      const { error: profileError } = await client
-        .from('noor_profiles')
-        .upsert(
-          {
-            name,
-            email: clean,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'email',
-          }
-        );
+    syncProfile();
 
-      if (profileError) {
-        console.error(
-          'Noor profile save error:',
-          profileError
-        );
-      }
+    window.addEventListener(
+      'storage',
+      syncProfile
+    );
 
-      // -----------------------------------------
-      // SAVE SUBSCRIBER
-      // -----------------------------------------
-      const { error: subscriberError } = await client
-        .from('noor_subscribers')
-        .upsert(
-          {
-            email: clean,
-            name,
-          },
-          {
-            onConflict: 'email',
-          }
-        );
+    window.addEventListener(
+      'noor-profile-updated',
+      syncProfile
+    );
 
-      if (subscriberError) {
-        console.error(
-          'Noor subscriber save error:',
-          subscriberError
-        );
-
-        setSubscribed(false);
-        return;
-      }
-
-      setSubscribed(true);
-    } catch (error) {
-      console.error(
-        'Noor subscription failed:',
-        error
+    return () => {
+      window.removeEventListener(
+        'storage',
+        syncProfile
       );
 
-      // Local profile still works even if Supabase
-      // temporarily cannot be reached.
-      setSubscribed(true);
-    }
+      window.removeEventListener(
+        'noor-profile-updated',
+        syncProfile
+      );
+    };
+  }, []);
+
+  const handleSubscribe = (
+    event: React.FormEvent
+  ) => {
+    event.preventDefault();
+
+    const clean = email
+      .trim()
+      .toLowerCase();
+
+    if (!clean) return;
+
+    const currentProfile =
+      getSavedProfile();
+
+    /*
+     * If Blog already has a real name,
+     * NEVER overwrite it with an email-derived name.
+     */
+    const name =
+      currentProfile?.name?.trim() ||
+      createNameFromEmail(clean);
+
+    saveProfile({
+      name,
+      email: clean,
+    });
+
+    setEmail(clean);
+    setSubscribed(true);
   };
 
   return (
     <footer
       className="relative overflow-hidden"
-      style={{ background: '#082019' }}
+      style={{
+        background: '#082019',
+      }}
     >
       <div className="islamic-pattern absolute inset-0 opacity-60 pointer-events-none" />
 
@@ -201,16 +189,24 @@ export default function Footer() {
         <div
           className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 lg:mb-8"
           style={{
-            background: 'rgba(16,51,41,0.72)',
-            border: '1px solid rgba(24,185,138,0.28)',
+            background:
+              'rgba(16,51,41,0.72)',
+            border:
+              '1px solid rgba(24,185,138,0.28)',
           }}
         >
           <div className="flex items-center gap-3.5">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(232,189,75,0.12)' }}
+              style={{
+                background:
+                  'rgba(232,189,75,0.12)',
+              }}
             >
-              <Mail size={20} className="text-noor-gold" />
+              <Mail
+                size={20}
+                className="text-noor-gold"
+              />
             </div>
 
             <div>
@@ -219,7 +215,8 @@ export default function Footer() {
               </p>
 
               <p className="text-noor-muted text-[11px]">
-                Get the latest Islamic content, reminders and updates.
+                Get the latest Islamic content,
+                reminders and updates.
               </p>
             </div>
           </div>
@@ -233,8 +230,10 @@ export default function Footer() {
               type="email"
               required
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
+              onChange={(event) => {
+                setEmail(
+                  event.target.value
+                );
                 setSubscribed(false);
               }}
               placeholder="Enter your email address"
@@ -254,7 +253,10 @@ export default function Footer() {
               ) : (
                 <>
                   Subscribe
-                  <ArrowRight size={13} className="inline ml-1" />
+                  <ArrowRight
+                    size={13}
+                    className="inline ml-1"
+                  />
                 </>
               )}
             </button>
@@ -266,7 +268,7 @@ export default function Footer() {
       <div className="relative max-w-[1400px] mx-auto px-4 lg:px-8 pt-2 pb-6 lg:pb-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-7 lg:gap-10 mb-8 lg:mb-10">
 
-          {/* Brand Info */}
+          {/* Brand */}
           <div className="col-span-2 lg:col-span-1 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2.5 mb-3">
@@ -278,8 +280,9 @@ export default function Footer() {
               </div>
 
               <p className="text-noor-muted text-xs leading-relaxed mb-1 max-w-md">
-                Your daily digital companion for Qur'an, prayer timings,
-                Sunnah habits, and spiritual growth.
+                Your daily digital companion for Qur'an,
+                prayer timings, Sunnah habits, and
+                spiritual growth.
               </p>
             </div>
           </div>
@@ -292,31 +295,46 @@ export default function Footer() {
 
             <ul className="space-y-2 text-[11px] sm:text-xs">
               <li>
-                <Link to="/quran" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/quran"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Holy Qur'an
                 </Link>
               </li>
 
               <li>
-                <Link to="/hadith" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/hadith"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Hadith Collection
                 </Link>
               </li>
 
               <li>
-                <Link to="/duas" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/duas"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Daily Duas & Azkar
                 </Link>
               </li>
 
               <li>
-                <Link to="/sunnah-habits" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/sunnah-habits"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Sunnah Habits
                 </Link>
               </li>
 
               <li>
-                <Link to="/qibla" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/qibla"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Qibla Direction
                 </Link>
               </li>
@@ -331,31 +349,46 @@ export default function Footer() {
 
             <ul className="space-y-2 text-[11px] sm:text-xs">
               <li>
-                <Link to="/calendar" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/calendar"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Islamic Calendar
                 </Link>
               </li>
 
               <li>
-                <Link to="/zakat" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/zakat"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Zakat Calculator
                 </Link>
               </li>
 
               <li>
-                <Link to="/tasbeeh" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/tasbeeh"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Digital Tasbeeh
                 </Link>
               </li>
 
               <li>
-                <Link to="/stories" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/stories"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Islamic Stories
                 </Link>
               </li>
 
               <li>
-                <Link to="/blog" className="text-noor-muted hover:text-noor-gold transition-colors">
+                <Link
+                  to="/blog"
+                  className="text-noor-muted hover:text-noor-gold transition-colors"
+                >
                   Articles & Guides
                 </Link>
               </li>
@@ -370,41 +403,53 @@ export default function Footer() {
 
             <ul className="space-y-2 text-xs">
               <li>
-                <Link to="/about" className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5">
+                <Link
+                  to="/about"
+                  className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5"
+                >
                   <Info size={13} />
                   About Us
                 </Link>
               </li>
 
               <li>
-                <Link to="/privacy" className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5">
+                <Link
+                  to="/privacy"
+                  className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5"
+                >
                   <Shield size={13} />
                   Privacy Policy
                 </Link>
               </li>
 
               <li>
-                <Link to="/terms" className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5">
+                <Link
+                  to="/terms"
+                  className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5"
+                >
                   <FileText size={13} />
                   Terms & Conditions
                 </Link>
               </li>
 
               <li>
-                <Link to="/contact" className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5">
+                <Link
+                  to="/contact"
+                  className="text-noor-muted hover:text-noor-gold transition-colors inline-flex items-center gap-1.5"
+                >
                   <PhoneCall size={13} />
                   Contact Support
                 </Link>
               </li>
             </ul>
           </div>
-
         </div>
 
         {/* Bottom Bar */}
         <div className="border-t border-noor-border/40 pt-4 lg:pt-5 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 text-[10px] sm:text-xs text-noor-muted/80">
           <p>
-            © {new Date().getFullYear()} Noor. All rights reserved.
+            © {new Date().getFullYear()} Noor.
+            All rights reserved.
           </p>
 
           <p>
