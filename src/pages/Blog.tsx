@@ -110,6 +110,7 @@ interface ChatMessage {
   text: string;
   time: string;
   linkUrl?: string;
+  avatarUrl?: string;
 }
 
 interface UserProfile {
@@ -264,6 +265,8 @@ const formatDbMessage = (m: any): ChatMessage => ({
         })
       : ''),
   linkUrl: m.link_url || undefined,
+  avatarUrl:
+    String(m.avatar_url || '').trim() || undefined,
 });
 
 const mergeMessages = (
@@ -972,18 +975,17 @@ useEffect(() => {
     try {
       const { error } =
         await client
-          .from('public_chat')
-          .insert([
-            {
-              user_name:
-                userProfile.name,
-              email:
-                userProfile.email,
-              text,
-              link_url:
-                link || null,
-            },
-          ]);
+  .from('public_chat')
+  .insert([
+    {
+      user_name: userProfile.name,
+      email: userProfile.email,
+      text,
+      link_url: link || null,
+      avatar_url:
+        localStorage.getItem('noor_user_avatar') || null,
+    },
+  ]);
 
       if (error) throw error;
 
@@ -1761,13 +1763,21 @@ useEffect(() => {
                   </button>
                 </div>
 
-                <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-[#234538] bg-[#061913] px-3 py-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
-                    {userProfile?.name
-                      ?.slice(0, 1)
-                      .toUpperCase() ||
-                      'M'}
-                  </div>
+                <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10">
+  {localStorage.getItem('noor_user_avatar') ? (
+    <img
+      src={localStorage.getItem('noor_user_avatar') || ''}
+      alt={userProfile?.name || 'You'}
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-[#D4AF37]">
+      {userProfile?.name
+        ?.slice(0, 1)
+        .toUpperCase() || 'M'}
+    </div>
+  )}
+</div>
 
                   <div className="min-w-0">
                     <p className="text-[9px] uppercase tracking-[0.12em] text-[#637D73]">
@@ -1856,10 +1866,23 @@ useEffect(() => {
                             }`}
                           >
                             {!isMine && (
-                              <div className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#34503F] bg-[#102B22] text-[10px] font-bold text-[#D4AF37]">
-                                {initial}
-                              </div>
-                            )}
+  <div className="mb-0.5 h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#34503F] bg-[#102B22]">
+    {message.avatarUrl ? (
+      <img
+        src={message.avatarUrl}
+        alt={message.user}
+        className="h-full w-full object-cover"
+        onError={(event) => {
+          event.currentTarget.style.display = 'none';
+        }}
+      />
+    ) : (
+      <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-[#D4AF37]">
+        {initial}
+      </div>
+    )}
+  </div>
+)}
 
                             <div
                               className={`relative max-w-[82%] sm:max-w-[78%] ${
@@ -2009,18 +2032,22 @@ useEffect(() => {
                             </div>
 
                             {isMine && (
-                              <div className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
-                                {userProfile?.name
-                                  ?.slice(0, 1)
-                                  .toUpperCase() ||
-                                  'M'}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      }
-                    )}
-
+  <div className="mb-0.5 h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10">
+    {message.avatarUrl ? (
+      <img
+        src={message.avatarUrl}
+        alt={userProfile?.name || 'You'}
+        className="h-full w-full object-cover"
+      />
+    ) : (
+      <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-[#D4AF37]">
+        {userProfile?.name
+          ?.slice(0, 1)
+          .toUpperCase() || 'M'}
+      </div>
+    )}
+  </div>
+)}
                     <div ref={chatEndRef} />
                   </div>
                 )}
