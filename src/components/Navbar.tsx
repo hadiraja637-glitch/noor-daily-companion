@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router';
 import {
   Search,
@@ -15,6 +15,7 @@ import {
   HandHeart,
   Compass,
   MoreHorizontal,
+  Camera,
 } from 'lucide-react';
 import NoorLogo from './NoorLogo';
 import {
@@ -99,44 +100,111 @@ const searchable: SearchableItem[] = [
   },
 ];
 
-/* =========================================================
-   NOOR PROFILE
-   This is the SAME profile storage key used by Footer/Blog.
-   ========================================================= */
-
-interface Profile {
+type Profile = {
   email: string;
   name: string;
-}
+  photo?: string;
+};
 
-const PROFILE_STORAGE_KEY = 'noor_user_profile';
+/* -------------------------------------------------------
+   PROFILE STORAGE
+   ------------------------------------------------------- */
 
 function readProfile(): Profile | null {
   if (typeof window === 'undefined') return null;
 
   try {
-    const raw = window.localStorage.getItem(
-      PROFILE_STORAGE_KEY
-    );
+    /*
+     * First use the main Navbar profile.
+     */
+    const primary = localStorage.getItem('noorProfile');
 
-    if (!raw) return null;
+    if (primary) {
+      const parsed = JSON.parse(primary);
 
-    const parsed = JSON.parse(raw);
-
-    if (!parsed?.name || !parsed?.email) {
-      return null;
+      if (parsed?.email && parsed?.name) {
+        return {
+          name: String(parsed.name).trim(),
+          email: String(parsed.email).trim().toLowerCase(),
+          photo:
+            typeof parsed.photo === 'string'
+              ? parsed.photo
+              : undefined,
+        };
+      }
     }
 
-    return {
-      name: String(parsed.name).trim(),
-      email: String(parsed.email)
-        .trim()
-        .toLowerCase(),
-    };
+    /*
+     * Compatibility with Footer profile storage.
+     */
+    const footerProfile = localStorage.getItem(
+      'noor_user_profile'
+    );
+
+    if (footerProfile) {
+      const parsed = JSON.parse(footerProfile);
+
+      if (parsed?.email && parsed?.name) {
+        return {
+          name: String(parsed.name).trim(),
+          email: String(parsed.email).trim().toLowerCase(),
+          photo:
+            typeof parsed.photo === 'string'
+              ? parsed.photo
+              : undefined,
+        };
+      }
+    }
   } catch {
     return null;
   }
+
+  return null;
 }
+
+/* -------------------------------------------------------
+   SAVE PROFILE
+   ------------------------------------------------------- */
+
+function saveProfile(profile: Profile) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    /*
+     * Main profile storage.
+     */
+    localStorage.setItem(
+      'noorProfile',
+      JSON.stringify(profile)
+    );
+
+    /*
+     * Keep Footer connected to the same profile.
+     */
+    localStorage.setItem(
+      'noor_user_profile',
+      JSON.stringify(profile)
+    );
+
+    /*
+     * Tell every Noor component immediately.
+     */
+    window.dispatchEvent(
+      new CustomEvent('noor-profile-updated', {
+        detail: profile,
+      })
+    );
+  } catch (error) {
+    console.warn(
+      'Noor: profile could not be saved.',
+      error
+    );
+  }
+}
+
+/* -------------------------------------------------------
+   INITIAL LANGUAGE
+   ------------------------------------------------------- */
 
 function readInitialLanguage(): LanguageCode {
   try {
@@ -155,37 +223,174 @@ function readInitialLanguage(): LanguageCode {
   return 'en';
 }
 
+/* -------------------------------------------------------
+   AVATAR INITIALS
+   ------------------------------------------------------- */
+
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+/* -------------------------------------------------------
+   IMAGE RESIZE
+   ------------------------------------------------------- */
+
+function resizeProfileImage(
+  file: File
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onload = () => {
+        const MAX_SIZE = 500;
+
+        let width = image.width;
+        let height = image.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height =
+              (height * MAX_SIZE) / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width =
+              (width * MAX_SIZE) / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        const canvas =
+          document.createElement('canvas');
+
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
+
+        const context =
+          canvas.getContext('2d');
+
+        if (!context) {
+          reject(
+            new Error(
+              'Could not create image canvas.'
+            )
+          );
+          return;
+        }
+
+        context.drawImage(
+          image,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+        /*
+         * JPEG keeps localStorage size much smaller
+         * than storing the original image.
+         */
+        const compressed =
+          canvas.toDataURL(
+            'image/jpeg',
+            0.82
+          );
+
+        resolve(compressed);
+      };
+
+      image.onerror = () => {
+        reject(
+          new Error(
+            'Could not load selected image.'
+          )
+        );
+      };
+
+      image.src = String(reader.result);
+    };
+
+    reader.onerror = () => {
+      reject(
+        new Error(
+          'Could not read selected image.'
+        )
+      );
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+/* -------------------------------------------------------
+   NAVBAR
+   ------------------------------------------------------- */
+
 export default function Navbar() {
   const navigate = useNavigate();
 
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
+  const [scrolled, setScrolled] =
+    useState(false);
 
-  const [selectedLanguage, setSelectedLanguage] =
-    useState<LanguageCode>(readInitialLanguage);
+  const [mobileOpen, setMobileOpen] =
+    useState(false);
+
+  const [search, setSearch] =
+    useState('');
+
+  const [moreOpen, setMoreOpen] =
+    useState(false);
+
+  const [profileOpen, setProfileOpen] =
+    useState(false);
+
+  const [langOpen, setLangOpen] =
+    useState(false);
+
+  const [
+    selectedLanguage,
+    setSelectedLanguage,
+  ] = useState<LanguageCode>(
+    readInitialLanguage
+  );
 
   const [profile, setProfile] =
     useState<Profile | null>(readProfile);
 
-  const t = (key: keyof TranslationKeys) =>
-    getTranslation(selectedLanguage, key);
+  /*
+   * Hidden file input used for profile photo.
+   */
+  const fileInputRef =
+    useRef<HTMLInputElement>(null);
 
-  /* =========================================================
-     PROFILE SYNC
-     Keeps Navbar connected with Footer/Blog profile.
-     ========================================================= */
+  const t = (
+    key: keyof TranslationKeys
+  ) =>
+    getTranslation(
+      selectedLanguage,
+      key
+    );
+
+  /* -------------------------------------------------------
+     SCROLL + PROFILE SYNC
+     ------------------------------------------------------- */
 
   useEffect(() => {
     const onScroll = () =>
       setScrolled(window.scrollY > 20);
 
-    const syncProfile = () => {
+    const sync = () =>
       setProfile(readProfile());
-    };
 
     window.addEventListener(
       'scroll',
@@ -195,15 +400,13 @@ export default function Navbar() {
 
     window.addEventListener(
       'storage',
-      syncProfile
+      sync
     );
 
     window.addEventListener(
       'noor-profile-updated',
-      syncProfile
+      sync
     );
-
-    syncProfile();
 
     return () => {
       window.removeEventListener(
@@ -213,15 +416,19 @@ export default function Navbar() {
 
       window.removeEventListener(
         'storage',
-        syncProfile
+        sync
       );
 
       window.removeEventListener(
         'noor-profile-updated',
-        syncProfile
+        sync
       );
     };
   }, []);
+
+  /* -------------------------------------------------------
+     LANGUAGE
+     ------------------------------------------------------- */
 
   useEffect(() => {
     document.documentElement.lang =
@@ -237,20 +444,13 @@ export default function Navbar() {
     }
   }, [selectedLanguage]);
 
-  const profileInitials = useMemo(() => {
-    if (!profile?.name) return '';
-
-    return profile.name
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((name) => name[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-  }, [profile]);
+  /* -------------------------------------------------------
+     SEARCH SUGGESTIONS
+     ------------------------------------------------------- */
 
   const suggestions = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q =
+      search.trim().toLowerCase();
 
     if (!q) return [];
 
@@ -269,14 +469,22 @@ export default function Navbar() {
             .includes(q)
       )
       .slice(0, 5);
-  }, [search, selectedLanguage]);
+  }, [
+    search,
+    selectedLanguage,
+  ]);
+
+  /* -------------------------------------------------------
+     SEARCH SUBMIT
+     ------------------------------------------------------- */
 
   const submitSearch = (
     e?: React.FormEvent
   ) => {
     e?.preventDefault();
 
-    const q = search.trim().toLowerCase();
+    const q =
+      search.trim().toLowerCase();
 
     if (!q) return;
 
@@ -301,14 +509,87 @@ export default function Navbar() {
     }
   };
 
-  /* =========================================================
+  /* -------------------------------------------------------
+     PROFILE PHOTO SELECT
+     ------------------------------------------------------- */
+
+  const handleProfilePhoto = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file =
+      event.target.files?.[0];
+
+    if (!file) return;
+
+    /*
+     * Only image files.
+     */
+    if (!file.type.startsWith('image/')) {
+      event.target.value = '';
+      return;
+    }
+
+    const currentProfile =
+      readProfile();
+
+    /*
+     * A photo is only meaningful when
+     * a Noor profile already exists.
+     */
+    if (!currentProfile) {
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const photo =
+        await resizeProfileImage(file);
+
+      const updatedProfile: Profile = {
+        ...currentProfile,
+        photo,
+      };
+
+      saveProfile(updatedProfile);
+      setProfile(updatedProfile);
+    } catch (error) {
+      console.warn(
+        'Noor: profile photo could not be saved.',
+        error
+      );
+    }
+
+    /*
+     * Allows selecting the same photo again.
+     */
+    event.target.value = '';
+  };
+
+  /* -------------------------------------------------------
+     OPEN PHOTO PICKER
+     ------------------------------------------------------- */
+
+  const openPhotoPicker = (
+    event: React.MouseEvent
+  ) => {
+    event.stopPropagation();
+
+    if (!profile) return;
+
+    fileInputRef.current?.click();
+  };
+
+  /* -------------------------------------------------------
      SIGN OUT
-     Same behavior, now using the correct shared profile key.
-     ========================================================= */
+     ------------------------------------------------------- */
 
   const signOut = () => {
     localStorage.removeItem(
-      PROFILE_STORAGE_KEY
+      'noorProfile'
+    );
+
+    localStorage.removeItem(
+      'noor_user_profile'
     );
 
     setProfile(null);
@@ -318,6 +599,10 @@ export default function Navbar() {
       new Event('noor-profile-updated')
     );
   };
+
+  /* -------------------------------------------------------
+     LANGUAGE SELECT
+     ------------------------------------------------------- */
 
   const handleSelectLanguage = (
     code: LanguageCode
@@ -416,27 +701,30 @@ export default function Navbar() {
                       '1px solid rgba(232,189,75,0.22)',
                   }}
                 >
-                  {moreLinks.map((item) => (
-                    <Link
-                      key={item.key}
-                      to={item.to}
-                      onClick={() =>
-                        setMoreOpen(false)
-                      }
-                      className="block rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5"
-                    >
-                      {item.to ===
-                      '/sunnah-habits'
-                        ? 'Sunnah Habits'
-                        : t(item.key)}
-                    </Link>
-                  ))}
+                  {moreLinks.map(
+                    (item) => (
+                      <Link
+                        key={item.key}
+                        to={item.to}
+                        onClick={() =>
+                          setMoreOpen(false)
+                        }
+                        className="block rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5"
+                      >
+                        {item.to ===
+                        '/sunnah-habits'
+                          ? 'Sunnah Habits'
+                          : t(item.key)}
+                      </Link>
+                    )
+                  )}
                 </div>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-1 ml-auto">
+            {/* SEARCH */}
             <div className="relative hidden sm:block">
               <form
                 onSubmit={submitSearch}
@@ -450,7 +738,9 @@ export default function Navbar() {
                 <input
                   value={search}
                   onChange={(e) =>
-                    setSearch(e.target.value)
+                    setSearch(
+                      e.target.value
+                    )
                   }
                   placeholder={t(
                     'searchAnything'
@@ -469,26 +759,30 @@ export default function Navbar() {
                       '1px solid rgba(232,189,75,0.22)',
                   }}
                 >
-                  {suggestions.map((item) => (
-                    <button
-                      key={`${item.to}-${item.key}`}
-                      onMouseDown={(e) =>
-                        e.preventDefault()
-                      }
-                      onClick={() => {
-                        navigate(item.to);
-                        setSearch('');
-                      }}
-                      className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+                  {suggestions.map(
+                    (item) => (
+                      <button
+                        key={`${item.to}-${item.key}`}
+                        onMouseDown={(e) =>
+                          e.preventDefault()
+                        }
+                        onClick={() => {
+                          navigate(
+                            item.to
+                          );
+                          setSearch('');
+                        }}
+                        className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-noor-muted hover:text-noor-gold hover:bg-white/5"
+                      >
+                        {item.label}
+                      </button>
+                    )
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Language Selector Dropdown */}
+            {/* LANGUAGE */}
             <div className="relative">
               <button
                 onClick={() =>
@@ -511,61 +805,114 @@ export default function Navbar() {
                       '1px solid rgba(232,189,75,0.22)',
                   }}
                 >
-                  {languages.map((lang) => {
-                    const isSelected =
-                      selectedLanguage ===
-                      lang.code;
+                  {languages.map(
+                    (lang) => {
+                      const isSelected =
+                        selectedLanguage ===
+                        lang.code;
 
-                    return (
-                      <button
-                        key={lang.code}
-                        onClick={() =>
-                          handleSelectLanguage(
-                            lang.code
-                          )
-                        }
-                        className={`w-full flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
-                          isSelected
-                            ? 'text-noor-gold bg-noor-gold/10 font-medium'
-                            : 'text-noor-muted hover:text-noor-gold hover:bg-white/5'
-                        }`}
-                      >
-                        <span>
-                          {lang.name}
-                        </span>
+                      return (
+                        <button
+                          key={lang.code}
+                          onClick={() =>
+                            handleSelectLanguage(
+                              lang.code
+                            )
+                          }
+                          className={`w-full flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                            isSelected
+                              ? 'text-noor-gold bg-noor-gold/10 font-medium'
+                              : 'text-noor-muted hover:text-noor-gold hover:bg-white/5'
+                          }`}
+                        >
+                          <span>
+                            {lang.name}
+                          </span>
 
-                        {isSelected && (
-                          <Check
-                            size={14}
-                            className="text-noor-gold ml-2 shrink-0"
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
+                          {isSelected && (
+                            <Check
+                              size={14}
+                              className="text-noor-gold ml-2 shrink-0"
+                            />
+                          )}
+                        </button>
+                      );
+                    }
+                  )}
                 </div>
               )}
             </div>
 
-            {/* =================================================
-                PROFILE
-                Connected to the same profile as Footer/Blog.
-                ================================================= */}
-
+            {/* -------------------------------------------------
+               PROFILE
+               ------------------------------------------------- */}
             <div className="relative">
+              {/* Hidden image picker */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={
+                  handleProfilePhoto
+                }
+                className="hidden"
+                aria-hidden="true"
+              />
+
               <button
                 onClick={() =>
                   setProfileOpen((v) => !v)
                 }
                 aria-label={t('profile')}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-noor-gold bg-white/5 border border-noor-border hover:border-noor-gold/50 transition-colors overflow-hidden"
+                className="relative w-8 h-8 rounded-full flex items-center justify-center text-noor-gold bg-white/5 border border-noor-border hover:border-noor-gold/50 transition-all overflow-visible"
               >
-                {profile ? (
-                  <span className="font-semibold text-xs">
-                    {profileInitials}
+                {/* Main Avatar */}
+                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                  {profile?.photo ? (
+                    <img
+                      src={profile.photo}
+                      alt={`${profile.name} profile`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : profile ? (
+                    <span className="font-semibold text-xs">
+                      {getInitials(
+                        profile.name
+                      )}
+                    </span>
+                  ) : (
+                    <User size={16} />
+                  )}
+                </div>
+
+                {/* Camera Badge */}
+                {profile && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Change profile photo"
+                    onClick={
+                      openPhotoPicker
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        event.key ===
+                          'Enter' ||
+                        event.key ===
+                          ' '
+                      ) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    className="absolute -right-0.5 -bottom-0.5 w-[15px] h-[15px] rounded-full flex items-center justify-center bg-[#0B2820] border border-noor-gold/70 text-noor-gold shadow-md cursor-pointer hover:bg-noor-gold hover:text-[#061812] transition-colors"
+                  >
+                    <Camera
+                      size={8}
+                      strokeWidth={2.5}
+                    />
                   </span>
-                ) : (
-                  <User size={16} />
                 )}
               </button>
 
@@ -580,17 +927,44 @@ export default function Navbar() {
                 >
                   {profile ? (
                     <>
+                      {/* Profile Header */}
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-noor-gold/15 text-noor-gold shrink-0">
-                          {profileInitials ? (
-                            <span className="font-semibold text-sm">
-                              {profileInitials}
-                            </span>
-                          ) : (
-                            <UserRound size={18} />
-                          )}
+                        {/* Profile Image + Camera */}
+                        <div className="relative shrink-0">
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-noor-gold/15 text-noor-gold">
+                            {profile.photo ? (
+                              <img
+                                src={
+                                  profile.photo
+                                }
+                                alt={`${profile.name} profile`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <UserRound
+                                size={18}
+                              />
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={
+                              openPhotoPicker
+                            }
+                            aria-label="Change profile photo"
+                            className="absolute -right-1 -bottom-1 w-5 h-5 rounded-full flex items-center justify-center bg-[#0B2820] border border-noor-gold/70 text-noor-gold hover:bg-noor-gold hover:text-[#061812] transition-colors"
+                          >
+                            <Camera
+                              size={10}
+                              strokeWidth={
+                                2.5
+                              }
+                            />
+                          </button>
                         </div>
 
+                        {/* Name + Email */}
                         <div className="min-w-0">
                           <p className="text-noor-ivory font-medium truncate">
                             {profile.name}
@@ -602,11 +976,16 @@ export default function Navbar() {
                         </div>
                       </div>
 
+                      {/* Sign Out */}
                       <button
-                        onClick={signOut}
+                        onClick={
+                          signOut
+                        }
                         className="w-full flex items-center justify-center gap-2 rounded-lg border border-noor-border py-2 text-xs text-noor-muted hover:text-noor-gold"
                       >
-                        <LogOut size={13} />
+                        <LogOut
+                          size={13}
+                        />
                         {t('signOut')}
                       </button>
                     </>
@@ -619,10 +998,11 @@ export default function Navbar() {
                       </p>
 
                       <p className="text-noor-muted text-xs leading-relaxed mb-3">
-                        Enter your email in the
-                        Stay Connected section
-                        below to save a profile
-                        on this device.
+                        Enter your email in
+                        the Stay Connected
+                        section below to
+                        save a profile on
+                        this device.
                       </p>
                     </div>
                   )}
@@ -630,10 +1010,13 @@ export default function Navbar() {
               )}
             </div>
 
+            {/* MOBILE MENU */}
             <button
               className="lg:hidden p-2 rounded-lg text-noor-muted hover:text-noor-ivory hover:bg-white/5 transition-colors"
               onClick={() =>
-                setMobileOpen(!mobileOpen)
+                setMobileOpen(
+                  !mobileOpen
+                )
               }
             >
               {mobileOpen ? (
@@ -645,6 +1028,7 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* MOBILE MENU */}
         {mobileOpen && (
           <div
             className="lg:hidden border-t border-noor-border px-4 pb-4 pt-2"
@@ -665,9 +1049,13 @@ export default function Navbar() {
               <input
                 value={search}
                 onChange={(e) =>
-                  setSearch(e.target.value)
+                  setSearch(
+                    e.target.value
+                  )
                 }
-                placeholder={t('searchNoor')}
+                placeholder={t(
+                  'searchNoor'
+                )}
                 className="flex-1 bg-transparent outline-none text-sm text-noor-ivory"
               />
             </form>
@@ -678,27 +1066,32 @@ export default function Navbar() {
                   size={14}
                   className="text-noor-gold"
                 />
-                {t('selectLanguage')}
+                {t(
+                  'selectLanguage'
+                )}
               </label>
 
               <select
                 value={selectedLanguage}
                 onChange={(e) =>
                   handleSelectLanguage(
-                    e.target.value as LanguageCode
+                    e.target
+                      .value as LanguageCode
                   )
                 }
                 className="w-full bg-[#0B2820] text-noor-ivory border border-noor-border rounded-lg px-3 py-2 text-sm outline-none focus:border-noor-gold/50"
               >
-                {languages.map((lang) => (
-                  <option
-                    key={lang.code}
-                    value={lang.code}
-                    className="bg-[#0B2820] text-noor-ivory"
-                  >
-                    {lang.name}
-                  </option>
-                ))}
+                {languages.map(
+                  (lang) => (
+                    <option
+                      key={lang.code}
+                      value={lang.code}
+                      className="bg-[#0B2820] text-noor-ivory"
+                    >
+                      {lang.name}
+                    </option>
+                  )
+                )}
               </select>
             </div>
 
@@ -708,7 +1101,8 @@ export default function Navbar() {
                 ...moreLinks.filter(
                   (m) =>
                     !navLinks.some(
-                      (n) => n.to === m.to
+                      (n) =>
+                        n.to === m.to
                     )
                 ),
               ].map((link) => (
@@ -716,7 +1110,9 @@ export default function Navbar() {
                   key={link.key}
                   to={link.to}
                   onClick={() =>
-                    setMobileOpen(false)
+                    setMobileOpen(
+                      false
+                    )
                   }
                   className={({ isActive }) =>
                     `px-3 py-2.5 rounded-lg text-sm ${
@@ -734,13 +1130,15 @@ export default function Navbar() {
         )}
       </nav>
 
+      {/* MOBILE BOTTOM NAVIGATION */}
       <div
         aria-label="Mobile navigation"
         className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-noor-border"
         style={{
           background:
             'rgba(6,24,18,0.97)',
-          backdropFilter: 'blur(16px)',
+          backdropFilter:
+            'blur(16px)',
         }}
       >
         <div className="flex items-center justify-around py-2">
@@ -785,17 +1183,20 @@ export default function Navbar() {
                     size={18}
                     strokeWidth={2}
                   />
-                ) : link.to === '/quran' ? (
+                ) : link.to ===
+                  '/quran' ? (
                   <BookOpen
                     size={18}
                     strokeWidth={2}
                   />
-                ) : link.to === '/duas' ? (
+                ) : link.to ===
+                  '/duas' ? (
                   <HandHeart
                     size={18}
                     strokeWidth={2}
                   />
-                ) : link.to === '/qibla' ? (
+                ) : link.to ===
+                  '/qibla' ? (
                   <Compass
                     size={18}
                     strokeWidth={2}
