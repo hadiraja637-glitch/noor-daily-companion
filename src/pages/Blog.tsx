@@ -4,15 +4,60 @@ import {
   ShieldAlert, Image as ImageIcon, Link as LinkIcon, ThumbsUp, Heart, Smile, Sparkles
 } from 'lucide-react';
 
-// Custom Supabase Client Loader (fixes Vercel Build Error without modifying UI)
+// Custom Supabase Client Loader (keeps the existing UI/design intact)
 const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
 
-const getSupabaseClient = () => {
-  const supWindow = (window as unknown as { supabase?: any }).supabase;
-  if (!supWindow) return null;
-  return supWindow.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabaseLoadPromise: Promise<any> | null = null;
+
+const loadSupabase = (): Promise<any> => {
+  const supWindow = window as unknown as { supabase?: any };
+
+  if (supWindow.supabase?.createClient) {
+    return Promise.resolve(supWindow.supabase);
+  }
+
+  if (supabaseLoadPromise) return supabaseLoadPromise;
+
+  supabaseLoadPromise = new Promise((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      'script[data-noor-supabase="true"]'
+    );
+
+    if (existingScript) {
+      existingScript.addEventListener('load', () => {
+        if (supWindow.supabase?.createClient) resolve(supWindow.supabase);
+        else reject(new Error('Supabase loaded but the client is unavailable.'));
+      }, { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load Supabase.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    script.async = true;
+    script.dataset.noorSupabase = 'true';
+
+    script.onload = () => {
+      if (supWindow.supabase?.createClient) resolve(supWindow.supabase);
+      else reject(new Error('Supabase loaded but the client is unavailable.'));
+    };
+    script.onerror = () => reject(new Error('Failed to load Supabase.'));
+
+    document.head.appendChild(script);
+  });
+
+  return supabaseLoadPromise;
 };
+
+const getSupabaseClient = () => {
+  const supWindow = window as unknown as { supabase?: any };
+  if (!supWindow.supabase?.createClient) return null;
+  return supWindow.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+};
+
+const DEFAULT_IMAGE =
+  'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=1000&q=80';
 
 interface BlogPost {
   id: string;
@@ -51,7 +96,7 @@ const DEFAULT_POSTS: BlogPost[] = [
     author: 'Sheikh Omar Al-Sayed',
     date: 'Aug 18, 2026',
     readTime: '5 min read',
-    img: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=1000&q=80',
+    img: DEFAULT_IMAGE,
     featured: true,
   },
   {
@@ -130,14 +175,12 @@ export const Blog: React.FC = () => {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Load CDN Supabase JS Script if missing dynamically
+  // Load Supabase once. The promise prevents the old race condition where
+  // the blog/chat query could run before the CDN script had finished loading.
   useEffect(() => {
-    if (!(window as any).supabase) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-      script.async = true;
-      document.body.appendChild(script);
-    }
+    loadSupabase().catch((error) => {
+      console.error('Supabase failed to load:', error);
+    });
   }, []);
 
   // Load User Profile from LocalStorage
@@ -157,14 +200,9 @@ export const Blog: React.FC = () => {
     let isMounted = true;
     const fetchBlogs = async () => {
       try {
+        await loadSupabase();
         const client = getSupabaseClient();
-        if (!client) {
-          if (isMounted) {
-            setPosts(DEFAULT_POSTS);
-            setIsLoading(false);
-          }
-          return;
-        }
+        if (!client) throw new Error('Supabase client is unavailable.');
 
         const { data, error } = await client
           .from('blogs')
@@ -181,10 +219,16 @@ export const Blog: React.FC = () => {
             author: b.author || 'Anonymous',
             date: b.date || new Date().toLocaleDateString(),
             readTime: b.read_time || b.readTime || '3 min read',
-            img: b.img || 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=800&q=80',
+            img: b.img || DEFAULT_IMAGE,
             featured: b.featured || false,
           }));
-          setPosts([...formatted, ...DEFAULT_POSTS]);
+          const merged = [
+            ...formatted,
+            ...DEFAULT_POSTS.filter(
+              (fallbackPost) => !formatted.some((post) => post.id === fallbackPost.id)
+            ),
+          ];
+          setPosts(merged);
         } else if (isMounted) {
           setPosts(DEFAULT_POSTS);
         }
@@ -200,39 +244,125 @@ export const Blog: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
-  // Fetch Chat Messages when Chat Modal Opens
+  // Fetch chat messages and keep the public room realtime.
   useEffect(() => {
     if (!isChatOpen) return;
-    const fetchChatMessages = async () => {
-      const client = getSupabaseClient();
-      if (!client) return;
 
-      const { data, error } = await client
-        .from('public_chat')
-        .select('*')
-        .order('created_at', { ascending: true });
+    let isMounted = true;
+    let channel: any = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-      if (!error && data) {
-        const formattedMsgs: ChatMessage[] = data.map((m: any) => ({
-          id: String(m.id),
-          user: m.user || 'User',
-          email: m.email || '',
-          text: m.text || '',
-          time: m.time || '',
-          linkUrl: m.link_url,
-        }));
-        setChatMessages(formattedMsgs);
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    const formatChatMessages = (data: any[]): ChatMessage[] =>
+      data.map((m: any) => ({
+        id: String(m.id),
+        user: m.user || 'User',
+        email: m.email || '',
+        text: m.text || '',
+        time: m.time || '',
+        linkUrl: m.link_url || undefined,
+      }));
+
+    const refreshMessages = async () => {
+      try {
+        await loadSupabase();
+        const client = getSupabaseClient();
+        if (!client || !isMounted) return;
+
+        const { data, error } = await client
+          .from('public_chat')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (!error && data && isMounted) {
+          setChatMessages(formatChatMessages(data));
+          setTimeout(
+            () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }),
+            50
+          );
+        } else if (error) {
+          console.error('Error fetching public chat:', error);
+        }
+      } catch (error) {
+        console.error('Error loading public chat:', error);
       }
     };
 
-    fetchChatMessages();
+    const startRealtimeChat = async () => {
+      try {
+        await refreshMessages();
+        if (!isMounted) return;
+
+        const client = getSupabaseClient();
+        if (!client) return;
+
+        channel = client
+          .channel('noor-public-chat')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'public_chat',
+            },
+            (payload: any) => {
+              if (!isMounted || !payload?.new) return;
+
+              const incoming: ChatMessage = {
+                id: String(payload.new.id),
+                user: payload.new.user || 'User',
+                email: payload.new.email || '',
+                text: payload.new.text || '',
+                time: payload.new.time || '',
+                linkUrl: payload.new.link_url || undefined,
+              };
+
+              setChatMessages((prev) => {
+                if (prev.some((message) => message.id === incoming.id)) return prev;
+                return [...prev, incoming];
+              });
+
+              setTimeout(
+                () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }),
+                50
+              );
+            }
+          )
+          .subscribe((status: string) => {
+            console.log('Noor public chat realtime status:', status);
+          });
+
+        // Lightweight fallback keeps the room usable if Realtime is not
+        // enabled for the table in Supabase yet.
+        pollTimer = setInterval(refreshMessages, 10000);
+      } catch (error) {
+        console.error('Error starting public chat realtime:', error);
+        pollTimer = setInterval(refreshMessages, 10000);
+      }
+    };
+
+    startRealtimeChat();
+
+    return () => {
+      isMounted = false;
+      if (pollTimer) clearInterval(pollTimer);
+      if (channel) {
+        const client = getSupabaseClient();
+        client?.removeChannel(channel);
+      }
+    };
   }, [isChatOpen]);
 
   // Submit Article Handler
   const handleSubmitArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.author) return;
+
+    try {
+      await loadSupabase();
+    } catch (error) {
+      console.error('Supabase failed to load before article submission:', error);
+      return;
+    }
 
     const client = getSupabaseClient();
     if (!client) return;
@@ -245,12 +375,17 @@ export const Blog: React.FC = () => {
       author: formData.author,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
       read_time: formData.readTime,
-      img: formData.img.trim() || 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=800&q=80',
+      img: formData.img.trim() || DEFAULT_IMAGE,
     };
 
     const { data, error } = await client.from('blogs').insert([newPostData]).select();
 
-    if (!error && data && data.length > 0) {
+    if (error) {
+      console.error('Error publishing article to Supabase:', error);
+      return;
+    }
+
+    if (data && data.length > 0) {
       const createdPost: BlogPost = {
         id: String(data[0].id),
         ...newPostData,
@@ -294,6 +429,13 @@ export const Blog: React.FC = () => {
     }
 
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      await loadSupabase();
+    } catch (error) {
+      console.error('Supabase failed to load before sending chat message:', error);
+      return;
+    }
+
     const client = getSupabaseClient();
 
     if (client) {
@@ -431,6 +573,11 @@ export const Blog: React.FC = () => {
                   <img
                     src={featuredPost.img}
                     alt={featuredPost.title}
+                    loading="eager"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = DEFAULT_IMAGE;
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-3 left-3 bg-[#061913]/80 backdrop-blur-md px-3 py-1 rounded-full border border-[#1C4235] text-[10px] font-semibold text-[#D4AF37]">
@@ -510,7 +657,15 @@ export const Blog: React.FC = () => {
               <X size={18} />
             </button>
             <div className="h-60 rounded-xl overflow-hidden">
-              <img src={selectedPost.img} alt={selectedPost.title} className="w-full h-full object-cover" />
+              <img
+                src={selectedPost.img}
+                alt={selectedPost.title}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = DEFAULT_IMAGE;
+                }}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="space-y-2 border-b border-[#1C4235] pb-4">
               <span className="text-xs text-[#D4AF37] font-semibold tracking-wider">{selectedPost.category.toUpperCase()}</span>
