@@ -16,7 +16,6 @@ import {
   Trash2,
   Wifi,
   Sparkles,
-  ChevronDown,
   Loader2,
   Circle
 } from 'lucide-react';
@@ -789,32 +788,32 @@ export const Blog: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#061913] text-[#E8EFEA] pt-20 pb-16 selection:bg-[#D4AF37]/30">
-      {/* HERO */}
+      {/* HERO — centered layout matching the original desktop design */}
       <section className="relative overflow-hidden border-b border-[#17372C]">
-        <div className="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(circle_at_20%_20%,rgba(212,175,55,0.08),transparent_30%),radial-gradient(circle_at_85%_10%,rgba(18,130,94,0.12),transparent_35%)]" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-7">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#34503F] bg-[#0B241B] px-3 py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.12em] text-[#D4AF37]">
-                <Sparkles size={13} />
-                Islamic Insights & Knowledge
-              </div>
-              <h1 className="mt-4 font-serif text-[2.15rem] leading-[1.05] sm:text-5xl lg:text-[3.35rem] font-semibold tracking-tight text-[#FAF8F5]">
-                Islamic Blog
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm sm:text-[15px] leading-6 text-[#A3B8B0]">
-                Insights, reflections, and practical reminders to strengthen faith and enrich everyday life.
-              </p>
+        <div className="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(circle_at_50%_18%,rgba(212,175,55,0.10),transparent_32%),radial-gradient(circle_at_85%_20%,rgba(18,130,94,0.10),transparent_35%)]" />
+        <div className="relative mx-auto flex min-h-[390px] max-w-7xl items-center justify-center px-4 py-12 text-center sm:min-h-[455px] sm:px-6 sm:py-16 lg:min-h-[500px] lg:px-8">
+          <div className="flex w-full max-w-4xl flex-col items-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#34503F] bg-[#0B241B] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#D4AF37] sm:text-xs">
+              <Sparkles size={13} />
+              Islamic Insights & Knowledge
             </div>
 
-            <div className="flex flex-wrap gap-2.5">
+            <h1 className="mt-5 font-serif text-[2.45rem] leading-[1.02] font-semibold tracking-tight text-[#FAF8F5] sm:text-5xl lg:text-[3.7rem]">
+              Islamic Blog
+            </h1>
+
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-[#A3B8B0] sm:text-[15px]">
+              Insights, reflections, and practical reminders to strengthen faith and enrich everyday life.
+            </p>
+
+            <div className="mt-7 flex w-full flex-wrap justify-center gap-2.5 sm:mt-8">
               <button
                 type="button"
                 onClick={() => {
                   setSubmitError('');
                   setIsSubmitOpen(true);
                 }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D4AF37]/50 bg-[#D4AF37] px-4 py-2.5 text-xs sm:text-sm font-bold text-[#061913] shadow-[0_8px_25px_rgba(0,0,0,0.18)] transition hover:bg-[#e0bf55] active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D4AF37]/50 bg-[#D4AF37] px-4 py-2.5 text-xs font-bold text-[#061913] shadow-[0_8px_25px_rgba(0,0,0,0.18)] transition hover:bg-[#e0bf55] active:scale-[0.98] sm:text-sm"
               >
                 <PlusCircle size={16} />
                 Submit Article
@@ -823,7 +822,7 @@ export const Blog: React.FC = () => {
               <button
                 type="button"
                 onClick={openCommunity}
-                className="group inline-flex items-center justify-center gap-2 rounded-xl border border-[#34503F] bg-[#0B241B] px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#E8EFEA] transition hover:border-[#D4AF37]/60 hover:bg-[#102B22] active:scale-[0.98]"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl border border-[#34503F] bg-[#0B241B] px-4 py-2.5 text-xs font-semibold text-[#E8EFEA] transition hover:border-[#D4AF37]/60 hover:bg-[#102B22] active:scale-[0.98] sm:text-sm"
               >
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
@@ -837,67 +836,45 @@ export const Blog: React.FC = () => {
         </div>
       </section>
 
-      {/* CONTROLS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
-        <div className="rounded-2xl border border-[#17372C] bg-[#082018]/80 p-3 sm:p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-            <div className="relative min-w-0 flex-[1.25] lg:max-w-2xl">
-              <Search
-                size={17}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6F8D82]"
-              />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search articles or authors..."
-                className="w-full rounded-xl border border-[#234538] bg-[#061913] py-3 pl-10 pr-4 text-sm text-[#E8EFEA] outline-none placeholder:text-[#5E776E] focus:border-[#D4AF37]/70 focus:ring-2 focus:ring-[#D4AF37]/10"
-              />
-            </div>
+      {/* CONTROLS — intentionally kept compact like the original layout */}
+      <section className="mx-auto w-full max-w-3xl px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+        <div className="relative">
+          <Search
+            size={18}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6F8D82]"
+          />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search articles or authors..."
+            className="w-full rounded-xl border border-[#234538] bg-[#061913] py-3.5 pl-11 pr-4 text-sm text-[#E8EFEA] outline-none placeholder:text-[#5E776E] focus:border-[#D4AF37]/70 focus:ring-2 focus:ring-[#D4AF37]/10"
+          />
+        </div>
 
-            <div className="relative w-full lg:w-[190px] lg:shrink-0">
-              <select
-                value={activeCategory}
-                onChange={(event) => setActiveCategory(event.target.value)}
-                className="w-full appearance-none rounded-xl border border-[#234538] bg-[#061913] py-3 pl-4 pr-9 text-sm text-[#DCE7E1] outline-none focus:border-[#D4AF37]/70"
+        <div className="mt-3 flex justify-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {CATEGORIES.map((category) => {
+            const active = activeCategory === category;
+            return (
+              <button
+                type="button"
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition sm:text-xs ${
+                  active
+                    ? 'border border-[#D4AF37] bg-[#D4AF37]/12 text-[#D4AF37]'
+                    : 'border border-[#234538] bg-[#0B241B] text-[#94AAA1] hover:border-[#345A49] hover:text-[#E8EFEA]'
+                }`}
               >
-                {CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={15}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#789187]"
-              />
-            </div>
-          </div>
-
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-            {CATEGORIES.map((category) => {
-              const active = activeCategory === category;
-              return (
-                <button
-                  type="button"
-                  key={category}
-                  onClick={() => setActiveCategory(category)}
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold transition ${
-                    active
-                      ? 'border border-[#D4AF37] bg-[#D4AF37]/12 text-[#D4AF37]'
-                      : 'border border-[#234538] bg-[#0B241B] text-[#94AAA1] hover:border-[#345A49] hover:text-[#E8EFEA]'
-                  }`}
-                >
-                  {category}
-                </button>
-              );
-            })}
-          </div>
+                {category}
+              </button>
+            );
+          })}
         </div>
       </section>
 
       {/* BLOG CONTENT */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
+      <main className="max-w-7xl mx-auto px-4 pt-7 sm:px-6 sm:pt-8 lg:px-8">
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 animate-pulse">
             <div className="lg:col-span-8 h-[310px] rounded-2xl border border-[#17372C] bg-[#0B241B]" />
@@ -1290,8 +1267,19 @@ export const Blog: React.FC = () => {
                 </div>
 
                 <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-[#234538] bg-[#061913] px-3 py-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
-                    {userProfile?.name?.slice(0, 1).toUpperCase() || 'M'}
+                  <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
+                    {userProfile?.avatarUrl ? (
+                      <img
+                        src={userProfile.avatarUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center">
+                        {userProfile?.name?.slice(0, 1).toUpperCase() || 'M'}
+                      </span>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-[9px] uppercase tracking-[0.12em] text-[#637D73]">
