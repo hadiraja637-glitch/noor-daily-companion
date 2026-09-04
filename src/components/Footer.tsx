@@ -1,4 +1,3 @@
-```tsx
 import { useState } from 'react';
 import { Link } from 'react-router';
 import NoorLogo from './NoorLogo';
