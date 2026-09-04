@@ -16,7 +16,6 @@ import {
   Trash2,
   Wifi,
   Sparkles,
-  ChevronDown,
   Loader2,
   Circle
 } from 'lucide-react';
@@ -86,53 +85,12 @@ interface ChatMessage {
   text: string;
   time: string;
   linkUrl?: string;
-  avatarUrl?: string;
 }
 
 interface UserProfile {
   name: string;
   email: string;
-  avatarUrl?: string;
 }
-
-const PROFILE_STORAGE_KEY = 'noor_user_profile';
-
-// The Navbar/Profile can use any of these common field names. Noor normalises
-// them here so the same DP is reused inside Community without changing the
-// public_chat table schema.
-const getAvatarUrl = (profile: any): string | undefined => {
-  if (!profile || typeof profile !== 'object') return undefined;
-
-  const candidates = [
-    profile.avatarUrl,
-    profile.avatar_url,
-    profile.photoURL,
-    profile.photoUrl,
-    profile.imageUrl,
-    profile.image_url,
-    profile.profilePicture,
-    profile.profile_picture,
-    profile.avatar,
-    profile.image,
-    profile.picture,
-  ];
-
-  const value = candidates.find(
-    (item) => typeof item === 'string' && item.trim().length > 0
-  );
-
-  return value ? String(value).trim() : undefined;
-};
-
-const normaliseProfile = (profile: any): UserProfile | null => {
-  if (!profile?.name || !profile?.email) return null;
-
-  return {
-    name: String(profile.name).trim(),
-    email: String(profile.email).trim().toLowerCase(),
-    avatarUrl: getAvatarUrl(profile),
-  };
-};
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=1200&q=82';
@@ -268,7 +226,6 @@ const formatDbMessage = (m: any): ChatMessage => ({
         })
       : ''),
   linkUrl: m.link_url || undefined,
-  avatarUrl: getAvatarUrl(m),
 });
 
 const mergeMessages = (current: ChatMessage[], incoming: ChatMessage[]) => {
@@ -387,39 +344,24 @@ export const Blog: React.FC = () => {
   useEffect(() => {
     let mounted = true;
 
-    const applyProfile = (candidate: any) => {
-      const profile = normaliseProfile(candidate);
-      if (!profile) return;
-
-      setUserProfile(profile);
-      setProfileInput({ name: profile.name, email: profile.email });
-    };
-
-    const loadSavedProfile = () => {
-      try {
-        const saved = window.localStorage.getItem(PROFILE_STORAGE_KEY);
-        if (!saved) return;
-        applyProfile(JSON.parse(saved));
-      } catch (error) {
-        console.warn('Noor: saved profile could not be read.', error);
+    // Restore the community profile before checking Supabase auth.
+    // This prevents the name/email form from appearing again after refresh.
+    try {
+      const saved = window.localStorage.getItem('noor_user_profile');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.name && parsed?.email) {
+          const profile = {
+            name: String(parsed.name).trim(),
+            email: String(parsed.email).trim().toLowerCase(),
+          };
+          setUserProfile(profile);
+          setProfileInput(profile);
+        }
       }
-    };
-
-    const handleProfileUpdated = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      // Prefer the event payload because the Navbar may update the profile
-      // immediately before localStorage is synchronised.
-      if (customEvent.detail) applyProfile(customEvent.detail);
-      else loadSavedProfile();
-    };
-
-    loadSavedProfile();
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key !== PROFILE_STORAGE_KEY) return;
-      loadSavedProfile();
-    };
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('noor-profile-updated', handleProfileUpdated);
+    } catch (error) {
+      console.warn('Noor: saved profile could not be read.', error);
+    }
 
     (async () => {
       const client = await getSupabaseClient();
@@ -439,23 +381,8 @@ export const Blog: React.FC = () => {
               metadata.user_name ||
               '';
             if (name && authUser.email) {
-              const authProfile = normaliseProfile({
-                name: String(name),
-                email: authUser.email,
-                avatarUrl:
-                  metadata.avatar_url ||
-                  metadata.avatarUrl ||
-                  metadata.picture ||
-                  metadata.photoURL,
-              });
-
-              if (authProfile) {
-                setUserProfile((current) => ({
-                  ...authProfile,
-                  avatarUrl: authProfile.avatarUrl || current?.avatarUrl,
-                }));
-                setProfileInput({ name: authProfile.name, email: authProfile.email });
-              }
+              setUserProfile({ name: String(name), email: authUser.email });
+              setProfileInput({ name: String(name), email: authUser.email });
             }
           }
         } catch (error) {
@@ -468,8 +395,6 @@ export const Blog: React.FC = () => {
 
     return () => {
       mounted = false;
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('noor-profile-updated', handleProfileUpdated);
     };
   }, []);
 
@@ -686,19 +611,18 @@ export const Blog: React.FC = () => {
 
     if (!name || !email) return;
 
-    const profile: UserProfile = {
-      name,
-      email,
-      avatarUrl: userProfile?.avatarUrl || getAvatarUrl(profileInput),
-    };
-
+    const profile = { name, email };
     setUserProfile(profile);
+
     try {
-      window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-      window.dispatchEvent(new CustomEvent('noor-profile-updated', { detail: profile }));
+      window.localStorage.setItem('noor_user_profile', JSON.stringify(profile));
+      window.dispatchEvent(
+        new CustomEvent('noor-profile-updated', { detail: profile })
+      );
     } catch (error) {
       console.warn('Noor: profile could not be saved locally.', error);
     }
+
     setIsProfileModalOpen(false);
     setIsChatOpen(true);
   };
@@ -834,10 +758,6 @@ export const Blog: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setSubmitError('');
-                  setFormData((current) => ({
-                    ...current,
-                    author: userProfile?.name || current.author,
-                  }));
                   setIsSubmitOpen(true);
                 }}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D4AF37]/50 bg-[#D4AF37] px-4 py-2.5 text-xs sm:text-sm font-bold text-[#061913] shadow-[0_8px_25px_rgba(0,0,0,0.18)] transition hover:bg-[#e0bf55] active:scale-[0.98]"
@@ -900,6 +820,25 @@ export const Blog: React.FC = () => {
             </div>
           </div>
 
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+            {CATEGORIES.map((category) => {
+              const active = activeCategory === category;
+              return (
+                <button
+                  type="button"
+                  key={category}
+                  onClick={() => setActiveCategory(category)}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold transition ${
+                    active
+                      ? 'border border-[#D4AF37] bg-[#D4AF37]/12 text-[#D4AF37]'
+                      : 'border border-[#234538] bg-[#0B241B] text-[#94AAA1] hover:border-[#345A49] hover:text-[#E8EFEA]'
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -1209,12 +1148,8 @@ export const Blog: React.FC = () => {
           <div className="w-full max-w-md rounded-2xl border border-[#34503F] bg-[#0B241B] p-5 sm:p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 text-sm font-bold text-[#D4AF37]">
-                  {userProfile?.avatarUrl ? (
-                    <img src={userProfile.avatarUrl} alt="Profile" className="h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
-                  ) : (
-                    userProfile?.name?.slice(0, 1).toUpperCase() || <User size={18} />
-                  )}
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[#D4AF37]">
+                  <User size={18} />
                 </div>
                 <h3 className="mt-4 font-serif text-xl font-semibold text-[#FAF8F5]">
                   Join Noor Community
@@ -1301,17 +1236,8 @@ export const Blog: React.FC = () => {
                 </div>
 
                 <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-[#234538] bg-[#061913] px-3 py-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
-                    {userProfile?.avatarUrl ? (
-                      <img
-                        src={userProfile.avatarUrl}
-                        alt="Your profile"
-                        className="h-full w-full object-cover"
-                        onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                      />
-                    ) : (
-                      userProfile?.name?.slice(0, 1).toUpperCase() || 'M'
-                    )}
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
+                    {userProfile?.name?.slice(0, 1).toUpperCase() || 'M'}
                   </div>
                   <div className="min-w-0">
                     <p className="text-[9px] uppercase tracking-[0.12em] text-[#637D73]">
@@ -1377,17 +1303,8 @@ export const Blog: React.FC = () => {
                           className={`flex items-end gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}
                         >
                           {!isMine && (
-                            <div className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#34503F] bg-[#102B22] text-[10px] font-bold text-[#D4AF37]">
-                              {message.avatarUrl ? (
-                                <img
-                                  src={message.avatarUrl}
-                                  alt={message.user}
-                                  className="h-full w-full object-cover"
-                                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                                />
-                              ) : (
-                                initial
-                              )}
+                            <div className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#34503F] bg-[#102B22] text-[10px] font-bold text-[#D4AF37]">
+                              {initial}
                             </div>
                           )}
 
@@ -1478,17 +1395,8 @@ export const Blog: React.FC = () => {
                           </div>
 
                           {isMine && (
-                            <div className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
-                              {userProfile?.avatarUrl ? (
-                                <img
-                                  src={userProfile.avatarUrl}
-                                  alt="Your profile"
-                                  className="h-full w-full object-cover"
-                                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                                />
-                              ) : (
-                                userProfile?.name?.slice(0, 1).toUpperCase() || 'M'
-                              )}
+                            <div className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
+                              {userProfile?.name?.slice(0, 1).toUpperCase() || 'M'}
                             </div>
                           )}
                         </div>
