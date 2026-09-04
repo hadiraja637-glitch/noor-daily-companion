@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+
 import {
   Search,
   PlusCircle,
@@ -20,75 +26,86 @@ import {
   Circle,
 } from 'lucide-react';
 
-const SUPABASE_URL = 'https://imcspnvjsvaxzejzxlqr.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
+const SUPABASE_URL =
+  'https://imcspnvjsvaxzejzxlqr.supabase.co';
+
+const SUPABASE_ANON_KEY =
+  'sb_publishable_tRYqJQ-xmq9m5yk1cu2fyA_kXvPUgnv';
 
 type SupabaseClient = any;
 
 let supabaseClient: SupabaseClient | null = null;
-let supabasePromise: Promise<SupabaseClient | null> | null = null;
+let supabasePromise: Promise<SupabaseClient | null> | null =
+  null;
 
-const getSupabaseClient = async (): Promise<SupabaseClient | null> => {
-  if (supabaseClient) return supabaseClient;
+const getSupabaseClient =
+  async (): Promise<SupabaseClient | null> => {
+    if (supabaseClient) return supabaseClient;
 
-  if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') return null;
 
-  const createClient = () => {
-    const supabase = (window as any).supabase;
+    const createClient = () => {
+      const supabase = (window as any).supabase;
 
-    if (!supabase?.createClient) return null;
+      if (!supabase?.createClient) return null;
 
-    supabaseClient = supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY
-    );
+      supabaseClient = supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
 
-    return supabaseClient;
+      return supabaseClient;
+    };
+
+    const existing = createClient();
+
+    if (existing) return existing;
+
+    if (!supabasePromise) {
+      supabasePromise = new Promise((resolve) => {
+        const current = document.querySelector(
+          'script[data-noor-supabase]'
+        ) as HTMLScriptElement | null;
+
+        if (current) {
+          current.addEventListener(
+            'load',
+            () => resolve(createClient()),
+            { once: true }
+          );
+
+          current.addEventListener(
+            'error',
+            () => resolve(null),
+            { once: true }
+          );
+
+          return;
+        }
+
+        const script = document.createElement('script');
+
+        script.src =
+          'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+
+        script.async = true;
+        script.dataset.noorSupabase = 'true';
+
+        script.onload = () =>
+          resolve(createClient());
+
+        script.onerror = () => resolve(null);
+
+        document.head.appendChild(script);
+      });
+    }
+
+    return supabasePromise;
   };
 
-  const existing = createClient();
-
-  if (existing) return existing;
-
-  if (!supabasePromise) {
-    supabasePromise = new Promise((resolve) => {
-      const current = document.querySelector(
-        'script[data-noor-supabase]'
-      ) as HTMLScriptElement | null;
-
-      if (current) {
-        current.addEventListener(
-          'load',
-          () => resolve(createClient()),
-          { once: true }
-        );
-
-        current.addEventListener(
-          'error',
-          () => resolve(null),
-          { once: true }
-        );
-
-        return;
-      }
-
-      const script = document.createElement('script');
-
-      script.src =
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-
-      script.async = true;
-      script.dataset.noorSupabase = 'true';
-
-      script.onload = () => resolve(createClient());
-      script.onerror = () => resolve(null);
-
-      document.head.appendChild(script);
-    });
-  }
-
-  return supabasePromise;
-};
+/* =========================================================
+   TYPES
+========================================================= */
 
 interface BlogPost {
   id: string;
@@ -110,15 +127,48 @@ interface ChatMessage {
   text: string;
   time: string;
   linkUrl?: string;
+  avatar?: string;
 }
 
 interface UserProfile {
   name: string;
   email: string;
+  avatar?: string;
 }
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=1200&q=82';
+
+const CATEGORIES = [
+  'Spiritual Growth',
+  'Salah & Prayer',
+  'Duas & Azkar',
+  'Community & Life',
+];
+
+const BANNED_KEYWORDS = [
+  'bf',
+  'gf',
+  'dating',
+  'relationship',
+  'love u',
+  'sexy',
+  'number',
+  'whatsapp',
+  'fuck',
+  'shit',
+  'abuse',
+  'single',
+  'meet me',
+];
+
+/* =========================================================
+   DEFAULT BLOG POSTS
+========================================================= */
 
 const DEFAULT_POSTS: BlogPost[] = [
   {
@@ -177,7 +227,8 @@ Incorporate authentic daily remembrance such as Ayat al-Kursi, the three Quls, a
   },
   {
     id: '4',
-    title: 'Building an Authentic Islamic Home Environment',
+    title:
+      'Building an Authentic Islamic Home Environment',
     category: 'COMMUNITY & LIFE',
     excerpt:
       'Practical advice on fostering love, mercy, and Islamic values in family life.',
@@ -194,28 +245,9 @@ Incorporate authentic daily remembrance such as Ayat al-Kursi, the three Quls, a
   },
 ];
 
-const CATEGORIES = [
-  'Spiritual Growth',
-  'Salah & Prayer',
-  'Duas & Azkar',
-  'Community & Life',
-];
-
-const BANNED_KEYWORDS = [
-  'bf',
-  'gf',
-  'dating',
-  'relationship',
-  'love u',
-  'sexy',
-  'number',
-  'whatsapp',
-  'fuck',
-  'shit',
-  'abuse',
-  'single',
-  'meet me',
-];
+/* =========================================================
+   HELPERS
+========================================================= */
 
 const normaliseCategory = (value: string) =>
   value
@@ -223,6 +255,26 @@ const normaliseCategory = (value: string) =>
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
+
+const cleanAvatar = (value: unknown) => {
+  const avatar = String(value || '').trim();
+
+  if (!avatar) return '';
+
+  if (
+    avatar.startsWith('data:image/') ||
+    avatar.startsWith('https://') ||
+    avatar.startsWith('http://') ||
+    avatar.startsWith('blob:')
+  ) {
+    return avatar;
+  }
+
+  return '';
+};
+
+const getInitial = (name: string) =>
+  name?.trim()?.slice(0, 1)?.toUpperCase() || 'U';
 
 const formatDbPost = (b: any): BlogPost => ({
   id: String(b.id),
@@ -238,32 +290,45 @@ const formatDbPost = (b: any): BlogPost => ({
   date:
     b.date ||
     (b.created_at
-      ? new Date(b.created_at).toLocaleDateString('en-US', {
-          month: 'short',
-          day: '2-digit',
-          year: 'numeric',
-        })
+      ? new Date(b.created_at).toLocaleDateString(
+          'en-US',
+          {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+          }
+        )
       : 'Recently'),
-  readTime: b.read_time || b.readTime || '3 min read',
+  readTime:
+    b.read_time ||
+    b.readTime ||
+    '3 min read',
   img: b.img || FALLBACK_IMAGE,
   featured: Boolean(b.featured),
 });
 
-const formatDbMessage = (m: any): ChatMessage => ({
+const formatDbMessage = (
+  m: any
+): ChatMessage => ({
   id: String(m.id),
   user:
-    String(m.user_name || '').trim() || 'Community Member',
+    String(m.user_name || '').trim() ||
+    'Community Member',
   email: String(m.email || '').trim(),
   text: String(m.text || ''),
   time:
     m.time ||
     (m.created_at
-      ? new Date(m.created_at).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
+      ? new Date(m.created_at).toLocaleTimeString(
+          [],
+          {
+            hour: '2-digit',
+            minute: '2-digit',
+          }
+        )
       : ''),
   linkUrl: m.link_url || undefined,
+  avatar: cleanAvatar(m.avatar_url),
 });
 
 const mergeMessages = (
@@ -272,11 +337,21 @@ const mergeMessages = (
 ) => {
   const map = new Map<string, ChatMessage>();
 
-  [...current, ...incoming].forEach((message) => {
-    map.set(message.id, message);
-  });
+  [...current, ...incoming].forEach(
+    (message) => {
+      if (!message?.id) return;
+      map.set(String(message.id), message);
+    }
+  );
 
-  return Array.from(map.values());
+  return Array.from(map.values()).sort(
+    (a, b) => {
+      const aTime = a.time || '';
+      const bTime = b.time || '';
+
+      return aTime.localeCompare(bTime);
+    }
+  );
 };
 
 const isHttpUrl = (value: string) => {
@@ -292,76 +367,405 @@ const isHttpUrl = (value: string) => {
   }
 };
 
+/* =========================================================
+   DELETE TOKEN HELPERS
+========================================================= */
+
+const DELETE_TOKEN_STORAGE =
+  'noor_chat_delete_tokens';
+
+const getDeleteTokens = (): Record<
+  string,
+  string
+> => {
+  try {
+    const raw =
+      localStorage.getItem(
+        DELETE_TOKEN_STORAGE
+      );
+
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw);
+
+    if (
+      parsed &&
+      typeof parsed === 'object'
+    ) {
+      return parsed;
+    }
+
+    return {};
+  } catch {
+    return {};
+  }
+};
+
+const saveDeleteToken = (
+  messageId: string,
+  token: string
+) => {
+  try {
+    const tokens = getDeleteTokens();
+
+    tokens[messageId] = token;
+
+    localStorage.setItem(
+      DELETE_TOKEN_STORAGE,
+      JSON.stringify(tokens)
+    );
+  } catch {
+    // Never crash the app because localStorage fails.
+  }
+};
+
+const getDeleteToken = (
+  messageId: string
+) => {
+  try {
+    return (
+      getDeleteTokens()[messageId] || ''
+    );
+  } catch {
+    return '';
+  }
+};
+
+const removeDeleteToken = (
+  messageId: string
+) => {
+  try {
+    const tokens = getDeleteTokens();
+
+    delete tokens[messageId];
+
+    localStorage.setItem(
+      DELETE_TOKEN_STORAGE,
+      JSON.stringify(tokens)
+    );
+  } catch {
+    // Safe no-op.
+  }
+};
+
+const createRandomToken = () => {
+  try {
+    const cryptoObject =
+      window.crypto;
+
+    if (
+      cryptoObject?.getRandomValues
+    ) {
+      const bytes = new Uint8Array(32);
+
+      cryptoObject.getRandomValues(bytes);
+
+      return Array.from(bytes)
+        .map((byte) =>
+          byte
+            .toString(16)
+            .padStart(2, '0')
+        )
+        .join('');
+    }
+  } catch {
+    // fallback below
+  }
+
+  return `${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
+};
+
+/* =========================================================
+   PROFILE NORMALIZATION
+========================================================= */
+
+const normalizeProfile = (
+  value: any
+): UserProfile | null => {
+  if (!value) return null;
+
+  const name = String(
+    value.name ||
+      value.full_name ||
+      value.display_name ||
+      ''
+  ).trim();
+
+  const email = String(
+    value.email || ''
+  )
+    .trim()
+    .toLowerCase();
+
+  const avatar = cleanAvatar(
+    value.avatar ||
+      value.avatar_url ||
+      value.photoURL ||
+      value.photo_url ||
+      value.profileImage ||
+      value.profile_image
+  );
+
+  if (!name || !email) {
+    return null;
+  }
+
+  return {
+    name,
+    email,
+    ...(avatar ? { avatar } : {}),
+  };
+};
+
+/* =========================================================
+   BLOG COMPONENT
+========================================================= */
+
 export const Blog: React.FC = () => {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [posts, setPosts] = useState<
+    BlogPost[]
+  >([]);
 
-  // Empty = show every category without needing an "All" button.
-  const [activeCategory, setActiveCategory] = useState('');
+  const [isLoading, setIsLoading] =
+    useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] =
+    useState('');
+
+  const [searchQuery, setSearchQuery] =
+    useState('');
+
   const [selectedPost, setSelectedPost] =
     useState<BlogPost | null>(null);
 
-  const [isSubmitOpen, setIsSubmitOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
-  const [submittedSuccess, setSubmittedSuccess] =
+  const [isSubmitOpen, setIsSubmitOpen] =
     useState(false);
 
-  const [submitError, setSubmitError] = useState('');
-
-  const [isProfileModalOpen, setIsProfileModalOpen] =
+  const [isChatOpen, setIsChatOpen] =
     useState(false);
+
+  const [
+    submittedSuccess,
+    setSubmittedSuccess,
+  ] = useState(false);
+
+  const [submitError, setSubmitError] =
+    useState('');
+
+  const [
+    isProfileModalOpen,
+    setIsProfileModalOpen,
+  ] = useState(false);
 
   const [userProfile, setUserProfile] =
     useState<UserProfile | null>(null);
 
-  const [profileInput, setProfileInput] = useState({
-    name: '',
-    email: '',
-  });
+  const [profileInput, setProfileInput] =
+    useState({
+      name: '',
+      email: '',
+      avatar: '',
+    });
 
-  const [chatMessages, setChatMessages] = useState<
-    ChatMessage[]
-  >([]);
+  const [chatMessages, setChatMessages] =
+    useState<ChatMessage[]>([]);
 
-  const [newMessage, setNewMessage] = useState('');
-  const [linkInput, setLinkInput] = useState('');
-  const [bannedAlert, setBannedAlert] = useState(false);
-  const [chatError, setChatError] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const [realtimeLive, setRealtimeLive] = useState(false);
-  const [openMessageMenu, setOpenMessageMenu] =
-    useState<string | null>(null);
-  const [deletingMessageId, setDeletingMessageId] =
-    useState<string | null>(null);
+  const [newMessage, setNewMessage] =
+    useState('');
 
-  const [formData, setFormData] = useState({
-    title: '',
-    category: 'Spiritual Growth',
-    author: '',
-    readTime: '3 min read',
-    excerpt: '',
-    content: '',
-    img: '',
-  });
+  const [linkInput, setLinkInput] =
+    useState('');
 
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const chatChannelRef = useRef<any>(null);
+  const [bannedAlert, setBannedAlert] =
+    useState(false);
+
+  const [chatError, setChatError] =
+    useState('');
+
+  const [isSending, setIsSending] =
+    useState(false);
+
+  const [realtimeLive, setRealtimeLive] =
+    useState(false);
+
+  const [
+    openMessageMenu,
+    setOpenMessageMenu,
+  ] = useState<string | null>(null);
+
+  const [
+    deletingMessageId,
+    setDeletingMessageId,
+  ] = useState<string | null>(null);
+
+  const [formData, setFormData] =
+    useState({
+      title: '',
+      category: 'Spiritual Growth',
+      author: '',
+      readTime: '3 min read',
+      excerpt: '',
+      content: '',
+      img: '',
+    });
+
+  const chatEndRef =
+    useRef<HTMLDivElement>(null);
+
+  const chatChannelRef =
+    useRef<any>(null);
+
   const fallbackSyncRef =
-    useRef<ReturnType<typeof setInterval> | null>(null);
+    useRef<ReturnType<
+      typeof setInterval
+    > | null>(null);
+
+  const chatGenerationRef =
+    useRef(0);
+
+  /*
+    Important:
+    This ref closes the race where two submit events
+    happen before React updates isSending.
+  */
+  const sendingLockRef =
+    useRef(false);
+
+  /* =======================================================
+     SCROLL
+  ======================================================= */
 
   const scrollChatToBottom = (
     behavior: ScrollBehavior = 'smooth'
   ) => {
     window.setTimeout(() => {
-      chatEndRef.current?.scrollIntoView({ behavior });
+      chatEndRef.current?.scrollIntoView({
+        behavior,
+        block: 'end',
+      });
     }, 60);
   };
 
+  /* =======================================================
+     LOAD PROFILE
+  ======================================================= */
+
+  useEffect(() => {
+    const loadSavedProfile = () => {
+      try {
+        const keys = [
+          'noor_user_profile',
+          'noor-profile',
+          'noor_profile',
+          'user_profile',
+        ];
+
+        let found: UserProfile | null =
+          null;
+
+        for (const key of keys) {
+          const saved =
+            window.localStorage.getItem(
+              key
+            );
+
+          if (!saved) continue;
+
+          try {
+            const parsed =
+              JSON.parse(saved);
+
+            const profile =
+              normalizeProfile(parsed);
+
+            if (profile) {
+              found = profile;
+              break;
+            }
+          } catch {
+            continue;
+          }
+        }
+
+        if (found) {
+          setUserProfile(found);
+
+          setProfileInput({
+            name: found.name,
+            email: found.email,
+            avatar:
+              found.avatar || '',
+          });
+        }
+      } catch (error) {
+        console.warn(
+          'Noor: saved profile could not be read.',
+          error
+        );
+      }
+    };
+
+    loadSavedProfile();
+
+    const handleProfileUpdate = (
+      event: Event
+    ) => {
+      const customEvent =
+        event as CustomEvent;
+
+      const profile =
+        normalizeProfile(
+          customEvent.detail
+        );
+
+      if (profile) {
+        setUserProfile(profile);
+
+        setProfileInput({
+          name: profile.name,
+          email: profile.email,
+          avatar:
+            profile.avatar || '',
+        });
+      } else {
+        loadSavedProfile();
+      }
+    };
+
+    window.addEventListener(
+      'noor-profile-updated',
+      handleProfileUpdate
+    );
+
+    window.addEventListener(
+      'storage',
+      loadSavedProfile
+    );
+
+    return () => {
+      window.removeEventListener(
+        'noor-profile-updated',
+        handleProfileUpdate
+      );
+
+      window.removeEventListener(
+        'storage',
+        loadSavedProfile
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     FETCH BLOGS
+  ======================================================= */
+
   const fetchBlogs = async () => {
-    const client = await getSupabaseClient();
+    const client =
+      await getSupabaseClient();
 
     if (!client) {
       setPosts(DEFAULT_POSTS);
@@ -370,29 +774,40 @@ export const Blog: React.FC = () => {
     }
 
     try {
-      const { data, error } = await client
+      const {
+        data,
+        error,
+      } = await client
         .from('blogs')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', {
+          ascending: false,
+        });
 
       if (error) throw error;
 
-      const remote = Array.isArray(data)
-        ? data.map(formatDbPost)
-        : [];
+      const remote =
+        Array.isArray(data)
+          ? data.map(formatDbPost)
+          : [];
 
-      const remoteTitles = new Set(
-        remote.map((post) =>
-          post.title.trim().toLowerCase()
-        )
-      );
+      const remoteTitles =
+        new Set(
+          remote.map((post) =>
+            post.title
+              .trim()
+              .toLowerCase()
+          )
+        );
 
       const merged = [
         ...remote,
         ...DEFAULT_POSTS.filter(
           (post) =>
             !remoteTitles.has(
-              post.title.trim().toLowerCase()
+              post.title
+                .trim()
+                .toLowerCase()
             )
         ),
       ];
@@ -410,16 +825,24 @@ export const Blog: React.FC = () => {
     }
   };
 
+  /* =======================================================
+     FETCH CHAT
+  ======================================================= */
+
   const fetchChatMessages = async (
     client?: SupabaseClient
   ) => {
     const supabase =
-      client || (await getSupabaseClient());
+      client ||
+      (await getSupabaseClient());
 
     if (!supabase) return;
 
     try {
-      const { data, error } = await supabase
+      const {
+        data,
+        error,
+      } = await supabase
         .from('public_chat')
         .select('*')
         .order('created_at', {
@@ -444,109 +867,37 @@ export const Blog: React.FC = () => {
       );
     }
   };
-useEffect(() => {
-  const loadSavedProfile = () => {
-    try {
-      const saved =
-        window.localStorage.getItem(
-          'noor_user_profile'
-        );
 
-      if (!saved) return;
+  /* =======================================================
+     INITIALIZE BLOG + AUTH PROFILE
+  ======================================================= */
 
-      const parsed = JSON.parse(saved);
-
-      if (
-        parsed?.name &&
-        parsed?.email
-      ) {
-        const profile = {
-          name: String(parsed.name).trim(),
-          email: String(parsed.email)
-            .trim()
-            .toLowerCase(),
-        };
-
-        setUserProfile(profile);
-        setProfileInput(profile);
-      }
-    } catch (error) {
-      console.warn(
-        'Noor: saved profile could not be read.',
-        error
-      );
-    }
-  };
-
-  loadSavedProfile();
-
-  const handleProfileUpdate = (
-    event: Event
-  ) => {
-    const customEvent =
-      event as CustomEvent;
-
-    const profile =
-      customEvent.detail;
-
-    if (
-      profile?.name &&
-      profile?.email
-    ) {
-      const cleanProfile = {
-        name: String(profile.name).trim(),
-        email: String(profile.email)
-          .trim()
-          .toLowerCase(),
-      };
-
-      setUserProfile(cleanProfile);
-      setProfileInput(cleanProfile);
-    } else {
-      loadSavedProfile();
-    }
-  };
-
-  window.addEventListener(
-    'noor-profile-updated',
-    handleProfileUpdate
-  );
-
-  window.addEventListener(
-    'storage',
-    loadSavedProfile
-  );
-
-  return () => {
-    window.removeEventListener(
-      'noor-profile-updated',
-      handleProfileUpdate
-    );
-
-    window.removeEventListener(
-      'storage',
-      loadSavedProfile
-    );
-  };
-}, []);
   useEffect(() => {
     let mounted = true;
 
     const initialise = async () => {
-      const client = await getSupabaseClient();
+      const client =
+        await getSupabaseClient();
 
       if (!mounted) return;
 
       if (client) {
         try {
-          const { data } =
+          const {
+            data,
+          } =
             await client.auth.getUser();
 
-          const authUser = data?.user;
+          const authUser =
+            data?.user;
 
-          if (authUser) {
+          if (
+            authUser &&
+            mounted
+          ) {
             const metadata =
-              authUser.user_metadata || {};
+              authUser.user_metadata ||
+              {};
 
             const name =
               metadata.full_name ||
@@ -555,15 +906,47 @@ useEffect(() => {
               metadata.user_name ||
               '';
 
-            if (name && authUser.email) {
-              setUserProfile({
-                name: String(name),
-                email: authUser.email,
-              });
+            const avatar =
+              metadata.avatar_url ||
+              metadata.avatar ||
+              metadata.picture ||
+              '';
+
+            if (
+              name &&
+              authUser.email
+            ) {
+              const profile: UserProfile =
+                {
+                  name: String(name),
+                  email:
+                    String(
+                      authUser.email
+                    ).toLowerCase(),
+                  ...(cleanAvatar(
+                    avatar
+                  )
+                    ? {
+                        avatar:
+                          cleanAvatar(
+                            avatar
+                          ),
+                      }
+                    : {}),
+                };
+
+              setUserProfile(
+                profile
+              );
 
               setProfileInput({
-                name: String(name),
-                email: authUser.email,
+                name:
+                  profile.name,
+                email:
+                  profile.email,
+                avatar:
+                  profile.avatar ||
+                  '',
               });
             }
           }
@@ -587,487 +970,896 @@ useEffect(() => {
     };
   }, []);
 
+  /* =======================================================
+     CHAT REALTIME
+  ======================================================= */
+
   useEffect(() => {
     if (!isChatOpen) return;
 
     let mounted = true;
 
-    const startChat = async () => {
-      const client = await getSupabaseClient();
+    const generation =
+      ++chatGenerationRef.current;
 
-      if (!client || !mounted) {
+    const startChat = async () => {
+      const client =
+        await getSupabaseClient();
+
+      if (
+        !mounted ||
+        generation !==
+          chatGenerationRef.current
+      ) {
+        return;
+      }
+
+      if (!client) {
         setChatError(
           'Community connection is unavailable.'
         );
+
         return;
       }
 
       setChatError('');
 
+      /*
+        Clean up any stale channel before
+        creating a new one.
+      */
+      const oldChannel =
+        chatChannelRef.current;
+
+      if (oldChannel) {
+        chatChannelRef.current =
+          null;
+
+        try {
+          await Promise.resolve(
+            oldChannel.unsubscribe()
+          );
+        } catch {
+          // Safe cleanup.
+        }
+      }
+
       await fetchChatMessages(client);
 
-      if (!mounted) return;
+      if (
+        !mounted ||
+        generation !==
+          chatGenerationRef.current
+      ) {
+        return;
+      }
 
       scrollChatToBottom('auto');
 
       const channel = client
-        .channel('noor-public-chat-live')
+        .channel(
+          `noor-public-chat-live-${generation}`
+        )
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'INSERT',
             schema: 'public',
             table: 'public_chat',
           },
           (payload: any) => {
             if (
-              payload.eventType === 'INSERT' &&
+              !mounted ||
+              generation !==
+                chatGenerationRef.current
+            ) {
+              return;
+            }
+
+            if (
+              payload.eventType ===
+                'INSERT' &&
               payload.new
             ) {
-              setChatMessages((prev) =>
-                mergeMessages(prev, [
-                  formatDbMessage(payload.new),
-                ])
+              const incoming =
+                formatDbMessage(
+                  payload.new
+                );
+
+              setChatMessages(
+                (prev) =>
+                  mergeMessages(
+                    prev,
+                    [incoming]
+                  )
               );
 
               scrollChatToBottom();
             }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'public_chat',
+          },
+          (payload: any) => {
+            if (
+              !mounted ||
+              generation !==
+                chatGenerationRef.current
+            ) {
+              return;
+            }
+
+            const deletedId =
+              payload.old?.id
+                ? String(
+                    payload.old.id
+                  )
+                : '';
+
+            if (!deletedId) return;
+
+            setChatMessages(
+              (prev) =>
+                prev.filter(
+                  (message) =>
+                    message.id !==
+                    deletedId
+                )
+            );
+
+            removeDeleteToken(
+              deletedId
+            );
+          }
+        )
+        .subscribe(
+          (status: string) => {
+            if (
+              !mounted ||
+              generation !==
+                chatGenerationRef.current
+            ) {
+              return;
+            }
+
+            const live =
+              status ===
+              'SUBSCRIBED';
+
+            setRealtimeLive(
+              live
+            );
 
             if (
-              payload.eventType === 'DELETE' &&
-              payload.old?.id
+              status ===
+                'CHANNEL_ERROR' ||
+              status ===
+                'TIMED_OUT'
             ) {
-              const deletedId = String(
-                payload.old.id
+              setChatError(
+                'Live sync is reconnecting. Messages are still being checked safely.'
               );
+            }
 
-              setChatMessages((prev) =>
-                prev.filter(
-                  (msg) => msg.id !== deletedId
-                )
+            if (
+              status ===
+              'CLOSED'
+            ) {
+              setRealtimeLive(
+                false
               );
             }
           }
-        )
-        .subscribe((status: string) => {
-          const live = status === 'SUBSCRIBED';
+        );
 
-          setRealtimeLive(live);
-
-          if (
-            status === 'CHANNEL_ERROR' ||
-            status === 'TIMED_OUT'
-          ) {
-            setChatError(
-              'Live sync is reconnecting. Messages are still being checked safely.'
-            );
-          }
-        });
-
-      chatChannelRef.current = channel;
+      if (
+        mounted &&
+        generation ===
+          chatGenerationRef.current
+      ) {
+        chatChannelRef.current =
+          channel;
+      } else {
+        try {
+          await Promise.resolve(
+            channel.unsubscribe()
+          );
+        } catch {
+          // Safe cleanup.
+        }
+      }
     };
 
     startChat();
 
     return () => {
       mounted = false;
+
+      ++chatGenerationRef.current;
+
       setRealtimeLive(false);
 
       if (fallbackSyncRef.current) {
-        clearInterval(fallbackSyncRef.current);
-        fallbackSyncRef.current = null;
+        clearInterval(
+          fallbackSyncRef.current
+        );
+
+        fallbackSyncRef.current =
+          null;
       }
 
       const channel =
         chatChannelRef.current;
 
-      chatChannelRef.current = null;
+      chatChannelRef.current =
+        null;
 
       if (channel) {
         Promise.resolve(
           channel.unsubscribe()
-        ).catch(() => undefined);
+        ).catch(
+          () => undefined
+        );
       }
     };
   }, [isChatOpen]);
 
-  useEffect(() => {
-    if (!isChatOpen || realtimeLive) return;
+  /* =======================================================
+     FALLBACK SYNC
+  ======================================================= */
 
-    fallbackSyncRef.current = setInterval(() => {
-      fetchChatMessages();
-    }, 15000);
+  useEffect(() => {
+    if (
+      !isChatOpen ||
+      realtimeLive
+    ) {
+      return;
+    }
+
+    if (fallbackSyncRef.current) {
+      clearInterval(
+        fallbackSyncRef.current
+      );
+    }
+
+    fallbackSyncRef.current =
+      setInterval(() => {
+        fetchChatMessages();
+      }, 15000);
 
     return () => {
       if (fallbackSyncRef.current) {
-        clearInterval(fallbackSyncRef.current);
-        fallbackSyncRef.current = null;
+        clearInterval(
+          fallbackSyncRef.current
+        );
+
+        fallbackSyncRef.current =
+          null;
       }
     };
-  }, [isChatOpen, realtimeLive]);
-
-  const filteredPosts = useMemo(() => {
-    const query =
-      searchQuery.trim().toLowerCase();
-
-    return posts.filter((post) => {
-      const matchesCategory =
-        !activeCategory ||
-        normaliseCategory(post.category) ===
-          normaliseCategory(activeCategory);
-
-      const matchesSearch =
-        !query ||
-        post.title
-          .toLowerCase()
-          .includes(query) ||
-        post.excerpt
-          .toLowerCase()
-          .includes(query) ||
-        post.author
-          .toLowerCase()
-          .includes(query);
-
-      return matchesCategory && matchesSearch;
-    });
   }, [
-    posts,
-    activeCategory,
-    searchQuery,
+    isChatOpen,
+    realtimeLive,
   ]);
 
-  const featuredPost = useMemo(
-    () =>
-      filteredPosts.find(
-        (post) => post.featured
-      ) || filteredPosts[0],
-    [filteredPosts]
-  );
+  /* =======================================================
+     FILTERED POSTS
+  ======================================================= */
 
-  const gridPosts = useMemo(
-    () =>
-      featuredPost
-        ? filteredPosts.filter(
-            (post) =>
-              post.id !== featuredPost.id
-          )
-        : filteredPosts,
-    [filteredPosts, featuredPost]
-  );
+  const filteredPosts =
+    useMemo(() => {
+      const query =
+        searchQuery
+          .trim()
+          .toLowerCase();
+
+      return posts.filter(
+        (post) => {
+          const matchesCategory =
+            !activeCategory ||
+            normaliseCategory(
+              post.category
+            ) ===
+              normaliseCategory(
+                activeCategory
+              );
+
+          const matchesSearch =
+            !query ||
+            post.title
+              .toLowerCase()
+              .includes(query) ||
+            post.excerpt
+              .toLowerCase()
+              .includes(query) ||
+            post.author
+              .toLowerCase()
+              .includes(query);
+
+          return (
+            matchesCategory &&
+            matchesSearch
+          );
+        }
+      );
+    }, [
+      posts,
+      activeCategory,
+      searchQuery,
+    ]);
+
+  const featuredPost =
+    useMemo(
+      () =>
+        filteredPosts.find(
+          (post) =>
+            post.featured
+        ) ||
+        filteredPosts[0],
+      [filteredPosts]
+    );
+
+  const gridPosts =
+    useMemo(
+      () =>
+        featuredPost
+          ? filteredPosts.filter(
+              (post) =>
+                post.id !==
+                featuredPost.id
+            )
+          : filteredPosts,
+      [
+        filteredPosts,
+        featuredPost,
+      ]
+    );
+
+  /* =======================================================
+     OPEN COMMUNITY
+  ======================================================= */
 
   const openCommunity = () => {
     setOpenMessageMenu(null);
 
     if (!userProfile) {
-      setIsProfileModalOpen(true);
+      setIsProfileModalOpen(
+        true
+      );
+
       return;
     }
 
     setIsChatOpen(true);
   };
 
-  const handleSubmitArticle = async (
-    event: React.FormEvent
-  ) => {
-    event.preventDefault();
-    setSubmitError('');
+  /* =======================================================
+     SUBMIT ARTICLE
+  ======================================================= */
 
-    if (
-      !formData.title.trim() ||
-      !formData.content.trim() ||
-      !formData.author.trim()
-    ) {
-      setSubmitError(
-        'Please complete the required fields.'
-      );
-      return;
-    }
+  const handleSubmitArticle =
+    async (
+      event: React.FormEvent
+    ) => {
+      event.preventDefault();
 
-    const client = await getSupabaseClient();
+      setSubmitError('');
 
-    if (!client) {
-      setSubmitError(
-        'The publishing service is unavailable. Please try again.'
-      );
-      return;
-    }
+      if (
+        !formData.title.trim() ||
+        !formData.content.trim() ||
+        !formData.author.trim()
+      ) {
+        setSubmitError(
+          'Please complete the required fields.'
+        );
 
-    const newPostData = {
-      title: formData.title.trim(),
-      category: formData.category.toUpperCase(),
-      excerpt:
-        formData.excerpt.trim() ||
-        `${formData.content
-          .trim()
-          .slice(0, 120)}…`,
-      content: formData.content.trim(),
-      author: formData.author.trim(),
-      date: new Date().toLocaleDateString(
-        'en-US',
-        {
-          month: 'short',
-          day: '2-digit',
-          year: 'numeric',
-        }
-      ),
-      read_time: formData.readTime,
-      img:
-        formData.img.trim() ||
-        FALLBACK_IMAGE,
+        return;
+      }
+
+      const client =
+        await getSupabaseClient();
+
+      if (!client) {
+        setSubmitError(
+          'The publishing service is unavailable. Please try again.'
+        );
+
+        return;
+      }
+
+      const newPostData = {
+        title:
+          formData.title.trim(),
+
+        category:
+          formData.category.toUpperCase(),
+
+        excerpt:
+          formData.excerpt.trim() ||
+          `${formData.content
+            .trim()
+            .slice(0, 120)}…`,
+
+        content:
+          formData.content.trim(),
+
+        author:
+          formData.author.trim(),
+
+        date:
+          new Date().toLocaleDateString(
+            'en-US',
+            {
+              month: 'short',
+              day: '2-digit',
+              year: 'numeric',
+            }
+          ),
+
+        read_time:
+          formData.readTime,
+
+        img:
+          formData.img.trim() ||
+          FALLBACK_IMAGE,
+      };
+
+      try {
+        const {
+          data,
+          error,
+        } = await client
+          .from('blogs')
+          .insert([
+            newPostData,
+          ])
+          .select('*')
+          .single();
+
+        if (error) throw error;
+
+        const createdPost:
+          BlogPost = data
+          ? formatDbPost(data)
+          : {
+              id: `pending-${Date.now()}`,
+              ...newPostData,
+              readTime:
+                newPostData.read_time,
+            };
+
+        setPosts(
+          (prev) => [
+            createdPost,
+            ...prev.filter(
+              (post) =>
+                post.id !==
+                createdPost.id
+            ),
+          ]
+        );
+
+        setSubmittedSuccess(
+          true
+        );
+
+        window.setTimeout(
+          () => {
+            setSubmittedSuccess(
+              false
+            );
+
+            setIsSubmitOpen(
+              false
+            );
+
+            setFormData({
+              title: '',
+              category:
+                'Spiritual Growth',
+              author: '',
+              readTime:
+                '3 min read',
+              excerpt: '',
+              content: '',
+              img: '',
+            });
+          },
+          1400
+        );
+      } catch (error: any) {
+        console.error(
+          'Noor: article publish failed.',
+          error
+        );
+
+        setSubmitError(
+          error?.message
+            ? `Could not publish: ${error.message}`
+            : 'Could not publish the article. Please try again.'
+        );
+      }
     };
 
-    try {
-      const { data, error } = await client
-        .from('blogs')
-        .insert([newPostData])
-        .select('*')
-        .single();
+  /* =======================================================
+     SAVE PROFILE
+  ======================================================= */
 
-      if (error) throw error;
+  const handleSaveProfile =
+    (
+      event: React.FormEvent
+    ) => {
+      event.preventDefault();
 
-      const createdPost: BlogPost = data
-        ? formatDbPost(data)
-        : {
-            id: `pending-${Date.now()}`,
-            ...newPostData,
-            readTime:
-              newPostData.read_time,
-          };
+      const name =
+        profileInput.name.trim();
 
-      setPosts((prev) => [
-        createdPost,
-        ...prev.filter(
-          (post) =>
-            post.id !== createdPost.id
-        ),
-      ]);
+      const email =
+        profileInput.email
+          .trim()
+          .toLowerCase();
 
-      setSubmittedSuccess(true);
+      const avatar =
+        cleanAvatar(
+          profileInput.avatar
+        );
 
-      window.setTimeout(() => {
-        setSubmittedSuccess(false);
-        setIsSubmitOpen(false);
+      if (!name || !email) {
+        return;
+      }
 
-        setFormData({
-          title: '',
-          category: 'Spiritual Growth',
-          author: '',
-          readTime: '3 min read',
-          excerpt: '',
-          content: '',
-          img: '',
-        });
-      }, 1400);
-    } catch (error: any) {
-      console.error(
-        'Noor: article publish failed.',
-        error
+      const profile:
+        UserProfile = {
+        name,
+        email,
+        ...(avatar
+          ? { avatar }
+          : {}),
+      };
+
+      setUserProfile(profile);
+
+      try {
+        localStorage.setItem(
+          'noor_user_profile',
+          JSON.stringify(profile)
+        );
+
+        window.dispatchEvent(
+          new CustomEvent(
+            'noor-profile-updated',
+            {
+              detail: profile,
+            }
+          )
+        );
+      } catch (error) {
+        console.warn(
+          'Noor: profile could not be saved locally.',
+          error
+        );
+      }
+
+      setIsProfileModalOpen(
+        false
       );
 
-      setSubmitError(
-        error?.message
-          ? `Could not publish: ${error.message}`
-          : 'Could not publish the article. Please try again.'
-      );
-    }
-  };
+      setIsChatOpen(true);
+    };
 
-  const handleSaveProfile = (
-  event: React.FormEvent
-) => {
-  event.preventDefault();
+  /* =======================================================
+     SEND MESSAGE
+  ======================================================= */
 
-  const name = profileInput.name.trim();
-  const email = profileInput.email.trim().toLowerCase();
+  const handleSendMessage =
+    async (
+      event: React.FormEvent
+    ) => {
+      event.preventDefault();
 
-  if (!name || !email) return;
+      /*
+        HARD LOCK:
+        Prevents double/triple submits before
+        React has time to update state.
+      */
+      if (
+        isSending ||
+        sendingLockRef.current
+      ) {
+        return;
+      }
 
-  const profile = {
-    name,
-    email,
-  };
+      const text =
+        newMessage.trim();
 
-  setUserProfile(profile);
+      const link =
+        linkInput.trim();
 
-  try {
-    localStorage.setItem(
-      'noor_user_profile',
-      JSON.stringify(profile)
-    );
+      if (!text && !link) {
+        return;
+      }
 
-    window.dispatchEvent(
-      new CustomEvent('noor-profile-updated', {
-        detail: profile,
-      })
-    );
-  } catch (error) {
-    console.warn(
-      'Noor: profile could not be saved locally.',
-      error
-    );
-  }
+      if (!userProfile) {
+        setIsProfileModalOpen(
+          true
+        );
 
-  setIsProfileModalOpen(false);
-  setIsChatOpen(true);
-};
+        return;
+      }
 
-  const handleSendMessage = async (
-    event: React.FormEvent
-  ) => {
-    event.preventDefault();
+      const combined =
+        `${text} ${link}`.toLowerCase();
 
-    if (isSending) return;
+      if (
+        BANNED_KEYWORDS.some(
+          (keyword) =>
+            combined.includes(
+              keyword
+            )
+        )
+      ) {
+        setBannedAlert(true);
 
-    const text = newMessage.trim();
-    const link = linkInput.trim();
+        window.setTimeout(
+          () =>
+            setBannedAlert(
+              false
+            ),
+          3200
+        );
 
-    if (!text && !link) return;
+        return;
+      }
 
-    if (!userProfile) {
-      setIsProfileModalOpen(true);
-      return;
-    }
+      if (
+        link &&
+        !isHttpUrl(link)
+      ) {
+        setChatError(
+          'Please enter a valid http:// or https:// reference link.'
+        );
 
-    const combined =
-      `${text} ${link}`.toLowerCase();
+        return;
+      }
 
-    if (
-      BANNED_KEYWORDS.some((keyword) =>
-        combined.includes(keyword)
-      )
-    ) {
-      setBannedAlert(true);
+      /*
+        LOCK IMMEDIATELY — BEFORE await.
+        This is the main duplicate-message fix.
+      */
+      sendingLockRef.current =
+        true;
 
-      window.setTimeout(
-        () => setBannedAlert(false),
-        3200
-      );
+      setIsSending(true);
+      setChatError('');
 
-      return;
-    }
+      try {
+        const client =
+          await getSupabaseClient();
 
-    if (
-      link &&
-      !isHttpUrl(link)
-    ) {
-      setChatError(
-        'Please enter a valid http:// or https:// reference link.'
-      );
-      return;
-    }
+        if (!client) {
+          throw new Error(
+            'Community connection is unavailable. Please try again.'
+          );
+        }
 
-    const client =
-      await getSupabaseClient();
+        /*
+          Private token belongs to this browser/message.
+          Only its SHA-256 hash is stored in DB.
+        */
+        const deleteToken =
+          createRandomToken();
 
-    if (!client) {
-      setChatError(
-        'Community connection is unavailable. Please try again.'
-      );
-      return;
-    }
+        const avatar =
+          cleanAvatar(
+            userProfile.avatar
+          );
 
-    setIsSending(true);
-    setChatError('');
-
-    try {
-      const { error } =
-        await client
+        const {
+          data,
+          error,
+        } = await client
           .from('public_chat')
           .insert([
             {
               user_name:
                 userProfile.name,
+
               email:
                 userProfile.email,
+
               text,
+
               link_url:
                 link || null,
+
+              avatar_url:
+                avatar || null,
+
+              delete_token_hash:
+                await hashToken(
+                  deleteToken
+                ),
             },
-          ]);
+          ])
+          .select('*')
+          .single();
 
-      if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
-      setNewMessage('');
-      setLinkInput('');
-
-      await fetchChatMessages(client);
-
-      scrollChatToBottom();
-    } catch (error: any) {
-      console.error(
-        'Noor: message send failed.',
-        error
-      );
-
-      setChatError(
-        error?.message
-          ? `Message could not be sent: ${error.message}`
-          : 'Message could not be sent. Please try again.'
-      );
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleDeleteMessage = async (
-    message: ChatMessage
-  ) => {
-    if (
-      !userProfile ||
-      message.email !==
-        userProfile.email ||
-      deletingMessageId
-    ) {
-      return;
-    }
-
-    setDeletingMessageId(message.id);
-    setOpenMessageMenu(null);
-    setChatError('');
-
-    const client =
-      await getSupabaseClient();
-
-    try {
-      if (!client) {
-        throw new Error(
-          'Community connection is unavailable.'
-        );
-      }
-
-      const { error } =
-        await client
-          .from('public_chat')
-          .delete()
-          .eq('id', message.id)
-          .eq(
-            'email',
-            userProfile.email
+        /*
+          IMPORTANT:
+          Save token only after the database accepted
+          the message.
+        */
+        if (data?.id) {
+          saveDeleteToken(
+            String(data.id),
+            deleteToken
           );
 
-      if (error) throw error;
+          /*
+            Add exactly the returned DB row.
+            Realtime will see the same ID and merge
+            instead of creating another copy.
+          */
+          const createdMessage =
+            formatDbMessage(data);
 
-      setChatMessages((prev) =>
-        prev.filter(
-          (item) =>
-            item.id !== message.id
-        )
-      );
-    } catch (error: any) {
-      console.error(
-        'Noor: message delete failed.',
-        error
+          setChatMessages(
+            (prev) =>
+              mergeMessages(
+                prev,
+                [createdMessage]
+              )
+          );
+        }
+
+        setNewMessage('');
+        setLinkInput('');
+
+        scrollChatToBottom();
+      } catch (error: any) {
+        console.error(
+          'Noor: message send failed.',
+          error
+        );
+
+        setChatError(
+          error?.message
+            ? `Message could not be sent: ${error.message}`
+            : 'Message could not be sent. Please try again.'
+        );
+      } finally {
+        /*
+          Always release the lock.
+        */
+        sendingLockRef.current =
+          false;
+
+        setIsSending(false);
+      }
+    };
+
+  /* =======================================================
+     DELETE MESSAGE FOR EVERYONE
+  ======================================================= */
+
+  const handleDeleteMessage =
+    async (
+      message: ChatMessage
+    ) => {
+      if (
+        !userProfile ||
+        message.email.toLowerCase() !==
+          userProfile.email.toLowerCase() ||
+        deletingMessageId
+      ) {
+        return;
+      }
+
+      const token =
+        getDeleteToken(
+          message.id
+        );
+
+      if (!token) {
+        setOpenMessageMenu(null);
+
+        setChatError(
+          'This message was created before the secure delete system was enabled. New messages can be deleted for everyone.'
+        );
+
+        return;
+      }
+
+      setDeletingMessageId(
+        message.id
       );
 
-      setChatError(
-        error?.message
-          ? `Delete failed: ${error.message}`
-          : 'Delete failed. Please try again.'
-      );
-    } finally {
-      setDeletingMessageId(null);
-    }
-  };
+      setOpenMessageMenu(null);
+      setChatError('');
+
+      try {
+        const client =
+          await getSupabaseClient();
+
+        if (!client) {
+          throw new Error(
+            'Community connection is unavailable.'
+          );
+        }
+
+        /*
+          Database RPC performs the real deletion.
+          This is NOT just a local UI removal.
+        */
+        const {
+          data,
+          error,
+        } = await client.rpc(
+          'delete_my_chat_message',
+          {
+            p_id: message.id,
+            p_token: token,
+          }
+        );
+
+        if (error) {
+          throw error;
+        }
+
+        if (data !== true) {
+          throw new Error(
+            'This message could not be deleted. Please try again.'
+          );
+        }
+
+        /*
+          Immediately remove locally for instant UI.
+          Other users receive the Postgres DELETE
+          realtime event and remove it too.
+        */
+        setChatMessages(
+          (prev) =>
+            prev.filter(
+              (item) =>
+                item.id !==
+                message.id
+            )
+        );
+
+        removeDeleteToken(
+          message.id
+        );
+      } catch (error: any) {
+        console.error(
+          'Noor: message delete failed.',
+          error
+        );
+
+        setChatError(
+          error?.message
+            ? `Delete failed: ${error.message}`
+            : 'Delete failed. Please try again.'
+        );
+      } finally {
+        setDeletingMessageId(
+          null
+        );
+      }
+    };
+
+  /* =======================================================
+     IMAGE FALLBACK
+  ======================================================= */
 
   const handleImageError = (
     event: React.SyntheticEvent<HTMLImageElement>
@@ -1076,28 +1868,56 @@ useEffect(() => {
       event.currentTarget;
 
     if (
-      image.src !== FALLBACK_IMAGE
+      image.src !==
+      FALLBACK_IMAGE
     ) {
-      image.src = FALLBACK_IMAGE;
+      image.src =
+        FALLBACK_IMAGE;
     }
   };
 
+  const handleAvatarError = (
+    event: React.SyntheticEvent<HTMLImageElement>
+  ) => {
+    const image =
+      event.currentTarget;
+
+    image.style.display =
+      'none';
+
+    const fallback =
+      image.parentElement?.querySelector(
+        '[data-avatar-fallback]'
+      ) as HTMLElement | null;
+
+    if (fallback) {
+      fallback.style.display =
+        'flex';
+    }
+  };
+
+  /* =======================================================
+     RETURN
+  ======================================================= */
+
   return (
     <div className="min-h-screen bg-[#061913] text-[#E8EFEA] pt-20 pb-16 selection:bg-[#D4AF37]/30">
-      {/* HERO */}
+
+      {/* ===================================================
+          HERO
+      =================================================== */}
+
       <section className="relative overflow-hidden border-b border-[#17372C]">
         <div className="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(circle_at_20%_20%,rgba(212,175,55,0.08),transparent_30%),radial-gradient(circle_at_85%_10%,rgba(18,130,94,0.12),transparent_35%)]" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
 
-            {/* BLOG LABEL */}
             <div className="inline-flex items-center gap-2 rounded-xl border border-[#34503F] bg-[#0B241B] px-3.5 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.12em] text-[#D4AF37] shadow-[0_8px_25px_rgba(0,0,0,0.12)]">
               <Sparkles size={13} />
               Islamic Insights & Knowledge
             </div>
 
-            {/* HEADING */}
             <h1 className="mt-4 font-serif text-[2rem] leading-[1.08] sm:text-4xl lg:text-[3rem] font-semibold tracking-tight text-[#FAF8F5]">
               Islamic Blog
             </h1>
@@ -1107,8 +1927,8 @@ useEffect(() => {
               to strengthen faith and enrich everyday life.
             </p>
 
-            {/* ACTION BUTTONS — ABOVE SEARCH */}
             <div className="mt-6 flex w-full flex-wrap items-center justify-center gap-2.5">
+
               <button
                 type="button"
                 onClick={() => {
@@ -1140,7 +1960,6 @@ useEffect(() => {
               </button>
             </div>
 
-            {/* SEARCH — BELOW BUTTONS */}
             <div className="mt-5 w-full max-w-2xl">
               <div className="relative">
                 <Search
@@ -1161,42 +1980,47 @@ useEffect(() => {
                 />
               </div>
 
-              {/* CATEGORIES — BELOW SEARCH */}
               <div className="mt-3 flex justify-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                {CATEGORIES.map((category) => {
-                  const active =
-                    activeCategory ===
-                    category;
+                {CATEGORIES.map(
+                  (category) => {
+                    const active =
+                      activeCategory ===
+                      category;
 
-                  return (
-                    <button
-                      type="button"
-                      key={category}
-                      onClick={() =>
-                        setActiveCategory(
+                    return (
+                      <button
+                        type="button"
+                        key={category}
+                        onClick={() =>
+                          setActiveCategory(
+                            active
+                              ? ''
+                              : category
+                          )
+                        }
+                        className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold transition duration-200 ${
                           active
-                            ? ''
-                            : category
-                        )
-                      }
-                      className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold transition duration-200 ${
-                        active
-                          ? 'border border-[#D4AF37] bg-[#D4AF37]/12 text-[#D4AF37]'
-                          : 'border border-[#234538] bg-[#0B241B] text-[#94AAA1] hover:border-[#345A49] hover:text-[#E8EFEA]'
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  );
-                })}
+                            ? 'border border-[#D4AF37] bg-[#D4AF37]/12 text-[#D4AF37]'
+                            : 'border border-[#234538] bg-[#0B241B] text-[#94AAA1] hover:border-[#345A49] hover:text-[#E8EFEA]'
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    );
+                  }
+                )}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* BLOG CONTENT */}
+      {/* ===================================================
+          BLOG CONTENT
+      =================================================== */}
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
+
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 animate-pulse">
             <div className="lg:col-span-8 h-[310px] rounded-2xl border border-[#17372C] bg-[#0B241B]" />
@@ -1230,7 +2054,7 @@ useEffect(() => {
           </div>
         ) : (
           <div className="space-y-5">
-            {/* FEATURED */}
+
             {featuredPost && (
               <article
                 onClick={() =>
@@ -1241,10 +2065,15 @@ useEffect(() => {
                 className="group cursor-pointer overflow-hidden rounded-2xl border border-[#234538] bg-[#0B241B] shadow-[0_18px_45px_rgba(0,0,0,0.18)] transition duration-300 hover:border-[#D4AF37]/45"
               >
                 <div className="grid grid-cols-1 md:grid-cols-12">
+
                   <div className="relative h-56 sm:h-64 md:col-span-5 md:h-[270px] overflow-hidden">
                     <img
-                      src={featuredPost.img}
-                      alt={featuredPost.title}
+                      src={
+                        featuredPost.img
+                      }
+                      alt={
+                        featuredPost.title
+                      }
                       loading="eager"
                       onError={
                         handleImageError
@@ -1261,9 +2090,12 @@ useEffect(() => {
                   </div>
 
                   <div className="flex flex-col justify-center p-5 sm:p-6 md:col-span-7">
+
                     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] sm:text-xs uppercase tracking-[0.11em]">
                       <span className="font-bold text-[#D4AF37]">
-                        {featuredPost.category}
+                        {
+                          featuredPost.category
+                        }
                       </span>
 
                       <span className="text-[#49675B]">
@@ -1272,16 +2104,22 @@ useEffect(() => {
 
                       <span className="flex items-center gap-1 text-[#829B91] normal-case tracking-normal">
                         <Clock size={12} />
-                        {featuredPost.readTime}
+                        {
+                          featuredPost.readTime
+                        }
                       </span>
                     </div>
 
                     <h2 className="mt-3 font-serif text-[1.45rem] leading-[1.18] sm:text-2xl lg:text-[1.8rem] font-semibold text-[#FAF8F5] transition group-hover:text-[#E2C25A]">
-                      {featuredPost.title}
+                      {
+                        featuredPost.title
+                      }
                     </h2>
 
                     <p className="mt-3 line-clamp-3 max-w-2xl text-sm leading-6 text-[#A3B8B0]">
-                      {featuredPost.excerpt}
+                      {
+                        featuredPost.excerpt
+                      }
                     </p>
 
                     <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[#234538]/80 pt-4 text-[11px] text-[#789187]">
@@ -1289,12 +2127,16 @@ useEffect(() => {
                         <User size={13} />
 
                         <strong className="font-medium text-[#DCE7E1]">
-                          {featuredPost.author}
+                          {
+                            featuredPost.author
+                          }
                         </strong>
                       </span>
 
                       <span>
-                        {featuredPost.date}
+                        {
+                          featuredPost.date
+                        }
                       </span>
                     </div>
                   </div>
@@ -1302,72 +2144,92 @@ useEffect(() => {
               </article>
             )}
 
-            {/* SECONDARY */}
             {gridPosts.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                {gridPosts.map((post) => (
-                  <article
-                    key={post.id}
-                    onClick={() =>
-                      setSelectedPost(post)
-                    }
-                    className="group cursor-pointer overflow-hidden rounded-2xl border border-[#234538] bg-[#0B241B] transition duration-300 hover:-translate-y-0.5 hover:border-[#D4AF37]/40 hover:shadow-[0_14px_35px_rgba(0,0,0,0.16)]"
-                  >
-                    <div className="relative h-40 sm:h-44 overflow-hidden">
-                      <img
-                        src={post.img}
-                        alt={post.title}
-                        loading="lazy"
-                        onError={
-                          handleImageError
-                        }
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                      />
+                {gridPosts.map(
+                  (post) => (
+                    <article
+                      key={post.id}
+                      onClick={() =>
+                        setSelectedPost(
+                          post
+                        )
+                      }
+                      className="group cursor-pointer overflow-hidden rounded-2xl border border-[#234538] bg-[#0B241B] transition duration-300 hover:-translate-y-0.5 hover:border-[#D4AF37]/40 hover:shadow-[0_14px_35px_rgba(0,0,0,0.16)]"
+                    >
+                      <div className="relative h-40 sm:h-44 overflow-hidden">
+                        <img
+                          src={post.img}
+                          alt={
+                            post.title
+                          }
+                          loading="lazy"
+                          onError={
+                            handleImageError
+                          }
+                          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                        />
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#061913]/45 to-transparent" />
-                    </div>
-
-                    <div className="p-4 sm:p-4.5">
-                      <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.08em]">
-                        <span className="truncate font-bold text-[#D4AF37]">
-                          {post.category}
-                        </span>
-
-                        <span className="shrink-0 normal-case tracking-normal text-[#789187]">
-                          {post.readTime}
-                        </span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#061913]/45 to-transparent" />
                       </div>
 
-                      <h3 className="mt-2.5 line-clamp-2 font-serif text-[1.08rem] leading-[1.25] font-semibold text-[#FAF8F5] group-hover:text-[#E2C25A]">
-                        {post.title}
-                      </h3>
+                      <div className="p-4 sm:p-4.5">
+                        <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.08em]">
+                          <span className="truncate font-bold text-[#D4AF37]">
+                            {
+                              post.category
+                            }
+                          </span>
 
-                      <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#94AAA1]">
-                        {post.excerpt}
-                      </p>
+                          <span className="shrink-0 normal-case tracking-normal text-[#789187]">
+                            {
+                              post.readTime
+                            }
+                          </span>
+                        </div>
 
-                      <div className="mt-4 flex items-center justify-between border-t border-[#234538]/70 pt-3 text-[10px] text-[#789187]">
-                        <span className="truncate pr-2">
-                          By {post.author}
-                        </span>
+                        <h3 className="mt-2.5 line-clamp-2 font-serif text-[1.08rem] leading-[1.25] font-semibold text-[#FAF8F5] group-hover:text-[#E2C25A]">
+                          {
+                            post.title
+                          }
+                        </h3>
 
-                        <span className="shrink-0 font-semibold text-[#D4AF37]">
-                          Read →
-                        </span>
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#94AAA1]">
+                          {
+                            post.excerpt
+                          }
+                        </p>
+
+                        <div className="mt-4 flex items-center justify-between border-t border-[#234538]/70 pt-3 text-[10px] text-[#789187]">
+                          <span className="truncate pr-2">
+                            By{' '}
+                            {
+                              post.author
+                            }
+                          </span>
+
+                          <span className="shrink-0 font-semibold text-[#D4AF37]">
+                            Read →
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  )
+                )}
               </div>
             )}
           </div>
         )}
       </main>
 
-      {/* ARTICLE MODAL */}
+      {/* ===================================================
+          ARTICLE MODAL
+      =================================================== */}
+
       {selectedPost && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#020B08]/85 p-3 sm:p-5 backdrop-blur-md">
           <div className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[#34503F] bg-[#0B241B] shadow-2xl">
+
             <button
               type="button"
               onClick={() =>
@@ -1381,8 +2243,12 @@ useEffect(() => {
 
             <div className="h-48 sm:h-64 shrink-0 overflow-hidden">
               <img
-                src={selectedPost.img}
-                alt={selectedPost.title}
+                src={
+                  selectedPost.img
+                }
+                alt={
+                  selectedPost.title
+                }
                 onError={
                   handleImageError
                 }
@@ -1392,31 +2258,50 @@ useEffect(() => {
 
             <div className="overflow-y-auto p-5 sm:p-7">
               <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D4AF37]">
-                {selectedPost.category}
+                {
+                  selectedPost.category
+                }
               </span>
 
               <h2 className="mt-2 max-w-2xl font-serif text-2xl sm:text-3xl font-semibold leading-tight text-[#FAF8F5]">
-                {selectedPost.title}
+                {
+                  selectedPost.title
+                }
               </h2>
 
               <p className="mt-2 text-xs text-[#789187]">
-                By {selectedPost.author} •{' '}
-                {selectedPost.date} •{' '}
-                {selectedPost.readTime}
+                By{' '}
+                {
+                  selectedPost.author
+                }{' '}
+                •{' '}
+                {
+                  selectedPost.date
+                }{' '}
+                •{' '}
+                {
+                  selectedPost.readTime
+                }
               </p>
 
               <div className="mt-6 whitespace-pre-line text-sm sm:text-[15px] leading-7 text-[#B5C5BE]">
-                {selectedPost.content}
+                {
+                  selectedPost.content
+                }
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* SUBMIT ARTICLE */}
+      {/* ===================================================
+          SUBMIT ARTICLE
+      =================================================== */}
+
       {isSubmitOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#020B08]/85 p-3 sm:p-5 backdrop-blur-md">
           <div className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#34503F] bg-[#0B241B] shadow-2xl">
+
             <div className="flex shrink-0 items-center justify-between border-b border-[#234538] px-5 py-4 sm:px-6">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#D4AF37]">
@@ -1431,7 +2316,9 @@ useEffect(() => {
               <button
                 type="button"
                 onClick={() =>
-                  setIsSubmitOpen(false)
+                  setIsSubmitOpen(
+                    false
+                  )
                 }
                 className="rounded-full border border-[#34503F] bg-[#102B22] p-2 text-[#A3B8B0] hover:text-white"
               >
@@ -1464,7 +2351,9 @@ useEffect(() => {
                 >
                   {submitError && (
                     <div className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2.5 text-xs text-red-300">
-                      {submitError}
+                      {
+                        submitError
+                      }
                     </div>
                   )}
 
@@ -1475,11 +2364,14 @@ useEffect(() => {
 
                     <input
                       required
-                      value={formData.title}
+                      value={
+                        formData.title
+                      }
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          title: e.target.value,
+                          title:
+                            e.target.value,
                         })
                       }
                       placeholder="Enter a meaningful title..."
@@ -1501,18 +2393,27 @@ useEffect(() => {
                           setFormData({
                             ...formData,
                             category:
-                              e.target.value,
+                              e.target
+                                .value,
                           })
                         }
                         className="w-full rounded-xl border border-[#234538] bg-[#061913] px-3.5 py-3 text-sm text-[#E8EFEA] outline-none focus:border-[#D4AF37]/70"
                       >
                         {CATEGORIES.map(
-                          (category) => (
+                          (
+                            category
+                          ) => (
                             <option
-                              key={category}
-                              value={category}
+                              key={
+                                category
+                              }
+                              value={
+                                category
+                              }
                             >
-                              {category}
+                              {
+                                category
+                              }
                             </option>
                           )
                         )}
@@ -1533,7 +2434,8 @@ useEffect(() => {
                           setFormData({
                             ...formData,
                             author:
-                              e.target.value,
+                              e.target
+                                .value,
                           })
                         }
                         placeholder="Your name..."
@@ -1552,11 +2454,14 @@ useEffect(() => {
 
                     <input
                       type="url"
-                      value={formData.img}
+                      value={
+                        formData.img
+                      }
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          img: e.target.value,
+                          img: e.target
+                            .value,
                         })
                       }
                       placeholder="https://..."
@@ -1581,7 +2486,8 @@ useEffect(() => {
                         setFormData({
                           ...formData,
                           excerpt:
-                            e.target.value,
+                            e.target
+                              .value,
                         })
                       }
                       placeholder="A short introduction for the card..."
@@ -1604,7 +2510,8 @@ useEffect(() => {
                         setFormData({
                           ...formData,
                           content:
-                            e.target.value,
+                            e.target
+                              .value,
                         })
                       }
                       placeholder="Write your article..."
@@ -1626,10 +2533,14 @@ useEffect(() => {
         </div>
       )}
 
-      {/* PROFILE */}
+      {/* ===================================================
+          PROFILE MODAL
+      =================================================== */}
+
       {isProfileModalOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#020B08]/85 p-4 backdrop-blur-md">
           <div className="w-full max-w-md rounded-2xl border border-[#34503F] bg-[#0B241B] p-5 sm:p-6 shadow-2xl">
+
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[#D4AF37]">
@@ -1651,7 +2562,9 @@ useEffect(() => {
               <button
                 type="button"
                 onClick={() =>
-                  setIsProfileModalOpen(false)
+                  setIsProfileModalOpen(
+                    false
+                  )
                 }
                 className="rounded-full p-2 text-[#789187] hover:bg-[#102B22] hover:text-white"
               >
@@ -1673,7 +2586,8 @@ useEffect(() => {
                 onChange={(e) =>
                   setProfileInput({
                     ...profileInput,
-                    name: e.target.value,
+                    name: e.target
+                      .value,
                   })
                 }
                 placeholder="Your name"
@@ -1689,10 +2603,27 @@ useEffect(() => {
                 onChange={(e) =>
                   setProfileInput({
                     ...profileInput,
-                    email: e.target.value,
+                    email:
+                      e.target.value,
                   })
                 }
                 placeholder="Your email"
+                className="w-full rounded-xl border border-[#234538] bg-[#061913] px-3.5 py-3 text-sm text-[#E8EFEA] outline-none placeholder:text-[#5E776E] focus:border-[#D4AF37]/70"
+              />
+
+              <input
+                type="url"
+                value={
+                  profileInput.avatar
+                }
+                onChange={(e) =>
+                  setProfileInput({
+                    ...profileInput,
+                    avatar:
+                      e.target.value,
+                  })
+                }
+                placeholder="Profile photo URL (optional)"
                 className="w-full rounded-xl border border-[#234538] bg-[#061913] px-3.5 py-3 text-sm text-[#E8EFEA] outline-none placeholder:text-[#5E776E] focus:border-[#D4AF37]/70"
               />
 
@@ -1708,16 +2639,25 @@ useEffect(() => {
         </div>
       )}
 
-      {/* COMMUNITY CHAT */}
+      {/* ===================================================
+          COMMUNITY CHAT
+      =================================================== */}
+
       {isChatOpen && (
         <div className="fixed inset-0 z-[100] bg-[#020B08]/75 backdrop-blur-sm">
+
           <div className="flex h-[100dvh] w-full items-end justify-end sm:items-center sm:justify-center sm:p-4">
+
             <section className="flex h-[100dvh] w-full flex-col overflow-hidden bg-[#071C15] shadow-2xl sm:h-[min(700px,88dvh)] sm:max-w-[440px] sm:rounded-2xl sm:border sm:border-[#34503F]">
 
               {/* CHAT HEADER */}
+
               <header className="shrink-0 border-b border-[#234538] bg-[#081F17] px-4 py-3">
+
                 <div className="flex items-center justify-between gap-3">
+
                   <div className="min-w-0 flex items-center gap-3">
+
                     <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[#D4AF37]">
                       <MessageSquare size={18} />
 
@@ -1725,12 +2665,15 @@ useEffect(() => {
                     </div>
 
                     <div className="min-w-0">
+
                       <div className="flex items-center gap-2">
+
                         <h2 className="truncate font-serif text-base font-semibold text-[#FAF8F5]">
                           Noor Community
                         </h2>
 
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-300">
+
                           <Circle
                             size={6}
                             fill="currentColor"
@@ -1740,49 +2683,90 @@ useEffect(() => {
                             ? 'Live'
                             : 'Syncing'}
                         </span>
+
                       </div>
 
                       <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#789187]">
                         <Wifi size={11} />
                         Public Islamic Community
                       </p>
+
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={() =>
-                      setIsChatOpen(false)
+                      setIsChatOpen(
+                        false
+                      )
                     }
                     className="shrink-0 rounded-full p-2 text-[#789187] hover:bg-[#102B22] hover:text-white"
                     aria-label="Close community chat"
                   >
                     <X size={18} />
                   </button>
+
                 </div>
 
+                {/* CURRENT USER */}
+
                 <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-[#234538] bg-[#061913] px-3 py-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
-                    {userProfile?.name
-                      ?.slice(0, 1)
-                      .toUpperCase() ||
-                      'M'}
+
+                  <div className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
+
+                    {userProfile?.avatar ? (
+                      <>
+                        <img
+                          src={
+                            userProfile.avatar
+                          }
+                          alt=""
+                          onError={
+                            handleAvatarError
+                          }
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+
+                        <span
+                          data-avatar-fallback
+                          className="hidden h-full w-full items-center justify-center"
+                        >
+                          {getInitial(
+                            userProfile.name
+                          )}
+                        </span>
+                      </>
+                    ) : (
+                      getInitial(
+                        userProfile?.name ||
+                          'M'
+                      )
+                    )}
+
                   </div>
 
                   <div className="min-w-0">
+
                     <p className="text-[9px] uppercase tracking-[0.12em] text-[#637D73]">
                       Chatting as
                     </p>
 
                     <p className="truncate text-xs font-semibold text-[#E8EFEA]">
-                      {userProfile?.name ||
-                        'Guest'}
+                      {
+                        userProfile?.name ||
+                          'Guest'
+                      }
                     </p>
+
                   </div>
+
                 </div>
+
               </header>
 
-              {/* CHAT STATUS */}
+              {/* STATUS */}
+
               {(bannedAlert ||
                 chatError) && (
                 <div
@@ -1802,17 +2786,25 @@ useEffect(() => {
                 </div>
               )}
 
-              {/* MESSAGES */}
+              {/* =================================================
+                  MESSAGES
+              ================================================= */}
+
               <div
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_top,rgba(22,75,56,0.18),transparent_42%)] px-3 py-4 sm:px-4"
                 onClick={() =>
-                  setOpenMessageMenu(null)
+                  setOpenMessageMenu(
+                    null
+                  )
                 }
               >
+
                 {chatMessages.length ===
                 0 ? (
                   <div className="flex h-full min-h-[320px] items-center justify-center px-6">
+
                     <div className="max-w-xs text-center">
+
                       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/8 text-[#D4AF37]">
                         <MessageSquare size={23} />
                       </div>
@@ -1826,38 +2818,75 @@ useEffect(() => {
                         reflections, and Islamic
                         resources with the community.
                       </p>
+
                     </div>
                   </div>
                 ) : (
+
                   <div className="space-y-3">
+
                     {chatMessages.map(
                       (message) => {
                         const isMine =
                           Boolean(
                             userProfile?.email
                           ) &&
-                          message.email ===
-                            userProfile?.email;
+                          message.email
+                            .trim()
+                            .toLowerCase() ===
+                            userProfile!.email
+                              .trim()
+                              .toLowerCase();
 
                         const initial =
-                          message.user
-                            ?.trim()
-                            ?.slice(0, 1)
-                            .toUpperCase() ||
-                          'U';
+                          getInitial(
+                            message.user
+                          );
+
+                        const avatar =
+                          message.avatar;
 
                         return (
                           <div
-                            key={message.id}
+                            key={
+                              message.id
+                            }
                             className={`flex items-end gap-2 ${
                               isMine
                                 ? 'justify-end'
                                 : 'justify-start'
                             }`}
                           >
+
+                            {/* OTHER USER AVATAR */}
+
                             {!isMine && (
-                              <div className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#34503F] bg-[#102B22] text-[10px] font-bold text-[#D4AF37]">
-                                {initial}
+                              <div className="relative mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#34503F] bg-[#102B22] text-[10px] font-bold text-[#D4AF37]">
+
+                                {avatar ? (
+                                  <>
+                                    <img
+                                      src={
+                                        avatar
+                                      }
+                                      alt=""
+                                      onError={
+                                        handleAvatarError
+                                      }
+                                      className="absolute inset-0 h-full w-full object-cover"
+                                    />
+
+                                    <span
+                                      data-avatar-fallback
+                                      className="hidden h-full w-full items-center justify-center"
+                                    >
+                                      {initial}
+                                    </span>
+                                  </>
+                                ) : (
+                                  initial
+                                )}
+
                               </div>
                             )}
 
@@ -1868,6 +2897,7 @@ useEffect(() => {
                                   : 'items-start'
                               } flex flex-col`}
                             >
+
                               <div
                                 className={`mb-1 flex max-w-full items-center gap-2 px-1 text-[9px] ${
                                   isMine
@@ -1875,6 +2905,7 @@ useEffect(() => {
                                     : ''
                                 }`}
                               >
+
                                 <span
                                   className={`max-w-[180px] truncate font-semibold ${
                                     isMine
@@ -1888,8 +2919,11 @@ useEffect(() => {
                                 </span>
 
                                 <span className="text-[#617A70]">
-                                  {message.time}
+                                  {
+                                    message.time
+                                  }
                                 </span>
+
                               </div>
 
                               <div
@@ -1899,6 +2933,9 @@ useEffect(() => {
                                     : 'rounded-bl-md border-[#234538] bg-[#0B241B] text-[#DCE7E1]'
                                 }`}
                               >
+
+                                {/* OPTIONS */}
+
                                 {isMine && (
                                   <button
                                     type="button"
@@ -1926,17 +2963,20 @@ useEffect(() => {
                                   </button>
                                 )}
 
+                                {/* DELETE MENU */}
+
                                 {openMessageMenu ===
                                   message.id &&
                                   isMine && (
                                     <div
-                                      className="absolute right-0 top-8 z-20 w-40 overflow-hidden rounded-xl border border-[#34503F] bg-[#0B241B] p-1 shadow-2xl"
+                                      className="absolute right-0 top-8 z-20 w-44 overflow-hidden rounded-xl border border-[#34503F] bg-[#0B241B] p-1 shadow-2xl"
                                       onClick={(
                                         event
                                       ) =>
                                         event.stopPropagation()
                                       }
                                     >
+
                                       <button
                                         type="button"
                                         disabled={
@@ -1950,6 +2990,7 @@ useEffect(() => {
                                         }
                                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-red-300 hover:bg-red-400/10 disabled:opacity-50"
                                       >
+
                                         {deletingMessageId ===
                                         message.id ? (
                                           <Loader2
@@ -1965,12 +3006,15 @@ useEffect(() => {
                                         Delete for
                                         Everyone
                                       </button>
+
                                     </div>
                                   )}
 
                                 {message.text && (
                                   <p className="whitespace-pre-wrap break-words text-[13px] leading-5">
-                                    {message.text}
+                                    {
+                                      message.text
+                                    }
                                   </p>
                                 )}
 
@@ -1988,6 +3032,7 @@ useEffect(() => {
                                     }
                                     className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-[#D4AF37]/15 bg-[#061913]/45 px-2.5 py-2 text-[10px] text-[#D4AF37] hover:bg-[#061913]/70"
                                   >
+
                                     <LinkIcon
                                       size={12}
                                       className="shrink-0"
@@ -2003,47 +3048,95 @@ useEffect(() => {
                                       size={11}
                                       className="shrink-0"
                                     />
+
                                   </a>
                                 )}
+
                               </div>
                             </div>
 
+                            {/* MY AVATAR */}
+
                             {isMine && (
-                              <div className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
-                                {userProfile?.name
-                                  ?.slice(0, 1)
-                                  .toUpperCase() ||
-                                  'M'}
+                              <div className="relative mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[10px] font-bold text-[#D4AF37]">
+
+                                {userProfile?.avatar ? (
+                                  <>
+                                    <img
+                                      src={
+                                        userProfile.avatar
+                                      }
+                                      alt=""
+                                      onError={
+                                        handleAvatarError
+                                      }
+                                      className="absolute inset-0 h-full w-full object-cover"
+                                    />
+
+                                    <span
+                                      data-avatar-fallback
+                                      className="hidden h-full w-full items-center justify-center"
+                                    >
+                                      {getInitial(
+                                        userProfile.name
+                                      )}
+                                    </span>
+                                  </>
+                                ) : (
+                                  getInitial(
+                                    userProfile?.name ||
+                                      'M'
+                                  )
+                                )}
+
                               </div>
                             )}
+
                           </div>
                         );
                       }
                     )}
 
-                    <div ref={chatEndRef} />
+                    <div
+                      ref={
+                        chatEndRef
+                      }
+                    />
+
                   </div>
                 )}
+
               </div>
 
-              {/* COMPOSER */}
+              {/* =================================================
+                  COMPOSER
+              ================================================= */}
+
               <form
                 onSubmit={
                   handleSendMessage
                 }
                 className="shrink-0 border-t border-[#234538] bg-[#081F17] p-2.5 sm:p-3"
               >
+
                 <div className="rounded-xl border border-[#34503F] bg-[#061913] p-1.5">
+
                   <div className="flex items-end gap-2">
+
                     <textarea
                       rows={1}
-                      value={newMessage}
+                      value={
+                        newMessage
+                      }
                       onChange={(event) =>
                         setNewMessage(
-                          event.target.value
+                          event.target
+                            .value
                         )
                       }
-                      onKeyDown={(event) => {
+                      onKeyDown={(
+                        event
+                      ) => {
                         if (
                           event.key ===
                             'Enter' &&
@@ -2051,6 +3144,11 @@ useEffect(() => {
                         ) {
                           event.preventDefault();
 
+                          /*
+                            Because the submit lock is now
+                            synchronous, this cannot generate
+                            duplicate API calls.
+                          */
                           event.currentTarget.form?.requestSubmit();
                         }
                       }}
@@ -2077,9 +3175,11 @@ useEffect(() => {
                         <Send size={16} />
                       )}
                     </button>
+
                   </div>
 
                   <div className="mt-1 flex items-center gap-2 border-t border-[#17372C] px-2 pt-2">
+
                     <LinkIcon
                       size={12}
                       className="shrink-0 text-[#637D73]"
@@ -2087,25 +3187,32 @@ useEffect(() => {
 
                     <input
                       type="url"
-                      value={linkInput}
+                      value={
+                        linkInput
+                      }
                       onChange={(event) =>
                         setLinkInput(
-                          event.target.value
+                          event.target
+                            .value
                         )
                       }
                       placeholder="Add reference link (optional)"
                       className="min-w-0 flex-1 bg-transparent py-1 text-[10px] text-[#B5C5BE] outline-none placeholder:text-[#5E776E]"
                     />
+
                   </div>
+
                 </div>
 
                 <div className="mt-2 flex items-center justify-between px-1 text-[9px] text-[#5E776E]">
+
                   <span>
                     Keep it beneficial • No
                     harmful links
                   </span>
 
                   <span className="inline-flex items-center gap-1">
+
                     <span
                       className={`h-1.5 w-1.5 rounded-full ${
                         realtimeLive
@@ -2117,9 +3224,13 @@ useEffect(() => {
                     {realtimeLive
                       ? 'Live sync'
                       : 'Syncing'}
+
                   </span>
+
                 </div>
+
               </form>
+
             </section>
           </div>
         </div>
@@ -2127,5 +3238,65 @@ useEffect(() => {
     </div>
   );
 };
+
+/* =========================================================
+   SHA-256 TOKEN HASH
+========================================================= */
+
+async function hashToken(
+  token: string
+): Promise<string> {
+  try {
+    if (
+      typeof window !==
+        'undefined' &&
+      window.crypto?.subtle
+    ) {
+      const encoded =
+        new TextEncoder().encode(
+          token
+        );
+
+      const hash =
+        await window.crypto.subtle.digest(
+          'SHA-256',
+          encoded
+        );
+
+      return Array.from(
+        new Uint8Array(hash)
+      )
+        .map((byte) =>
+          byte
+            .toString(16)
+            .padStart(2, '0')
+        )
+        .join('');
+    }
+  } catch {
+    // Fall through to deterministic fallback.
+  }
+
+  /*
+    This fallback is only reached in very old environments.
+    Modern browsers use Web Crypto above.
+  */
+  let hash = 0;
+
+  for (
+    let i = 0;
+    i < token.length;
+    i++
+  ) {
+    hash =
+      (hash << 5) -
+      hash +
+      token.charCodeAt(i);
+
+    hash |= 0;
+  }
+
+  return Math.abs(hash).toString(16);
+}
 
 export default Blog;
