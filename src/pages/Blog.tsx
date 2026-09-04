@@ -444,7 +444,91 @@ export const Blog: React.FC = () => {
       );
     }
   };
+useEffect(() => {
+  const loadSavedProfile = () => {
+    try {
+      const saved =
+        window.localStorage.getItem(
+          'noor_user_profile'
+        );
 
+      if (!saved) return;
+
+      const parsed = JSON.parse(saved);
+
+      if (
+        parsed?.name &&
+        parsed?.email
+      ) {
+        const profile = {
+          name: String(parsed.name).trim(),
+          email: String(parsed.email)
+            .trim()
+            .toLowerCase(),
+        };
+
+        setUserProfile(profile);
+        setProfileInput(profile);
+      }
+    } catch (error) {
+      console.warn(
+        'Noor: saved profile could not be read.',
+        error
+      );
+    }
+  };
+
+  loadSavedProfile();
+
+  const handleProfileUpdate = (
+    event: Event
+  ) => {
+    const customEvent =
+      event as CustomEvent;
+
+    const profile =
+      customEvent.detail;
+
+    if (
+      profile?.name &&
+      profile?.email
+    ) {
+      const cleanProfile = {
+        name: String(profile.name).trim(),
+        email: String(profile.email)
+          .trim()
+          .toLowerCase(),
+      };
+
+      setUserProfile(cleanProfile);
+      setProfileInput(cleanProfile);
+    } else {
+      loadSavedProfile();
+    }
+  };
+
+  window.addEventListener(
+    'noor-profile-updated',
+    handleProfileUpdate
+  );
+
+  window.addEventListener(
+    'storage',
+    loadSavedProfile
+  );
+
+  return () => {
+    window.removeEventListener(
+      'noor-profile-updated',
+      handleProfileUpdate
+    );
+
+    window.removeEventListener(
+      'storage',
+      loadSavedProfile
+    );
+  };
+}, []);
   useEffect(() => {
     let mounted = true;
 
@@ -803,15 +887,52 @@ export const Blog: React.FC = () => {
 
     if (!name || !email) return;
 
-    const profile = {
-      name,
-      email,
-    };
+    const handleSaveProfile = (
+  event: React.FormEvent
+) => {
+  event.preventDefault();
 
-    setUserProfile(profile);
-    setIsProfileModalOpen(false);
-    setIsChatOpen(true);
+  const name =
+    profileInput.name.trim();
+
+  const email =
+    profileInput.email
+      .trim()
+      .toLowerCase();
+
+  if (!name || !email) return;
+
+  const profile = {
+    name,
+    email,
   };
+
+  setUserProfile(profile);
+
+  try {
+    window.localStorage.setItem(
+      'noor_user_profile',
+      JSON.stringify(profile)
+    );
+
+    window.dispatchEvent(
+      new CustomEvent(
+        'noor-profile-updated',
+        {
+          detail: profile,
+        }
+      )
+    );
+  } catch (error) {
+    console.warn(
+      'Noor: profile could not be saved locally.',
+      error
+    );
+  }
+
+  setIsProfileModalOpen(false);
+  setIsChatOpen(true);
+};
 
   const handleSendMessage = async (
     event: React.FormEvent
