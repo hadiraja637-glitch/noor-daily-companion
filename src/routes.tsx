@@ -17,6 +17,8 @@ import StoryDetail from './pages/StoryDetail';
 import Blog from './pages/Blog';
 import SunnahHabits from './pages/SunnahHabits';
 import InfoPage from './pages/InfoPage';
+import Profile from './pages/Profile';
+
 
 function Layout() {
   const { pathname } = useLocation();
@@ -53,6 +55,7 @@ export const router = createBrowserRouter([
       { path: '/stories', element: <Stories /> },
       { path: '/stories/:slug', element: <StoryDetail /> },
       { path: '/blog', element: <Blog /> },
+      { path: '/profile', element: <Profile /> },
       { path: '/sunnah-habits', element: <SunnahHabits /> },
       { path: '/sunnah-habits/:slug', element: <SunnahHabits /> },
 
