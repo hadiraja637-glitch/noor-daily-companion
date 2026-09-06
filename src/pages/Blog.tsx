@@ -318,6 +318,7 @@ export const Blog: React.FC = () => {
       const { data, error } = await client
         .from('blogs')
         .select('*')
+        .eq('status', 'published')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -584,6 +585,7 @@ export const Blog: React.FC = () => {
     const newPostData = {
       title: formData.title.trim(),
       category: formData.category.toUpperCase(),
+      status: 'pending',
       excerpt:
         formData.excerpt.trim() ||
         `${formData.content.trim().slice(0, 120)}…`,
@@ -599,42 +601,15 @@ export const Blog: React.FC = () => {
     };
 
     try {
-      const { data, error } = await client
+      // Submit as pending. We intentionally do not request the inserted row back
+      // because the public SELECT policy exposes published articles only.
+      const { error } = await client
         .from('blogs')
-        .insert([newPostData])
-        .select('*')
-        .single();
+        .insert([newPostData]);
 
       if (error) throw error;
 
-      const createdPost = data
-        ? formatDbPost(data)
-        : {
-            id: `pending-${Date.now()}`,
-            ...newPostData,
-            readTime: newPostData.read_time,
-          };
-
-      setPosts((prev) => [
-        createdPost,
-        ...prev.filter((post) => post.id !== createdPost.id),
-      ]);
-
       setSubmittedSuccess(true);
-
-      window.setTimeout(() => {
-        setSubmittedSuccess(false);
-        setIsSubmitOpen(false);
-        setFormData({
-          title: '',
-          category: 'Spiritual Growth',
-          author: '',
-          readTime: '3 min read',
-          excerpt: '',
-          content: '',
-          img: '',
-        });
-      }, 1400);
     } catch (error: any) {
       console.error('Noor: article publish failed.', error);
       setSubmitError(
@@ -1083,10 +1058,10 @@ export const Blog: React.FC = () => {
                     <Check size={28} />
                   </div>
                   <h3 className="mt-4 font-serif text-xl text-[#FAF8F5]">
-                    Article Published
+                    Article Submitted
                   </h3>
                   <p className="mt-1 text-sm text-[#8FA79D]">
-                    Your article has been saved to the Noor blog.
+                    Your article has been submitted for review and will appear after it is published.
                   </p>
                 </div>
               ) : (
@@ -1187,7 +1162,7 @@ export const Blog: React.FC = () => {
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D4AF37] py-3 text-sm font-bold text-[#061913] shadow-lg transition hover:bg-[#e0bf55] active:scale-[0.99]"
                   >
                     <Check size={16} />
-                    Publish Article
+                    Submit for Review
                   </button>
                 </form>
               )}
