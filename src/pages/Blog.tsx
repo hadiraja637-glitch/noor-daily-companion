@@ -128,7 +128,7 @@ const DEFAULT_POSTS: BlogPost[] = [
     author: 'Sheikh Omar Al-Sayed',
     date: 'Aug 18, 2026',
     readTime: '5 min read',
-    img: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=1200&q=82',
+    img: 'https://images.pexels.com/photos/2344997/pexels-photo-2344997.jpeg,
     featured: true,
   },
   {
