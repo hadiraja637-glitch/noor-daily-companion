@@ -9,6 +9,8 @@ interface DuaItem {
   transliteration?: string;
   category: string;
   keywords?: string[];
+  significance?: string;
+  whenToRecite?: string;
 }
 
 const CATEGORIES = [
@@ -26,6 +28,9 @@ const CATEGORIES = [
   'After Prayer',
   'Before Sleeping',
   'Travel',
+  'Guidance & Faith',
+  'Daily Essentials',
+  'Life & Hardship',
 ];
 
 const EXTENDED_DUAS: DuaItem[] = [
@@ -218,10 +223,207 @@ const EXTENDED_DUAS: DuaItem[] = [
     reference: 'Surah Az-Zukhruf 43:13-14',
     keywords: ['travel', 'journey', 'flight', 'drive'],
   },
+
+  // Guidance & Faith
+  {
+    category: 'Guidance & Faith',
+    arabic: 'رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنكَ رَحْمَةً إِنَّكَ أَنتَ الْوَهَّابُ',
+    transliteration: "Rabbana la tuzigh qulubana ba'da idh hadaytana wa hab lana milladunka rahmah, innaka antal-Wahhab",
+    translation: 'Our Lord, do not let our hearts deviate after You have guided us, and grant us mercy from You. Indeed, You are the Bestower.',
+    reference: 'Surah Aal-Imran 3:8',
+    keywords: ['guidance', 'faith', 'heart', 'steadfastness', 'mercy'],
+    significance: 'A Qur’anic supplication for remaining firm after receiving guidance and asking Allah for mercy.',
+    whenToRecite: 'When seeking steadfastness, stronger faith, or protection from spiritual deviation.',
+  },
+  {
+    category: 'Guidance & Faith',
+    arabic: 'رَبِّ هَبْ لِي مِن لَّدُنكَ ذُرِّيَّةً طَيِّبَةً إِنَّكَ سَمِيعُ الدُّعَاءِ',
+    transliteration: 'Rabbi hab li milladunka dhurriyyatan tayyibah, innaka samiud-dua',
+    translation: 'My Lord, grant me from You a righteous offspring. Indeed, You are the Hearer of supplication.',
+    reference: 'Surah Aal-Imran 3:38',
+    keywords: ['children', 'offspring', 'family', 'righteous children'],
+    significance: 'The supplication of Prophet Zakariyya عليه السلام for righteous offspring.',
+    whenToRecite: 'When asking Allah for righteous children and a blessed family.',
+  },
+  // Daily Essentials
+  {
+    category: 'Daily Essentials',
+    arabic: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ وَأَبُوءُ لَكَ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ',
+    transliteration: "Allahumma anta Rabbi la ilaha illa anta, khalaqtani wa ana 'abduka, wa ana 'ala 'ahdika wa wa'dika mastata'tu, a'udhu bika min sharri ma sana'tu, abu'u laka bini'matika 'alayya wa abu'u laka bidhanbi faghfir li fa innahu la yaghfirudh-dhunuba illa anta",
+    translation: 'O Allah, You are my Lord; there is no deity except You. You created me and I am Your servant. I acknowledge Your blessing upon me and my sin, so forgive me, for none forgives sins except You.',
+    reference: 'Sahih al-Bukhari 6306',
+    keywords: ['forgiveness', 'morning', 'evening', 'istighfar', 'repentance'],
+    significance: 'The Prophet ﷺ described this as the most superior way of seeking Allah’s forgiveness.',
+    whenToRecite: 'In the morning and evening; the hadith specifically mentions reciting it with firm faith.',
+  },
+  {
+    category: 'Daily Essentials',
+    arabic: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ الْهُدَى وَالتُّقَى وَالْعَفَافَ وَالْغِنَى',
+    transliteration: "Allahumma inni as'alukal-huda wat-tuqa wal-'afafa wal-ghina",
+    translation: 'O Allah, I ask You for guidance, piety, chastity, and self-sufficiency.',
+    reference: 'Sahih Muslim; Riyad as-Salihin 1468',
+    keywords: ['guidance', 'piety', 'chastity', 'contentment', 'self sufficiency'],
+    significance: 'A short prophetic supplication bringing together guidance, piety, modesty, and contentment.',
+    whenToRecite: 'As a general daily dua when seeking guidance, taqwa, purity, and independence from people.',
+  },
+  {
+    category: 'Daily Essentials',
+    arabic: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَايَ وَأَهْلِي وَمَالِي، اللَّهُمَّ اسْتُرْ عَوْرَاتِي وَآمِنْ رَوْعَاتِي، وَاحْفَظْنِي مِنْ بَيْنِ يَدَيَّ وَمِنْ خَلْفِي وَعَنْ يَمِينِي وَعَنْ شِمَالِي وَمِنْ فَوْقِي، وَأَعُوذُ بِعَظَمَتِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي',
+    transliteration: "Allahumma inni as'alukal-'afwa wal-'afiyah fid-dunya wal-akhirah. Allahumma inni as'alukal-'afwa wal-'afiyah fi dini wa dunyaya wa ahli wa mali. Allahummastur 'awrati wa amin raw'ati, wahfazni min bayni yadayya wa min khalfi wa 'an yamini wa 'an shimali wa min fawqi, wa a'udhu bi 'azamatika an ughtala min tahti",
+    translation: 'O Allah, I ask You for pardon and well-being in this world and the Hereafter. O Allah, I ask You for pardon and well-being in my religion, worldly life, family and wealth. Conceal my faults, calm my fears, and protect me from every direction.',
+    reference: 'Sunan Ibn Majah 3871',
+    keywords: ['morning', 'evening', 'wellbeing', 'protection', 'family', 'wealth'],
+    significance: 'Ibn Umar reported that the Messenger of Allah ﷺ did not abandon this supplication morning and evening.',
+    whenToRecite: 'Morning and evening.',
+  },
+  {
+    category: 'Daily Essentials',
+    arabic: 'اللَّهُمَّ آتِ نَفْسِي تَقْوَاهَا وَزَكِّهَا أَنْتَ خَيْرُ مَنْ زَكَّاهَا أَنْتَ وَلِيُّهَا وَمَوْلَاهَا',
+    transliteration: "Allahumma ati nafsi taqwaha wa zakkiha anta khayru man zakkaha anta waliyyuha wa mawlaha",
+    translation: 'O Allah, grant my soul its piety and purify it; You are the best to purify it. You are its Guardian and Master.',
+    reference: 'Sahih Muslim 2722',
+    keywords: ['purification', 'taqwa', 'heart', 'soul', 'faith'],
+    significance: 'A prophetic supplication asking Allah to purify the soul and grant it taqwa.',
+    whenToRecite: 'When working on character, sincerity, self-discipline, and spiritual growth.',
+  },
+
+  // Life & Hardship
+  {
+    category: 'Life & Hardship',
+    arabic: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
+    transliteration: 'Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina adhaban-nar',
+    translation: 'Our Lord, give us good in this world and good in the Hereafter and protect us from the punishment of the Fire.',
+    reference: 'Surah Al-Baqarah 2:201; Sahih al-Bukhari 6389',
+    keywords: ['world', 'hereafter', 'success', 'protection', 'comprehensive dua'],
+    significance: 'A comprehensive Qur’anic supplication asking for good in this life and the Hereafter and protection from the Fire.',
+    whenToRecite: 'As a general dua in daily life and when asking Allah for balanced worldly and spiritual good.',
+  },
+  {
+    category: 'Life & Hardship',
+    arabic: 'رَبِّي إِنِّي مَسَّنِيَ الضُّرُّ وَأَنتَ أَرْحَمُ الرَّاحِمِينَ',
+    transliteration: "Rabbi anni massaniyad-durru wa anta arhamur-rahimin",
+    translation: 'My Lord, indeed adversity has touched me, and You are the Most Merciful of the merciful.',
+    reference: 'Surah Al-Anbiya 21:83',
+    keywords: ['hardship', 'illness', 'pain', 'mercy', 'difficulty'],
+    significance: 'The supplication of Prophet Ayyub عليه السلام during hardship, turning to Allah’s mercy.',
+    whenToRecite: 'During illness, hardship, pain, or any difficult period when seeking Allah’s mercy.',
+  },
+  {
+    category: 'Life & Hardship',
+    arabic: 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ زَوَالِ نِعْمَتِكَ وَتَحَوُّلِ عَافِيَتِكَ وَفُجَاءَةِ نِقْمَتِكَ وَجَمِيعِ سَخَطِكَ',
+    transliteration: "Allahumma inni a'udhu bika min zawali ni'matika wa tahawwuli 'afiyatika wa fuja'ati niqmatika wa jami'i sakhatika",
+    translation: 'O Allah, I seek refuge in You from the loss of Your blessing, the change of the well-being You have granted, the suddenness of Your punishment, and all that displeases You.',
+    reference: 'Sahih Muslim; Riyad as-Salihin 1478',
+    keywords: ['blessings', 'protection', 'wellbeing', 'gratitude', 'safety'],
+    significance: 'A prophetic supplication seeking protection for blessings and well-being.',
+    whenToRecite: 'As a general dua when asking Allah to preserve blessings, safety, and well-being.',
+  },
+  {
+    category: 'Life & Hardship',
+    arabic: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ الثَّبَاتَ فِي الْأَمْرِ وَالْعَزِيمَةَ عَلَى الرُّشْدِ، وَأَسْأَلُكَ شُكْرَ نِعْمَتِكَ وَحُسْنَ عِبَادَتِكَ، وَأَسْأَلُكَ لِسَانًا صَادِقًا وَقَلْبًا سَلِيمًا',
+    transliteration: "Allahumma inni as'alukath-thabata fil-amri wal-'azimata 'alar-rushdi, wa as'aluka shukra ni'matika wa husna 'ibadatik, wa as'aluka lisanan sadiqan wa qalban salima",
+    translation: 'O Allah, I ask You for steadfastness in the matter, determination upon guidance, gratitude for Your blessing, excellent worship, a truthful tongue, and a sound heart.',
+    reference: 'Jami at-Tirmidhi 3407',
+    keywords: ['steadfastness', 'guidance', 'gratitude', 'worship', 'truth', 'heart'],
+    significance: 'A prophetic supplication asking for steadfastness, sound worship, gratitude, truthfulness, and a sound heart.',
+    whenToRecite: 'When seeking consistency in faith, worship, character, and difficult decisions.',
+  },
+
+  // Health & Healing
+  // Protection
+  {
+    category: 'Protection',
+    arabic: 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ، وَمِنْ عَذَابِ النَّارِ، وَمِنْ فِتْنَةِ الْمَحْيَا وَالْمَمَاتِ، وَمِنْ فِتْنَةِ الْمَسِيحِ الدَّجَّالِ',
+    transliteration: "Allahumma inni a'udhu bika min 'adhabil-qabr, wa min 'adhabin-nar, wa min fitnatil-mahya wal-mamat, wa min fitnatil-masihid-dajjal",
+    translation: 'O Allah, I seek refuge in You from the punishment of the grave, the punishment of the Fire, the trials of life and death, and the trial of the False Messiah.',
+    reference: 'Sahih al-Bukhari 1377',
+    keywords: ['protection', 'grave', 'fire', 'trials', 'afterlife'],
+    significance: 'A prophetic supplication seeking refuge from major trials and punishments.',
+    whenToRecite: 'In salah, particularly in the final part of the prayer before salam.',
+  },
+
+  // Forgiveness
+  {
+    category: 'Forgiveness',
+    arabic: 'اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا، وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ، فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي، إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ',
+    transliteration: "Allahumma inni zalamtu nafsi zulman kathiran, wa la yaghfirudh-dhunuba illa anta, faghfir li maghfiratan min 'indika warhamni, innaka antal-Ghafurur-Rahim",
+    translation: 'O Allah, I have greatly wronged myself, and none forgives sins except You. So forgive me with forgiveness from You and have mercy on me. You are the Most Forgiving, Most Merciful.',
+    reference: 'Sahih al-Bukhari 6326',
+    keywords: ['forgiveness', 'repentance', 'salah', 'mercy', 'sins'],
+    significance: 'The Prophet ﷺ taught this supplication to Abu Bakr رضي الله عنه for use in prayer.',
+    whenToRecite: 'In salah and when sincerely seeking Allah’s forgiveness and mercy.',
+  },
+
+  // Parents & Family
+  // Travel
+  {
+    category: 'Travel',
+    arabic: 'اللَّهُمَّ إِنَّا نَسْأَلُكَ فِي سَفَرِنَا هَذَا الْبِرَّ وَالتَّقْوَى، وَمِنَ الْعَمَلِ مَا تَرْضَى',
+    transliteration: "Allahumma inna nas'aluka fi safarina hadhal-birra wat-taqwa, wa minal-'amali ma tarda",
+    translation: 'O Allah, we ask You on this journey of ours for righteousness and piety, and for deeds that please You.',
+    reference: 'Sahih Muslim 1342',
+    keywords: ['travel', 'journey', 'road', 'flight', 'trip', 'piety'],
+    significance: 'Part of the authentic supplication the Prophet ﷺ would say when setting out on a journey.',
+    whenToRecite: 'When beginning a journey.',
+  },
+
+
+  // Daily Essentials — everyday Sunnah moments
+  {
+    category: 'Daily Essentials',
+    arabic: 'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ',
+    transliteration: 'Alhamdu lillahil-ladhi ahyana ba‘da ma amatana wa ilayhin-nushur',
+    translation: 'All praise is for Allah who gave us life after causing us to die, and to Him is the resurrection.',
+    reference: 'Sahih al-Bukhari 6312',
+    keywords: ['waking up', 'morning', 'sleep', 'gratitude'],
+    significance: 'The Prophet ﷺ would say this upon waking.',
+    whenToRecite: 'Immediately after waking up.',
+  },
+  {
+    category: 'Daily Essentials',
+    arabic: 'بِسْمِ اللَّهِ أَوَّلَهُ وَآخِرَهُ',
+    transliteration: 'Bismillahi awwalahu wa akhirahu',
+    translation: 'In the name of Allah at its beginning and at its end.',
+    reference: 'Sunan Abi Dawud 3767',
+    keywords: ['food', 'eating', 'forgot bismillah'],
+    significance: 'The Prophet ﷺ taught this wording for someone who forgot to mention Allah’s name at the beginning of a meal.',
+    whenToRecite: 'If you began eating and forgot to say Bismillah at the start.',
+  },
+  {
+    category: 'Daily Essentials',
+    arabic: 'غُفْرَانَكَ',
+    transliteration: 'Ghufranaka',
+    translation: 'I seek Your forgiveness.',
+    reference: 'Sunan Ibn Majah 300',
+    keywords: ['toilet', 'after toilet', 'forgiveness'],
+    significance: 'A short authentic supplication reported from the Prophet ﷺ after leaving the toilet.',
+    whenToRecite: 'After leaving the toilet.',
+  },
+  {
+    category: 'Rizq & Wealth',
+    arabic: 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْمَأْثَمِ وَالْمَغْرَمِ',
+    transliteration: "Allahumma inni a'udhu bika minal-ma'thami wal-maghram",
+    translation: 'O Allah, I seek refuge in You from sin and from debt.',
+    reference: 'Sahih al-Bukhari 832',
+    keywords: ['debt', 'money', 'sin', 'financial difficulty'],
+    significance: 'The Prophet ﷺ sought refuge in Allah from debt in prayer and explained why he frequently did so.',
+    whenToRecite: 'In prayer and when asking Allah for protection from debt and its burdens.',
+  },
+  {
+    category: 'Daily Essentials',
+    arabic: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ حُبَّكَ وَحُبَّ مَنْ يُحِبُّكَ وَالْعَمَلَ الَّذِي يُبَلِّغُنِي حُبَّكَ',
+    transliteration: "Allahumma inni as'aluka hubbaka wa hubba man yuhibbuka wal-'amalalladhi yuballighuni hubbak",
+    translation: 'O Allah, I ask You for Your love, the love of those who love You, and deeds that bring me to Your love.',
+    reference: 'Jami at-Tirmidhi 3490',
+    keywords: ['love of Allah', 'faith', 'worship', 'spiritual growth'],
+    significance: 'A supplication attributed to the supplication of Prophet Dawud عليه السلام and reported as a hasan narration in Jami at-Tirmidhi.',
+    whenToRecite: 'When seeking stronger love for Allah and deeds that draw you closer to Him.',
+  },
+
 ];
 
 export default function Duas() {
-  const [activeCategory, setActiveCategory] = useState<string>('Daily Featured');
+  const [activeCategory, setActiveCategory] = useState<string>('All Duas');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dailyDua, setDailyDua] = useState<DuaItem | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
@@ -290,7 +492,7 @@ export default function Duas() {
             <BookOpen size={13} /> Blessed Supplications & Azkar
           </div>
           <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-wide">Sacred Duas</h1>
-          <p className="text-noor-muted text-xs sm:text-sm">Authentic supplications for health, exams, anxiety, rizq & protection</p>
+          <p className="text-noor-muted text-xs sm:text-sm">Qur'anic and Sunnah supplications for health, exams, anxiety, rizq & protection</p>
         </div>
       </div>
 
@@ -306,6 +508,27 @@ export default function Duas() {
             className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#103329] border border-[#1A4035] text-xs sm:text-sm text-noor-ivory placeholder-noor-muted/60 focus:outline-none focus:border-[#E8BD4B]/50 transition-all"
           />
         </div>
+
+        {!searchQuery && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="rounded-xl bg-[#103329]/70 border border-[#1A4035] px-3 py-2.5">
+              <p className="text-lg font-display text-[#E8BD4B] font-bold">{EXTENDED_DUAS.length}</p>
+              <p className="text-[10px] text-noor-muted">Sourced duas</p>
+            </div>
+            <div className="rounded-xl bg-[#103329]/70 border border-[#1A4035] px-3 py-2.5">
+              <p className="text-lg font-display text-[#E8BD4B] font-bold">{CATEGORIES.length - 2}</p>
+              <p className="text-[10px] text-noor-muted">Topics</p>
+            </div>
+            <div className="rounded-xl bg-[#103329]/70 border border-[#1A4035] px-3 py-2.5">
+              <p className="text-lg font-display text-[#E8BD4B] font-bold">Qur'an</p>
+              <p className="text-[10px] text-noor-muted">& Sunnah sources</p>
+            </div>
+            <div className="rounded-xl bg-[#103329]/70 border border-[#1A4035] px-3 py-2.5">
+              <p className="text-lg font-display text-[#E8BD4B] font-bold">Daily</p>
+              <p className="text-[10px] text-noor-muted">Featured dua</p>
+            </div>
+          </div>
+        )}
 
         {/* Daily Featured Highlight Box */}
         {dailyDua && activeCategory !== 'Daily Featured' && !searchQuery && (
@@ -328,6 +551,20 @@ export default function Duas() {
             <p className="text-noor-ivory/90 text-xs sm:text-sm leading-relaxed mb-2">"{dailyDua.translation}"</p>
             <p className="text-noor-muted/70 text-[11px]">— {dailyDua.reference}</p>
           </div>
+        )}
+
+        {!searchQuery && activeCategory === 'All Duas' && (
+          <section className="rounded-2xl p-5 sm:p-6 bg-gradient-to-br from-[#103329] to-[#0B2820] border border-[#1A4035] shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-lg bg-[#E8BD4B]/10 p-2 text-[#E8BD4B]"><BookOpen size={16} /></div>
+              <div>
+                <h2 className="text-sm sm:text-base font-display font-semibold text-noor-ivory">A curated collection for real moments</h2>
+                <p className="mt-1.5 text-xs sm:text-sm leading-6 text-noor-muted">
+                  Explore supplications from the Qur'an and authentic or well-established hadith collections, organized around situations people actually face: worry, study, healing, family, rizq, forgiveness, protection, worship and travel. Each entry includes its source and a short context note so you can understand why it is included—not just copy the words.
+                </p>
+              </div>
+            </div>
+          </section>
         )}
 
         {/* Category Pills */}
@@ -395,6 +632,23 @@ export default function Duas() {
                     "{dua.translation}"
                   </p>
 
+                  {(dua.significance || dua.whenToRecite) && (
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      {dua.significance && (
+                        <div className="rounded-xl bg-[#061812]/35 border border-[#1A4035]/60 p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-[#E8BD4B] font-semibold">Significance</p>
+                          <p className="mt-1 text-[11px] sm:text-xs leading-5 text-noor-muted">{dua.significance}</p>
+                        </div>
+                      )}
+                      {dua.whenToRecite && (
+                        <div className="rounded-xl bg-[#061812]/35 border border-[#1A4035]/60 p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-[#E8BD4B] font-semibold">When to recite</p>
+                          <p className="mt-1 text-[11px] sm:text-xs leading-5 text-noor-muted">{dua.whenToRecite}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Clean Accessible Actions Bar (Copy & Native Share) */}
                   <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1A4035]/50 text-xs">
                     <button
@@ -437,6 +691,13 @@ export default function Duas() {
               );
             })
           )}
+        </div>
+
+        <div className="rounded-2xl border border-[#1A4035]/60 bg-[#0B2820]/70 p-4 sm:p-5">
+          <p className="text-[10px] uppercase tracking-wider font-semibold text-[#E8BD4B]">Source & editorial note</p>
+          <p className="mt-1.5 text-[11px] sm:text-xs leading-5 text-noor-muted">
+            Noor lists the Qur’anic verses and hadith references alongside each dua so readers can check the source. Context notes are editorial explanations of when a supplication fits; they are not additional hadith or promises of guaranteed outcomes.
+          </p>
         </div>
       </div>
     </div>
