@@ -211,7 +211,7 @@ export default function Qibla() {
           >
             <Compass size={24} className="text-noor-gold" />
           </div>
-          <p className="font-arabic text-noor-gold text-lg mb-1">القبلة</p>
+          <p className="font-arabic text-noor-gold text-lg mb-1">ا</p>
           <h1 className="font-display text-noor-ivory text-3xl sm:text-4xl font-semibold">
             Qibla Finder
           </h1>
