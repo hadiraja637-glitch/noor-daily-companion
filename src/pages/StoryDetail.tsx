@@ -1,107 +1,100 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router';
-import { ArrowLeft, BookOpen, Share2, Sparkles, Check } from 'lucide-react';
-import { getStoryAsync, type Story } from '../data/stories';
+import React, { useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router';
+import { ArrowLeft, ArrowRight, BookOpen, Check, Clock, ExternalLink, Quote, Share2, Sparkles } from 'lucide-react';
+import { STORIES } from './Stories';
 
 export default function StoryDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const [story, setStory] = useState<Story | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [copied, setCopied] = useState<boolean>(false);
+  const [copied, setCopied] = useState(false);
+  const story = STORIES.find((item) => item.slug === slug);
 
-  useEffect(() => {
-    async function loadStory() {
-      setLoading(true);
-      if (slug) {
-        const found = await getStoryAsync(slug);
-        setStory(found || null);
-      }
-      setLoading(false);
+  const related = useMemo(() => {
+    if (!story) return [];
+    return story.relatedSlugs.map((id) => STORIES.find((item) => item.slug === id)).filter(Boolean).slice(0, 3);
+  }, [story]);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try { await navigator.share({ title: story?.title ?? 'Islamic Story', text: story?.excerpt ?? '', url }); } catch { /* cancelled */ }
+      return;
     }
-    loadStory();
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen pt-28 pb-16 flex items-center justify-center" style={{ background: '#072018' }}>
-        <div className="text-center text-noor-gold">
-          <BookOpen className="animate-bounce mx-auto mb-2" size={32} />
-          <p className="text-xs text-noor-muted">Story load ho rahi hai...</p>
-        </div>
-      </div>
-    );
-  }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch { /* clipboard unavailable */ }
+  };
 
   if (!story) {
     return (
-      <div className="min-h-screen pt-28 pb-16 flex items-center justify-center" style={{ background: '#072018' }}>
-        <div className="text-center p-8 rounded-2xl bg-[#103329] border border-noor-border max-w-md mx-4">
-          <h2 className="text-noor-ivory text-xl font-semibold mb-2">Story Nahi Mili</h2>
-          <p className="text-noor-muted text-xs mb-6">Munsalik kahani ya zikr load nahi ho saka.</p>
-          <Link to="/stories" className="px-5 py-2.5 rounded-full text-xs font-medium bg-[#E8BD4B] text-[#061812] inline-flex items-center gap-2">
-            <ArrowLeft size={14} /> Wapas Stories Par Jayein
-          </Link>
+      <div className="min-h-screen pt-28 pb-20 flex items-center justify-center" style={{ background: '#072018' }}>
+        <div className="mx-4 max-w-md rounded-2xl border border-[#1A4035] bg-[#103329] p-8 text-center">
+          <BookOpen className="mx-auto mb-3 text-noor-gold" size={32} />
+          <h1 className="font-display text-xl font-semibold text-noor-ivory">Story not found</h1>
+          <p className="mt-2 text-sm text-noor-muted">The story you requested is not available in the Noor collection.</p>
+          <Link to="/stories" className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#E8BD4B] px-5 py-2.5 text-xs font-semibold text-[#061812]"><ArrowLeft size={14} /> Back to Stories</Link>
         </div>
       </div>
     );
   }
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: story.title, text: story.excerpt, url: window.location.href });
-      } catch { /* Share cancelled */ }
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   return (
-    <div className="min-h-screen pt-20 pb-20" style={{ background: '#072018' }}>
-      <div className="max-w-3xl mx-auto px-4 lg:px-8">
-        <Link to="/stories" className="inline-flex items-center gap-1.5 text-xs text-noor-gold hover:underline mb-6">
-          <ArrowLeft size={13} /> Back
-        </Link>
+    <div className="min-h-screen pt-20 pb-24" style={{ background: '#072018' }}>
+      <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Link to="/stories" className="inline-flex items-center gap-1.5 py-4 text-xs font-medium text-noor-gold hover:underline"><ArrowLeft size={13} /> Back to Stories</Link>
 
-        <div className="rounded-2xl overflow-hidden mb-8" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.6)' }}>
-          <div className="relative h-64 sm:h-80 overflow-hidden bg-[#072018]">
-            <img src={story.img} alt={story.alt || story.title} className="w-full h-full object-cover" />
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(16,51,41,0.95) 0%, rgba(16,51,41,0.2) 60%)' }} />
-            <span className="absolute top-4 left-4 text-xs px-3 py-1 rounded-full font-medium" style={{ background: 'rgba(232,189,75,0.2)', color: '#E8BD4B', border: '1px solid rgba(232,189,75,0.3)' }}>
-              {story.tag}
-            </span>
+        <header className="overflow-hidden rounded-3xl border border-[#1A4035] bg-[#103329] shadow-2xl shadow-black/10">
+          <div className="relative h-64 sm:h-80 lg:h-[430px] bg-[#072018]">
+            <img src={story.img} alt={story.alt} className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#103329] via-[#103329]/25 to-transparent" />
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-3">
+              <span className="rounded-full border border-[#E8BD4B]/30 bg-[#E8BD4B]/15 px-3 py-1.5 text-[10px] font-semibold text-noor-gold backdrop-blur-sm">{story.tag}</span>
+              <button onClick={handleShare} aria-label="Share story" className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 py-1.5 text-[10px] font-medium text-white backdrop-blur-sm hover:bg-black/40">{copied ? <Check size={12} /> : <Share2 size={12} />} {copied ? 'Copied' : 'Share'}</button>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-9">
+              <div className="flex flex-wrap items-center gap-3 text-[11px] text-noor-muted mb-3"><span className="inline-flex items-center gap-1.5 text-noor-accent"><Sparkles size={12} /> {story.lesson}</span><span className="h-1 w-1 rounded-full bg-[#54766A]" /><span className="inline-flex items-center gap-1.5"><Clock size={12} /> {story.readingTime} min read</span></div>
+              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight text-noor-ivory">{story.title}</h1>
+            </div>
           </div>
 
-          <div className="p-6 sm:p-8">
-            <div className="flex items-center justify-between gap-4 mb-3 border-b border-[#1A4035] pb-4">
-              <div className="flex items-center gap-2">
-                <Sparkles size={14} className="text-noor-gold" />
-                <span className="text-noor-accent text-xs font-medium">{story.lesson}</span>
+          <div className="p-6 sm:p-9">
+            <div className="rounded-2xl border border-[#1A4035] bg-[#072018]/60 p-5 sm:p-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-noor-accent">Overview</p>
+              <p className="mt-2 text-sm sm:text-base leading-7 text-noor-ivory/80">{story.excerpt}</p>
+            </div>
+
+            <section className="mt-10">
+              <h2 className="font-display text-2xl sm:text-3xl font-semibold text-noor-ivory">The Story</h2>
+              <div className="mt-5 space-y-5 text-sm sm:text-base leading-8 text-noor-ivory/80">
+                {story.content.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
               </div>
-              <button onClick={handleShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-noor-muted border border-noor-border hover:text-noor-gold transition-colors">
-                {copied ? <Check size={12} className="text-noor-gold" /> : <Share2 size={12} />}
-                {copied ? 'Copied' : 'Share'}
-              </button>
-            </div>
+            </section>
 
-            <h1 className="font-display text-noor-ivory text-2xl sm:text-4xl font-semibold mb-4 leading-tight">
-              {story.title}
-            </h1>
+            <section className="mt-12">
+              <div className="flex items-end justify-between gap-4 mb-5"><div><p className="text-[10px] uppercase tracking-[.18em] text-noor-accent font-semibold">Practical reflection</p><h2 className="mt-1 font-display text-2xl sm:text-3xl font-semibold text-noor-ivory">What We Learn</h2></div><span className="hidden sm:block text-xs text-noor-muted">{story.lessons.length} lessons</span></div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {story.lessons.map((item, index) => <div key={item.title} className="rounded-2xl border border-[#1A4035] bg-[#0B2820] p-5"><div className="flex items-center gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E8BD4B]/10 text-[10px] font-bold text-noor-gold">0{index + 1}</span><h3 className="text-sm font-semibold text-noor-ivory">{item.title}</h3></div><p className="mt-3 pl-10 text-xs sm:text-sm leading-6 text-noor-muted">{item.text}</p></div>)}
+              </div>
+            </section>
 
-            <p className="text-noor-gold text-sm italic mb-6 leading-relaxed bg-[#072018]/50 p-4 rounded-xl border border-[#1A4035]">
-              "{story.excerpt}"
-            </p>
+            <section className="mt-12 rounded-2xl border border-[#1A4035] bg-[#0B2820] p-5 sm:p-6">
+              <div className="flex items-center gap-2"><BookOpen size={16} className="text-noor-gold" /><h2 className="font-display text-xl font-semibold text-noor-ivory">Qur’an & Hadith References</h2></div>
+              <div className="mt-4 space-y-2">
+                {story.sources.map((source) => <div key={`${source.label}-${source.reference}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 rounded-xl border border-[#1A4035] bg-[#072018]/60 px-4 py-3"><span className="text-xs font-semibold text-noor-ivory">{source.label}</span><span className="text-xs text-noor-muted">{source.reference}</span></div>)}
+              </div>
+              <div className="mt-4 flex gap-3 rounded-xl border border-[#1A4035] bg-[#072018]/50 p-4"><Quote size={16} className="mt-0.5 shrink-0 text-noor-gold" /><p className="text-[11px] sm:text-xs leading-5 text-noor-muted">Source material is listed above. The explanation, practical lessons, reflection, and takeaway on this page are Noor’s original editorial presentation and are not presented as Qur’an or Hadith text.</p></div>
+            </section>
 
-            <div className="space-y-4 text-noor-ivory/80 text-sm sm:text-base leading-relaxed">
-              {story.content.map((paragraph, idx) => (
-                <p key={idx}>{paragraph}</p>
-              ))}
-            </div>
+            <section className="mt-10 grid sm:grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-[#1A4035] bg-[#0B2820] p-5"><p className="text-[10px] uppercase tracking-[.18em] text-noor-accent font-semibold">Reflection</p><p className="mt-3 text-sm leading-7 text-noor-ivory/80">{story.reflection}</p></div>
+              <div className="rounded-2xl border border-[#E8BD4B]/20 bg-[#E8BD4B]/5 p-5"><p className="text-[10px] uppercase tracking-[.18em] text-noor-gold font-semibold">Key Takeaway</p><p className="mt-3 font-display text-lg leading-7 text-noor-ivory">{story.takeaway}</p></div>
+            </section>
           </div>
-        </div>
-      </div>
+        </header>
+
+        {related.length > 0 && <section className="mt-12"><div className="flex items-end justify-between gap-4 mb-5"><div><p className="text-[10px] uppercase tracking-[.18em] text-noor-accent font-semibold">Continue reading</p><h2 className="mt-1 font-display text-2xl font-semibold text-noor-ivory">Related Stories</h2></div><Link to="/stories" className="hidden sm:inline-flex items-center gap-1 text-xs text-noor-gold hover:underline">View all <ArrowRight size={12} /></Link></div><div className="grid md:grid-cols-3 gap-4">{related.map((item) => item && <Link key={item.slug} to={`/stories/${item.slug}`} className="group rounded-2xl border border-[#1A4035] bg-[#103329] p-4 transition hover:-translate-y-1 hover:border-[#2D6655]"><div className="h-28 overflow-hidden rounded-xl bg-[#072018]"><img src={item.img} alt={item.alt} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" /></div><p className="mt-3 text-[10px] font-semibold text-noor-accent">{item.tag}</p><h3 className="mt-1 font-display text-base font-semibold leading-snug text-noor-ivory group-hover:text-noor-gold">{item.title}</h3><span className="mt-3 inline-flex items-center gap-1 text-[11px] text-noor-gold">Read story <ArrowRight size={11} /></span></Link>)}</div></section>}
+      </article>
     </div>
   );
 }
