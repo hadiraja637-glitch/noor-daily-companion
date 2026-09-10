@@ -604,7 +604,7 @@ function FeatureCards() {
 }
 
 function IslamicStories() {
-  const featuredStories = STORIES.slice(0, 6);
+  const featuredStories = STORIES.slice(0, 3);
 
   return (
     <section
@@ -645,7 +645,7 @@ function IslamicStories() {
             <FadeIn
               key={story.slug}
               delay={index * 0.05}
-              className="h-full"
+              className={`h-full ${index > 0 ? 'hidden sm:block' : ''}`}
             >
               <Link
                 to={`/stories/${story.slug}`}
@@ -655,6 +655,7 @@ function IslamicStories() {
                   border: '1px solid rgba(26,64,53,0.65)',
                 }}
               >
+                {/* Image */}
                 <div className="relative h-44 sm:h-48 overflow-hidden bg-[#072018]">
                   <img
                     src={story.img}
@@ -676,6 +677,7 @@ function IslamicStories() {
                     }}
                   />
 
+                  {/* Category */}
                   <span
                     className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-semibold backdrop-blur-sm"
                     style={{
@@ -687,11 +689,13 @@ function IslamicStories() {
                     {story.tag}
                   </span>
 
+                  {/* Reading Time */}
                   <span className="absolute bottom-3 right-3 text-[10px] text-noor-ivory/80">
                     {story.readingTime || 5} min read
                   </span>
                 </div>
 
+                {/* Content */}
                 <div className="p-4 sm:p-5 flex flex-col h-[210px] sm:h-[220px]">
                   <div className="flex items-center gap-1.5 mb-2">
                     <span
@@ -724,7 +728,7 @@ function IslamicStories() {
           ))}
         </div>
 
-        {/* Mobile CTA */}
+        {/* Mobile Explore Button */}
         <div className="sm:hidden mt-5 text-center">
           <Link
             to="/stories"
