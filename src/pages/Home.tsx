@@ -5,7 +5,7 @@ import {
   RotateCcw, FileText, ArrowRight, Share2, MapPin,
   Plus, Minus, RefreshCw, Clock, Star, Sparkles, Check
 } from 'lucide-react';
-import { STORIES } from '../data/stories';
+import { STORIES } from './Stories';
 import {
   CITY_OPTIONS, DEFAULT_LOCATION, fetchPrayerData, getCurrentAndNextPrayer,
   getCityFromCoordinates, type PrayerData, type PrayerLocation,
@@ -604,70 +604,137 @@ function FeatureCards() {
 }
 
 function IslamicStories() {
+  const featuredStories = STORIES.slice(0, 6);
+
   return (
-    <section className="py-10 sm:py-14" style={{ background: '#0B2820' }}>
+    <section
+      className="py-10 sm:py-14"
+      style={{ background: '#0B2820' }}
+    >
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
+
+        {/* Section Header */}
         <FadeIn>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-end justify-between gap-4 mb-6 sm:mb-7">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Star size={14} className="text-noor-gold" />
+              <div className="flex items-center gap-2 mb-1.5">
+                <Star size={15} className="text-noor-gold" />
                 <h2 className="font-display text-noor-ivory text-xl sm:text-3xl font-semibold">
                   Islamic Stories
                 </h2>
               </div>
-              <p className="text-noor-muted text-xs sm:text-sm">
-                Inspiring stories from the lives of the Prophets, Sahaba and righteous people.
+
+              <p className="text-noor-muted text-xs sm:text-sm max-w-xl leading-relaxed">
+                Lessons from the lives of the Prophets, Sahabah and righteous people.
               </p>
             </div>
+
             <Link
               to="/stories"
-              className="hidden sm:flex items-center gap-1.5 text-sm text-noor-gold border border-noor-gold/30 px-4 py-2 rounded-full hover:bg-noor-gold/10 transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs sm:text-sm text-noor-gold border border-noor-gold/30 px-4 py-2 rounded-full hover:bg-noor-gold/10 hover:border-noor-gold/50 transition-all"
             >
-              View All <ArrowRight size={13} />
+              Explore Stories
+              <ArrowRight size={13} />
             </Link>
           </div>
         </FadeIn>
 
-        <div
-          className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 lg:grid-cols-6 sm:overflow-visible"
-          style={{ scrollbarWidth: 'none' }}
-        >
-          {STORIES.map((s, i) => (
-            <FadeIn key={s.slug || i} delay={i * 0.05} className="flex-shrink-0 w-48 sm:w-auto">
+        {/* Story Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {featuredStories.map((story, index) => (
+            <FadeIn
+              key={story.slug}
+              delay={index * 0.05}
+              className="h-full"
+            >
               <Link
-                to={`/stories/${s.slug}`}
-                className="block rounded-xl overflow-hidden group transition-transform hover:-translate-y-1 h-full"
-                style={{ border: '1px solid rgba(26,64,53,0.5)' }}
+                to={`/stories/${story.slug}`}
+                className="group block h-full rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: '#103329',
+                  border: '1px solid rgba(26,64,53,0.65)',
+                }}
               >
-                <div className="relative h-36 sm:h-44 overflow-hidden bg-[#072018]">
+                <div className="relative h-44 sm:h-48 overflow-hidden bg-[#072018]">
                   <img
-                    src={s.img}
-                    alt={s.title || 'Islamic Story'}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    src={story.img}
+                    alt={story.alt || story.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=600&h=400&fit=crop";
+                      const target = e.currentTarget;
+                      target.src =
+                        'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=900&h=600&fit=crop&auto=format';
                     }}
                   />
+
                   <div
                     className="absolute inset-0"
-                    style={{ background: 'linear-gradient(to top, rgba(6,24,18,0.95) 0%, rgba(6,24,18,0.2) 60%)' }}
+                    style={{
+                      background:
+                        'linear-gradient(to top, rgba(6,24,18,0.96) 0%, rgba(6,24,18,0.12) 65%)',
+                    }}
                   />
-                  <p className="absolute bottom-2.5 left-2.5 right-2.5 text-noor-ivory text-xs sm:text-sm font-medium leading-snug whitespace-pre-line group-hover:text-noor-gold transition-colors">
-                    {s.title}
+
+                  <span
+                    className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-semibold backdrop-blur-sm"
+                    style={{
+                      background: 'rgba(232,189,75,0.18)',
+                      color: '#E8BD4B',
+                      border: '1px solid rgba(232,189,75,0.35)',
+                    }}
+                  >
+                    {story.tag}
+                  </span>
+
+                  <span className="absolute bottom-3 right-3 text-[10px] text-noor-ivory/80">
+                    {story.readingTime || 5} min read
+                  </span>
+                </div>
+
+                <div className="p-4 sm:p-5 flex flex-col h-[210px] sm:h-[220px]">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ background: '#18B98A' }}
+                    />
+
+                    <span className="text-noor-accent text-[10px] sm:text-xs font-medium truncate">
+                      {story.lesson}
+                    </span>
+                  </div>
+
+                  <h3 className="font-display text-noor-ivory text-base sm:text-lg font-semibold leading-snug mb-2 group-hover:text-noor-gold transition-colors line-clamp-2">
+                    {story.title}
+                  </h3>
+
+                  <p className="text-noor-muted text-xs sm:text-sm leading-relaxed line-clamp-3">
+                    {story.excerpt}
                   </p>
+
+                  <div className="mt-auto pt-4 border-t border-[#1A4035]/70">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-noor-gold group-hover:gap-2.5 transition-all">
+                      Read Story
+                      <ArrowRight size={12} />
+                    </span>
+                  </div>
                 </div>
               </Link>
             </FadeIn>
           ))}
         </div>
 
-        <div className="sm:hidden mt-4 text-center">
-          <Link to="/stories" className="text-xs text-noor-gold hover:underline inline-flex items-center gap-1">
-            View All Stories <ArrowRight size={12} />
+        {/* Mobile CTA */}
+        <div className="sm:hidden mt-5 text-center">
+          <Link
+            to="/stories"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-noor-gold border border-noor-gold/30 px-4 py-2 rounded-full hover:bg-noor-gold/10 transition-colors"
+          >
+            Explore All Stories
+            <ArrowRight size={12} />
           </Link>
         </div>
+
       </div>
     </section>
   );
