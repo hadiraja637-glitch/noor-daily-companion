@@ -1,4 +1,3 @@
-```tsx
 export type PrayerName =
   | 'Fajr'
   | 'Sunrise'
@@ -67,9 +66,7 @@ function toMinutes(value: string): number {
 
 function normalizeTime(value: string): string {
   const match = value.match(/(\d{1,2}):(\d{2})/);
-
   if (!match) return value;
-
   return `${String(Number(match[1])).padStart(2, '0')}:${match[2]}`;
 }
 
