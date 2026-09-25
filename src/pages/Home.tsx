@@ -406,6 +406,44 @@ function PrayerTimesSection() {
   const allCities = CITY_OPTIONS;
 const [locationResults, setLocationResults] = useState<PrayerLocation[]>([]);
 const [searchingLocation, setSearchingLocation] = useState(false);
+  const handleLocationSubmit = async (searchName: string) => {
+  const query = searchName.trim();
+
+  if (!query) return;
+
+  // First check the built-in cities
+  const foundCity = allCities.find(
+    (city) =>
+      city.name.toLowerCase() === query.toLowerCase()
+  );
+
+  if (foundCity) {
+    setLocationResults([]);
+    await setCity(foundCity);
+    return;
+  }
+
+  // Search anywhere in the world
+  setSearchingLocation(true);
+
+  try {
+    const results = await searchGlobalLocations(query);
+
+    setLocationResults(results);
+
+    // Automatically use the first accurate result
+    if (results.length > 0) {
+      await setCity(results[0]);
+      setInputValue(results[0].name);
+      setLocationResults([]);
+    }
+  } catch (error) {
+    console.error('Worldwide location search failed:', error);
+    setLocationResults([]);
+  } finally {
+    setSearchingLocation(false);
+  }
+};
 
   if (!query) return;
 
