@@ -151,7 +151,7 @@ export default function Quran() {
 
         setAyahs(processed);
       })
-      .catch(() => setError('Surah text load nahi ho saka.'))
+      .catch(() => setError('Internet connection failed.'))
       .finally(() => setLoading(false));
   }, [selected]);
 
