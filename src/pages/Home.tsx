@@ -455,7 +455,7 @@ const [searchingLocation, setSearchingLocation] = useState(false);
 
   if (foundCity) {
     setLocationResults([]);
-    async setCity(foundCity);
+    await setCity(foundCity);
     return;
   }
 
