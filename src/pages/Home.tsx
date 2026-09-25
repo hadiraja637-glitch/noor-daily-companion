@@ -10,6 +10,7 @@ import {
   CITY_OPTIONS, DEFAULT_LOCATION, fetchPrayerData, getCurrentAndNextPrayer,
   getCityFromCoordinates, type PrayerData, type PrayerLocation,
 } from '../services/prayer';
+import { searchGlobalLocations } from '../services/globalLocations';
 import { getDailyHadith } from '../data/dailyHadith';
 
 // Dynamic Verses List (Rotates Daily Based on Day of Year)
@@ -404,17 +405,42 @@ function PrayerTimesSection() {
 
   const allCities = CITY_OPTIONS;
 
-  const handleLocationSubmit = (searchName: string) => {
-  if (!searchName.trim()) return;
+  const handleLocationSubmit = async (searchName: string) => {
+  const query = searchName.trim();
 
+  if (!query) return;
+
+  // First check the built-in cities
   const foundCity = allCities.find(
     (city) =>
-      city.name.toLowerCase() ===
-      searchName.toLowerCase().trim()
+      city.name.toLowerCase() === query.toLowerCase()
   );
 
   if (foundCity) {
-    setCity(foundCity);
+    setLocationResults([]);
+    await setCity(foundCity);
+    return;
+  }
+
+  // Search anywhere in the world
+  setSearchingLocation(true);
+
+  try {
+    const results = await searchGlobalLocations(query);
+
+    setLocationResults(results);
+
+    // Automatically use the first accurate result
+    if (results.length > 0) {
+      await setCity(results[0]);
+      setInputValue(results[0].name);
+      setLocationResults([]);
+    }
+  } catch (error) {
+    console.error('Worldwide location search failed:', error);
+    setLocationResults([]);
+  } finally {
+    setSearchingLocation(false);
   }
 };
 
@@ -456,10 +482,7 @@ function PrayerTimesSection() {
                             handleLocationSubmit(inputValue);
                           }
                         }}
-                        onBlur={() => {
-                          handleLocationSubmit(inputValue);
-                        }}
-                        placeholder="🌍 Search worldwide"
+                        placeholder="🌍 Search any city or town"
                         className="bg-[#072018] text-[11px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2.5 py-1 w-[150px] sm:w-[180px] placeholder:text-noor-muted/60 focus:border-noor-gold/50 transition-colors"
                         aria-label="Search a country or city worldwide"
                       />
