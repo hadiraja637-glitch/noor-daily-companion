@@ -192,8 +192,38 @@ function figmaSiteConfiguration(config: FigmaSiteConfiguration): Plugin {
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', ${JSON.stringify(googleAnalyticsId)});
+
+   // Detect whether Noor is running as an installed PWA
+  function isInstalledPWA() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+
+  // Track installed PWA launch
+  if (isInstalledPWA()) {
+    gtag('event', 'pwa_launch', {
+      app_mode: 'standalone'
+    });
+
+    // One PWA session event per browser session
+    if (!sessionStorage.getItem('noor_pwa_session')) {
+      sessionStorage.setItem('noor_pwa_session', '1');
+
+      gtag('event', 'pwa_session', {
+        app_mode: 'standalone'
+      });
+    }
+  }
+
+  // Track successful PWA installation
+  window.addEventListener('appinstalled', function() {
+    gtag('event', 'pwa_install', {
+      app_mode: 'standalone'
+    });
+  });
+
 `,
-              injectTo: 'head',
+  injectTo: 'head',
             },
           )
         }
