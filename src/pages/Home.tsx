@@ -456,30 +456,8 @@ const [searchingLocation, setSearchingLocation] = useState(false);
   if (foundCity) {
     setLocationResults([]);
     await setCity(foundCity);
-    return;
+  return;
   }
-
-  // Search anywhere in the world
-  setSearchingLocation(true);
-
-  try {
-    const results = await searchGlobalLocations(query);
-    setLocationResults(results);
-    // Automatically use the first accurate result
-    if (results.length > 0) {
-      await setCity(results[0]);
-      setInputValue(results[0].name);
-      setLocationResults([]);
-    }
-  } catch (error) {
-    console.error('Worldwide location search failed:', error);
-    setLocationResults([]);
-  } finally {
-    setSearchingLocation(false);
-  }
-};
-
-  return (
     <section className="py-8 sm:py-12" style={{ background: '#0B2820', borderTop: '1px solid rgba(26,64,53,0.5)' }}>
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
