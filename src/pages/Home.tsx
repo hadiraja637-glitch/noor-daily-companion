@@ -403,10 +403,10 @@ function PrayerTimesSection() {
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - Math.min(Math.max(progress, 0), 1));
 
-  const allCities = CITY_OPTIONS;
+const allCities = CITY_OPTIONS;
 const [locationResults, setLocationResults] = useState<PrayerLocation[]>([]);
 const [searchingLocation, setSearchingLocation] = useState(false);
-  const handleLocationSubmit = async (searchName: string) => {
+const handleLocationSubmit = async (searchName: string) => {
     const query = searchName.trim();
     if (!query) return;
 
@@ -446,7 +446,7 @@ const [searchingLocation, setSearchingLocation] = useState(false);
 
   if (foundCity) {
     setLocationResults([]);
-    await setCity(foundCity);
+    async setCity(foundCity);
   return;
   }
     <section className="py-8 sm:py-12" style={{ background: '#0B2820', borderTop: '1px solid rgba(26,64,53,0.5)' }}>
@@ -578,7 +578,7 @@ const [searchingLocation, setSearchingLocation] = useState(false);
     </section>
   );
 }
-const FEATURES = [
+ const FEATURES = [
   { icon: BookOpen, label: "Qur'an", sub: 'Read, Listen & Learn', to: '/quran' },
   { icon: MessageSquare, label: 'Hadith', sub: 'Authentic Sayings', to: '/hadith' },
   { icon: Sparkles, label: 'Sunnah Habits', sub: 'Daily Practices', to: '/sunnah-habits' },
