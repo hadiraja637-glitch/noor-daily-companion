@@ -10,7 +10,6 @@ import {
   CITY_OPTIONS, DEFAULT_LOCATION, fetchPrayerData, getCurrentAndNextPrayer,
   getCityFromCoordinates, type PrayerData, type PrayerLocation,
 } from '../services/prayer';
-import { GLOBAL_LOCATIONS } from '../services/globalLocations';
 import { getDailyHadith } from '../data/dailyHadith';
 
 // Dynamic Verses List (Rotates Daily Based on Day of Year)
@@ -403,7 +402,7 @@ function PrayerTimesSection() {
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - Math.min(Math.max(progress, 0), 1));
 
-  const allCities = [...CITY_OPTIONS, ...GLOBAL_LOCATIONS];
+  const allCities = CITY_OPTIONS;
 
   const handleLocationSubmit = (searchName: string) => {
     if (!searchName.trim()) return;
