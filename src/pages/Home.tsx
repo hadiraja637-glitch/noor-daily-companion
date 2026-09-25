@@ -405,21 +405,18 @@ function PrayerTimesSection() {
   const allCities = CITY_OPTIONS;
 
   const handleLocationSubmit = (searchName: string) => {
-    if (!searchName.trim()) return;
-    const foundCity = allCities.find((c) => c.name.toLowerCase() === searchName.toLowerCase().trim());
-    
-    if (foundCity) {
-      setCity(foundCity);
-    } else {
-      const customLoc = {
-        name: searchName,
-        country: '',
-        lat: 32.5731, 
-        lon: 74.0755
-      };
-      setCity(customLoc);
-    }
-  };
+  if (!searchName.trim()) return;
+
+  const foundCity = allCities.find(
+    (city) =>
+      city.name.toLowerCase() ===
+      searchName.toLowerCase().trim()
+  );
+
+  if (foundCity) {
+    setCity(foundCity);
+  }
+};
 
   return (
     <section className="py-8 sm:py-12" style={{ background: '#0B2820', borderTop: '1px solid rgba(26,64,53,0.5)' }}>
