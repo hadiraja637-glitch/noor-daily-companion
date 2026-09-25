@@ -455,7 +455,7 @@ const [searchingLocation, setSearchingLocation] = useState(false);
 
   if (foundCity) {
     setLocationResults([]);
-    await setCity(foundCity);
+    async setCity(foundCity);
     return;
   }
 
@@ -464,9 +464,7 @@ const [searchingLocation, setSearchingLocation] = useState(false);
 
   try {
     const results = await searchGlobalLocations(query);
-
     setLocationResults(results);
-
     // Automatically use the first accurate result
     if (results.length > 0) {
       await setCity(results[0]);
