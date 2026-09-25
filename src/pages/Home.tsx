@@ -359,221 +359,655 @@ function Hero() {
 }
 
 function PrayerTimesSection() {
-  const { data, location, loading, error, setCity, useCurrentLocation } = usePrayerContext();
+  const {
+    data,
+    location,
+    loading,
+    error,
+    setCity,
+    useCurrentLocation,
+  } = usePrayerContext();
+
   const timings = data?.timings ?? [];
   const [now, setNow] = useState(() => new Date());
   const [inputValue, setInputValue] = useState(location.name);
+  const [locationResults, setLocationResults] = useState<PrayerLocation[]>([]);
+  const [searchingLocation, setSearchingLocation] = useState(false);
 
-  // Sync input value whenever location changes
+  // Adhan audio
+  const adhanAudioRef = useRef<HTMLAudioElement | null>(null);
+  const lastAdhanKeyRef = useRef<string>('');
+
+  // Sync search box with selected location
   useEffect(() => {
     setInputValue(location.name);
   }, [location.name]);
 
+  // Clock
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, []);
+
+  /*
+   * Daily Qur'an verse
+   */
   const dailyVerse = useMemo(() => {
     const today = new Date();
     const start = new Date(today.getFullYear(), 0, 0);
     const diff = today.getTime() - start.getTime();
-    const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const dayOfYear = Math.floor(
+      diff / (1000 * 60 * 60 * 24)
+    );
+
     return DAILY_VERSES[dayOfYear % DAILY_VERSES.length];
   }, []);
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  /*
+   * Built-in cities are only used as a quick shortcut.
+   * Worldwide locations are searched through searchGlobalLocations().
+   */
+  const allCities = CITY_OPTIONS;
 
-  const { current: activePrayer, next: nextPrayer } = timings.length
-    ? getCurrentAndNextPrayer(timings, now, data?.timezone)
-    : { current: undefined, next: undefined };
+  /*
+   * Search a city/town/village worldwide.
+   */
+  const handleLocationSubmit = async (searchName: string) => {
+    const query = searchName.trim();
 
+    if (!query) {
+      return;
+    }
+
+    // First check the normal built-in city list.
+    const foundCity = allCities.find(
+      (city) =>
+        city.name.toLowerCase() === query.toLowerCase()
+    );
+
+    if (foundCity) {
+      setLocationResults([]);
+      await setCity(foundCity);
+      return;
+    }
+
+    // Otherwise search worldwide using the global location API.
+    setSearchingLocation(true);
+    setLocationResults([]);
+
+    try {
+      const results = await searchGlobalLocations(query);
+
+      if (results.length === 0) {
+        setLocationResults([]);
+        return;
+      }
+
+      /*
+       * Use the first result returned by the location API.
+       * It contains the actual latitude/longitude of the searched place.
+       */
+      const selectedLocation = results[0];
+
+      await setCity(selectedLocation);
+      setInputValue(selectedLocation.name);
+      setLocationResults([]);
+    } catch (searchError) {
+      console.error(
+        'Worldwide location search failed:',
+        searchError
+      );
+
+      setLocationResults([]);
+    } finally {
+      setSearchingLocation(false);
+    }
+  };
+
+  /*
+   * Current + next prayer
+   */
+  const { current: activePrayer, next: nextPrayer } =
+    timings.length
+      ? getCurrentAndNextPrayer(
+          timings,
+          now,
+          data?.timezone
+        )
+      : {
+          current: undefined,
+          next: undefined,
+        };
+
+  /*
+   * Countdown
+   */
   let countdown = 0;
   let totalWindow = 3600;
+
   if (activePrayer && nextPrayer) {
-    const nowMinutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    const nowMinutes =
+      now.getHours() * 60 +
+      now.getMinutes() +
+      now.getSeconds() / 60;
+
     let nextMinutes = nextPrayer.minutes;
-    if (nextMinutes <= nowMinutes) nextMinutes += 24 * 60;
+
+    if (nextMinutes <= nowMinutes) {
+      nextMinutes += 24 * 60;
+    }
+
     let currentMinutes = activePrayer.minutes;
-    if (currentMinutes > nowMinutes) currentMinutes -= 24 * 60;
-    countdown = Math.max(0, (nextMinutes - nowMinutes) * 60);
-    totalWindow = Math.max(1, (nextMinutes - currentMinutes) * 60);
+
+    if (currentMinutes > nowMinutes) {
+      currentMinutes -= 24 * 60;
+    }
+
+    countdown = Math.max(
+      0,
+      (nextMinutes - nowMinutes) * 60
+    );
+
+    totalWindow = Math.max(
+      1,
+      (nextMinutes - currentMinutes) * 60
+    );
   }
 
-  const progress = totalWindow > 0 ? 1 - countdown / totalWindow : 0;
+  const progress =
+    totalWindow > 0
+      ? 1 - countdown / totalWindow
+      : 0;
+
   const r = 54;
   const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - Math.min(Math.max(progress, 0), 1));
 
-const allCities = CITY_OPTIONS;
-const [locationResults, setLocationResults] = useState<PrayerLocation[]>([]);
-const [searchingLocation, setSearchingLocation] = useState(false);
-const handleLocationSubmit = async (searchName: string) => {
-    const query = searchName.trim();
-    if (!query) return;
+  const offset =
+    circ *
+    (1 - Math.min(Math.max(progress, 0), 1));
 
-    const foundCity = allCities.find((city) => city.name.toLowerCase() === query.toLowerCase());
-    if (foundCity) {
-    setLocationResults([]);
-    await setCity(foundCity);
-    return;
-  }
+  /*
+   * Adhan
+   *
+   * The actual audio file should be:
+   * public/audio/adhan.mp3
+   *
+   * Browser autoplay rules mean the user may need to
+   * interact with the page once before audio can play.
+   */
+  useEffect(() => {
+    const audio = adhanAudioRef.current;
 
-  // Search anywhere in the world
-  setSearchingLocation(true);
-  try {
-    const results = await searchGlobalLocations(query);
-    setLocationResults(results);
-    // Automatically use the first accurate result
-    if (results.length > 0) {
-      await setCity(results[0]);
-      setInputValue(results[0].name);
-      setLocationResults([]);
+    if (!audio || !data || !timings.length) {
+      return;
     }
-  } catch (error) {
-    console.error('Worldwide location search failed:', error);
-    setLocationResults([]);
-  } finally {
-    setSearchingLocation(false);
-  }
-};
 
-  if (!query) return;
+    const adhanPrayers = [
+      'Fajr',
+      'Dhuhr',
+      'Asr',
+      'Maghrib',
+      'Isha',
+    ];
 
-  // First check the built-in cities
-  const foundCity = allCities.find(
-    (city) =>
-      city.name.toLowerCase() === query.toLowerCase()
-  );
+    const currentPrayer = timings.find(
+      (prayer) => {
+        return (
+          adhanPrayers.includes(prayer.name) &&
+          prayer.minutes ===
+            now.getHours() * 60 + now.getMinutes()
+        );
+      }
+    );
 
-  if (foundCity) {
-    setLocationResults([]);
-    async setCity(foundCity);
-  return;
-  }
-    <section className="py-8 sm:py-12" style={{ background: '#0B2820', borderTop: '1px solid rgba(26,64,53,0.5)' }}>
+    if (!currentPrayer) {
+      return;
+    }
+
+    const todayKey = new Date().toISOString().slice(0, 10);
+
+    const adhanKey =
+      `${todayKey}-${location.name}-${currentPrayer.name}`;
+
+    if (lastAdhanKeyRef.current === adhanKey) {
+      return;
+    }
+
+    lastAdhanKeyRef.current = adhanKey;
+
+    audio.currentTime = 0;
+
+    audio.play().catch((playError) => {
+      console.warn(
+        'Adhan could not autoplay:',
+        playError
+      );
+    });
+  }, [now, timings, data, location.name]);
+
+  return (
+    <section
+      className="py-8 sm:py-12"
+      style={{
+        background: '#0B2820',
+        borderTop:
+          '1px solid rgba(26,64,53,0.5)',
+      }}
+    >
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+          {/* Prayer Times */}
           <div className="xl:col-span-2">
-            <div className="rounded-2xl p-4 sm:p-6 h-full flex flex-col justify-between" style={{ background: '#103329', border: '1px solid rgba(26,64,53,0.7)' }}>
+
+            <div
+              className="rounded-2xl p-4 sm:p-6 h-full flex flex-col justify-between"
+              style={{
+                background: '#103329',
+                border:
+                  '1px solid rgba(26,64,53,0.7)',
+              }}
+            >
+
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
+
                 <div>
+
                   <div className="flex items-center gap-2 mb-1">
-                    <Clock size={15} className="text-noor-gold" />
-                    <h2 className="font-display text-noor-ivory text-lg sm:text-xl font-semibold">Today's Prayer Times</h2>
+
+                    <Clock
+                      size={15}
+                      className="text-noor-gold"
+                    />
+
+                    <h2 className="font-display text-noor-ivory text-lg sm:text-xl font-semibold">
+                      Today's Prayer Times
+                    </h2>
+
                   </div>
-                  <p className="text-noor-muted text-xs">Stay connected with your Salah</p>
-                  {error && <p className="text-noor-gold text-[10px] mt-1">{error}</p>}
+
+                  <p className="text-noor-muted text-xs">
+                    Stay connected with your Salah
+                  </p>
+
+                  {error && (
+                    <p className="text-noor-gold text-[10px] mt-1">
+                      {error}
+                    </p>
+                  )}
+
                 </div>
+
                 <div className="flex flex-col items-start sm:items-end gap-1.5">
+
                   <div className="flex items-center gap-1.5 text-noor-ivory text-xs font-medium">
-                    <MapPin size={13} className="text-noor-gold" /> 
-                    {loading ? 'Loading location…' : location.name}
+
+                    <MapPin
+                      size={13}
+                      className="text-noor-gold"
+                    />
+
+                    {loading
+                      ? 'Loading location…'
+                      : location.name}
+
                   </div>
+
                   <div className="flex flex-wrap items-center gap-2">
-                    <button 
-                      onClick={useCurrentLocation} 
+
+                    <button
+                      type="button"
+                      onClick={useCurrentLocation}
                       className="text-[11px] font-medium text-noor-gold hover:underline transition-all"
                     >
                       Use my location
                     </button>
+
                     <div className="relative">
+
                       <input
                         type="text"
                         list="noor-global-locations"
                         value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
+                        onChange={(e) => {
+                          setInputValue(e.target.value);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
-                            handleLocationSubmit(inputValue);
+                            void handleLocationSubmit(
+                              inputValue
+                            );
                           }
                         }}
-                        placeholder="🌍 Search any city or town"
+                        placeholder={
+                          searchingLocation
+                            ? 'Searching…'
+                            : '🌍 Search any city or town'
+                        }
                         className="bg-[#072018] text-[11px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2.5 py-1 w-[150px] sm:w-[180px] placeholder:text-noor-muted/60 focus:border-noor-gold/50 transition-colors"
                         aria-label="Search a country or city worldwide"
                       />
+
                       <datalist id="noor-global-locations">
-                        {allCities.map((city, i) => <option key={`${city.name}-${i}`} value={city.name} />)}
+
+                        {allCities.map(
+                          (city, i) => (
+                            <option
+                              key={`${city.name}-${i}`}
+                              value={city.name}
+                            />
+                          )
+                        )}
+
                       </datalist>
+
                     </div>
+
                   </div>
-                  <Link to="/calendar" className="mt-0.5 inline-flex items-center gap-1 text-xs text-noor-gold hover:underline">
-                    View Calendar <ArrowRight size={11} />
+
+                  <Link
+                    to="/calendar"
+                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-noor-gold hover:underline"
+                  >
+                    View Calendar
+                    <ArrowRight size={11} />
                   </Link>
+
                 </div>
+
               </div>
 
+              {/* Prayer Cards */}
+
               <div className="flex flex-col sm:flex-row items-center gap-4">
+
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 flex-1 w-full">
-                  {(timings.length ? timings : [
-                    { name: 'Fajr', time: '--:--', minutes: 0 }, 
-                    { name: 'Sunrise', time: '--:--', minutes: 0 }, 
-                    { name: 'Dhuhr', time: '--:--', minutes: 0 }, 
-                    { name: 'Asr', time: '--:--', minutes: 0 }, 
-                    { name: 'Maghrib', time: '--:--', minutes: 0 }, 
-                    { name: 'Isha', time: '--:--', minutes: 0 },
-                  ]).map((prayer) => {
-                    const isActive = prayer.name === activePrayer?.name;
+
+                  {(timings.length
+                    ? timings
+                    : [
+                        {
+                          name: 'Fajr',
+                          time: '--:--',
+                          minutes: 0,
+                        },
+                        {
+                          name: 'Sunrise',
+                          time: '--:--',
+                          minutes: 0,
+                        },
+                        {
+                          name: 'Dhuhr',
+                          time: '--:--',
+                          minutes: 0,
+                        },
+                        {
+                          name: 'Asr',
+                          time: '--:--',
+                          minutes: 0,
+                        },
+                        {
+                          name: 'Maghrib',
+                          time: '--:--',
+                          minutes: 0,
+                        },
+                        {
+                          name: 'Isha',
+                          time: '--:--',
+                          minutes: 0,
+                        },
+                      ]
+                  ).map((prayer) => {
+
+                    const isActive =
+                      prayer.name ===
+                      activePrayer?.name;
+
                     return (
-                      <div key={prayer.name} className="flex flex-col items-center gap-1.5 px-1.5 py-2.5 sm:px-2 sm:py-3 rounded-xl transition-all min-w-[65px]" style={{ background: isActive ? 'rgba(232,189,75,0.12)' : 'rgba(6,24,18,0.4)', border: isActive ? '1px solid rgba(232,189,75,0.35)' : '1px solid rgba(26,64,53,0.4)' }}>
-                        <span className="text-base sm:text-lg leading-none">{prayer.name === 'Fajr' ? '🌙' : prayer.name === 'Sunrise' ? '🌅' : prayer.name === 'Dhuhr' ? '☀️' : prayer.name === 'Asr' ? '🌤️' : prayer.name === 'Maghrib' ? '🌇' : '🌃'}</span>
-                        <span className={`text-[11px] sm:text-xs font-medium ${isActive ? 'text-noor-gold' : 'text-noor-muted'}`}>{prayer.name}</span>
-                        <span className={`text-xs sm:text-sm font-semibold ${isActive ? 'text-noor-gold' : 'text-noor-ivory'}`}>{prayer.time}</span>
+                      <div
+                        key={prayer.name}
+                        className="flex flex-col items-center gap-1.5 px-1.5 py-2.5 sm:px-2 sm:py-3 rounded-xl transition-all min-w-[65px]"
+                        style={{
+                          background: isActive
+                            ? 'rgba(232,189,75,0.12)'
+                            : 'rgba(6,24,18,0.4)',
+                          border: isActive
+                            ? '1px solid rgba(232,189,75,0.35)'
+                            : '1px solid rgba(26,64,53,0.4)',
+                        }}
+                      >
+
+                        <span className="text-base sm:text-lg leading-none">
+
+                          {prayer.name === 'Fajr'
+                            ? '🌙'
+                            : prayer.name === 'Sunrise'
+                              ? '🌅'
+                              : prayer.name === 'Dhuhr'
+                                ? '☀️'
+                                : prayer.name === 'Asr'
+                                  ? '🌤️'
+                                  : prayer.name === 'Maghrib'
+                                    ? '🌇'
+                                    : '🌃'}
+
+                        </span>
+
+                        <span
+                          className={`text-[11px] sm:text-xs font-medium ${
+                            isActive
+                              ? 'text-noor-gold'
+                              : 'text-noor-muted'
+                          }`}
+                        >
+                          {prayer.name}
+                        </span>
+
+                        <span
+                          className={`text-xs sm:text-sm font-semibold ${
+                            isActive
+                              ? 'text-noor-gold'
+                              : 'text-noor-ivory'
+                          }`}
+                        >
+                          {prayer.time}
+                        </span>
+
                       </div>
                     );
                   })}
+
                 </div>
+
+                {/* Countdown */}
 
                 <div className="flex-shrink-0 flex flex-col items-center mt-2 sm:mt-0">
+
                   <div className="relative w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
-                    <svg className="absolute inset-0 w-full h-full" style={{ transform: 'rotate(-90deg)' }} viewBox="0 0 120 120">
-                      <defs><linearGradient id="cGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#18B98A" /><stop offset="100%" stopColor="#E8BD4B" /></linearGradient></defs>
-                      <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(26,64,53,0.6)" strokeWidth="5" />
-                      <circle cx="60" cy="60" r={r} fill="none" stroke="url(#cGrad)" strokeWidth="5" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} />
+
+                    <svg
+                      className="absolute inset-0 w-full h-full"
+                      style={{
+                        transform: 'rotate(-90deg)',
+                      }}
+                      viewBox="0 0 120 120"
+                    >
+
+                      <defs>
+
+                        <linearGradient
+                          id="cGrad"
+                          x1="0%"
+                          y1="0%"
+                          x2="100%"
+                          y2="0%"
+                        >
+
+                          <stop
+                            offset="0%"
+                            stopColor="#18B98A"
+                          />
+
+                          <stop
+                            offset="100%"
+                            stopColor="#E8BD4B"
+                          />
+
+                        </linearGradient>
+
+                      </defs>
+
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r={r}
+                        fill="none"
+                        stroke="rgba(26,64,53,0.6)"
+                        strokeWidth="5"
+                      />
+
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r={r}
+                        fill="none"
+                        stroke="url(#cGrad)"
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                        strokeDasharray={circ}
+                        strokeDashoffset={offset}
+                      />
+
                     </svg>
+
                     <div className="text-center z-10">
-                      <p className="text-noor-gold text-[10px] font-medium tracking-wider uppercase">{nextPrayer?.name ?? 'Prayer'}</p>
-                      <p className="font-display text-noor-ivory text-base sm:text-lg font-bold tabular-nums">{fmtSeconds(countdown)}</p>
-                      <p className="text-noor-muted text-[9px]">Time remaining</p>
+
+                      <p className="text-noor-gold text-[10px] font-medium tracking-wider uppercase">
+                        {nextPrayer?.name ?? 'Prayer'}
+                      </p>
+
+                      <p className="font-display text-noor-ivory text-base sm:text-lg font-bold tabular-nums">
+                        {fmtSeconds(countdown)}
+                      </p>
+
+                      <p className="text-noor-muted text-[9px]">
+                        Time remaining
+                      </p>
+
                     </div>
+
                   </div>
+
                 </div>
+
               </div>
+
             </div>
+
           </div>
 
+          {/* Daily Qur'an */}
+
           <FadeIn className="xl:col-span-1">
-            <div className="rounded-2xl overflow-hidden h-full flex flex-col shadow-lg" style={{ border: '1px solid rgba(232,189,75,0.3)', background: '#103329' }}>
+
+            <div
+              className="rounded-2xl overflow-hidden h-full flex flex-col shadow-lg"
+              style={{
+                border:
+                  '1px solid rgba(232,189,75,0.3)',
+                background: '#103329',
+              }}
+            >
+
               <div className="relative h-36 sm:h-40 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=800&q=80" 
-                  alt="Quran Holy Book" 
-                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" 
-                  loading="lazy" 
+
+                <img
+                  src="https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=800&q=80"
+                  alt="Quran Holy Book"
+                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                  loading="lazy"
                 />
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(16,51,41,0.25), rgba(16,51,41,0.95))' }} />
-                <span className="absolute top-3 right-3 text-xs px-2.5 py-1 rounded-full font-semibold shadow-md backdrop-blur-md" style={{ background: 'rgba(232,189,75,0.25)', color: '#E8BD4B', border: '1px solid rgba(232,189,75,0.4)' }}>
+
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(to bottom, rgba(16,51,41,0.25), rgba(16,51,41,0.95))',
+                  }}
+                />
+
+                <span
+                  className="absolute top-3 right-3 text-xs px-2.5 py-1 rounded-full font-semibold shadow-md backdrop-blur-md"
+                  style={{
+                    background:
+                      'rgba(232,189,75,0.25)',
+                    color: '#E8BD4B',
+                    border:
+                      '1px solid rgba(232,189,75,0.4)',
+                  }}
+                >
                   ✨ Daily Qur'an
                 </span>
+
               </div>
+
               <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+
                 <div>
+
                   <h3 className="font-display text-noor-ivory text-base font-semibold mb-2 flex items-center gap-1.5">
                     Verse of the Day
                   </h3>
-                  <p className="font-arabic text-noor-gold text-xl sm:text-2xl leading-loose mb-2 text-right" style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}>
+
+                  <p
+                    className="font-arabic text-noor-gold text-xl sm:text-2xl leading-loose mb-2 text-right"
+                    style={{
+                      fontFamily:
+                        'Amiri, serif',
+                      direction: 'rtl',
+                    }}
+                  >
                     {dailyVerse.arabic}
                   </p>
+
                   <p className="text-noor-ivory/90 text-xs sm:text-sm italic mb-1 leading-relaxed">
                     {dailyVerse.english}
                   </p>
-                  <p className="text-noor-muted text-xs font-medium">— {dailyVerse.reference}</p>
+
+                  <p className="text-noor-muted text-xs font-medium">
+                    — {dailyVerse.reference}
+                  </p>
+
                 </div>
-                <Link to={dailyVerse.surahLink} className="flex items-center gap-2 text-xs sm:text-sm text-noor-gold hover:underline font-semibold pt-2 border-t border-[#1A4035]/60">
-                  Read Full Surah <ArrowRight size={13} />
+
+                <Link
+                  to={dailyVerse.surahLink}
+                  className="flex items-center gap-2 text-xs sm:text-sm text-noor-gold hover:underline font-semibold pt-2 border-t border-[#1A4035]/60"
+                >
+                  Read Full Surah
+                  <ArrowRight size={13} />
                 </Link>
+
               </div>
+
             </div>
+
           </FadeIn>
+
         </div>
+
+        {/* Hidden audio element for Adhan */}
+
+        <audio
+          ref={adhanAudioRef}
+          preload="auto"
+          src="/audio/adhan.mp3"
+        />
+
       </div>
     </section>
   );
