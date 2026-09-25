@@ -404,9 +404,8 @@ function PrayerTimesSection() {
   const offset = circ * (1 - Math.min(Math.max(progress, 0), 1));
 
   const allCities = CITY_OPTIONS;
-
-  const handleLocationSubmit = async (searchName: string) => {
-  const query = searchName.trim();
+const [locationResults, setLocationResults] = useState<PrayerLocation[]>([]);
+const [searchingLocation, setSearchingLocation] = useState(false);
 
   if (!query) return;
 
