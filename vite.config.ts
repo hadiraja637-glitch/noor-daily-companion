@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
     registerType: 'autoUpdate',
 
     manifest: {
-      name: 'Noor — Islamic Daily Companion',
+      name: 'Noor'
       short_name: 'Noor',
       description:
         'A peaceful Islamic daily companion with Quran, prayer times, duas, hadith, Qibla and more.',
