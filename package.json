@@ -11,7 +11,7 @@
     "predev": "node scripts/ensure-dependencies.cjs"
   },
   "dependencies": {
-    "adhan": "^2.15.0",
+    "adhan": "4.4.3",
     "lucide-react": "0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
