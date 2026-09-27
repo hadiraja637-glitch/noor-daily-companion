@@ -3,26 +3,12 @@ import { Link } from 'react-router';
 import {
   BookOpen, MessageSquare, Heart, Compass, CalendarDays, DollarSign,
   RotateCcw, FileText, ArrowRight, Share2, MapPin,
-  Plus, Minus, RefreshCw, Clock, Star, Sparkles, Check, Settings2,
-  Bell, BellRing, Volume2, LocateFixed, CheckCircle2
+  Plus, Minus, RefreshCw, Clock, Star, Sparkles, Check, Bell, Volume2
 } from 'lucide-react';
 import { STORIES } from './Stories';
 import {
-  CITY_OPTIONS,
-  DEFAULT_LOCATION,
-  fetchPrayerData,
-  getCurrentAndNextPrayer,
-  getCityFromCoordinates,
-  getPrayerSettings,
-  updatePrayerSettings,
-  buildLocalPrayerData,
-  CALCULATION_METHOD_OPTIONS,
-  ASR_METHOD_OPTIONS,
-  getSavedLocation,
-  saveLocation,
-  type PrayerData,
-  type PrayerLocation,
-  type PrayerSettings,
+  CITY_OPTIONS, DEFAULT_LOCATION, fetchPrayerData, getCurrentAndNextPrayer,
+  getCityFromCoordinates, type PrayerData, type PrayerLocation,
 } from '../services/prayer';
 import { searchGlobalLocations } from '../services/globalLocations';
 import { getDailyHadith } from '../data/dailyHadith';
@@ -122,18 +108,22 @@ const PRAYER_CONTEXT = React.createContext<null | {
   location: PrayerLocation;
   loading: boolean;
   error: string;
-  settings: PrayerSettings;
   refresh: () => Promise<void>;
   setCity: (city: PrayerLocation) => Promise<void>;
   useCurrentLocation: () => void;
-  setPrayerSettings: (patch: Partial<PrayerSettings>) => void;
   locationMode: 'city' | 'current';
 }>(null);
 
 function PrayerProvider({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useState<PrayerLocation>(() => getSavedLocation());
+  const [location, setLocation] = useState<PrayerLocation>(() => {
+    try {
+      const saved = localStorage.getItem('noor-prayer-location');
+      return saved ? JSON.parse(saved) : DEFAULT_LOCATION;
+    } catch {
+      return DEFAULT_LOCATION;
+    }
+  });
   const [locationMode, setLocationMode] = useState<'city' | 'current'>('city');
-  const [settings, setSettings] = useState<PrayerSettings>(() => getPrayerSettings());
   const [data, setData] = useState<PrayerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -141,71 +131,38 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
   const load = async (nextLocation: PrayerLocation = location) => {
     setLoading(true);
     setError('');
-
-    // Calculate immediately on-device. The network is not required for prayer times.
     try {
-      const local = buildLocalPrayerData(nextLocation, settings);
-      setData(local);
-      setLocation(local.location);
-      saveLocation(local.location);
-    } catch (localError) {
-      console.error('Local prayer calculation failed:', localError);
-      setError('Prayer timings could not be calculated right now.');
-      setData(null);
-      setLoading(false);
-      return;
+      const next = await fetchPrayerData(nextLocation);
+      setData(next);
+      localStorage.setItem('noor-prayer-location', JSON.stringify(nextLocation));
+    } catch {
+      setError('Prayer timings could not be refreshed right now. Showing default location.');
+      try {
+        const fallback = await fetchPrayerData(DEFAULT_LOCATION);
+        setData(fallback);
+      } catch {
+        setData(null);
+      }
     } finally {
       setLoading(false);
-    }
-
-    // Refresh only optional Hijri/timezone metadata in the background.
-    try {
-      const enriched = await fetchPrayerData(nextLocation, settings);
-      setData(enriched);
-      setLocation(enriched.location);
-      saveLocation(enriched.location);
-    } catch (metadataError) {
-      console.warn('Prayer metadata refresh skipped:', metadataError);
     }
   };
 
   const setCity = async (city: PrayerLocation) => {
     setLocation(city);
     setLocationMode('city');
+    setLoading(true);
     setError('');
-
-    // Show locally calculated times immediately.
     try {
-      const local = buildLocalPrayerData(city, settings);
-      setData(local);
-      setLocation(local.location);
-      saveLocation(local.location);
-    } catch (localError) {
-      console.error('Local city calculation failed:', localError);
-      setError('Could not calculate timings for that city.');
-      return;
+      const next = await fetchPrayerData(city);
+      setData(next);
+      localStorage.setItem('noor-prayer-location', JSON.stringify(city));
+    } catch {
+      setError('Could not load timings for that city. Please try again.');
+      await load(city);
+    } finally {
+      setLoading(false);
     }
-
-    // Enrich timezone/Hijri metadata in the background when online.
-    try {
-      const enriched = await fetchPrayerData(city, settings);
-      setData(enriched);
-      setLocation(enriched.location);
-      saveLocation(enriched.location);
-    } catch (metadataError) {
-      console.warn('City metadata refresh skipped:', metadataError);
-    }
-  };
-
-  const setPrayerSettings = (patch: Partial<PrayerSettings>) => {
-    const nextSettings = updatePrayerSettings(patch);
-    setSettings(nextSettings);
-
-    // Recalculate immediately on-device. No page reload and no API required.
-    setData((previous) => {
-      if (!previous) return previous;
-      return buildLocalPrayerData(previous.location, nextSettings);
-    });
   };
 
   const useCurrentLocation = () => {
@@ -213,7 +170,6 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
       setError('Location services are not available in this browser.');
       return;
     }
-
     setLoading(true);
     setError('');
 
@@ -222,83 +178,49 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
         try {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-
-          let currentLoc = await getCityFromCoordinates(lat, lon);
-          currentLoc = {
-            ...currentLoc,
-            lat,
-            lon,
-            timezone:
-              Intl.DateTimeFormat().resolvedOptions().timeZone,
+          
+          // Safe city fetch with fallback
+          let cityName = 'Current Location';
+          try {
+            const fetchedName = await getCityFromCoordinates(lat, lon);
+            if (fetchedName) cityName = fetchedName;
+          } catch {
+            // Fallback if reverse geocoding fails
+            cityName = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+          }
+          
+          const currentLoc: PrayerLocation = {
+            name: cityName,
+            country: cityName.split(',')[1]?.trim() || '',
+            lat: lat,
+            lon: lon,
           };
-
+          
           setLocation(currentLoc);
           setLocationMode('current');
-
-          const next = await fetchPrayerData(currentLoc, settings);
+          
+          const next = await fetchPrayerData(currentLoc);
           setData(next);
-          setLocation(next.location);
-          saveLocation(next.location);
-        } catch (locationError) {
-          console.error('Current location prayer load failed:', locationError);
-
-          try {
-            const fallback = buildLocalPrayerData(
-              {
-                name: 'Current Location',
-                lat: pos.coords.latitude,
-                lon: pos.coords.longitude,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              },
-              settings,
-            );
-
-            setData(fallback);
-            setLocation(fallback.location);
-            setLocationMode('current');
-            saveLocation(fallback.location);
-            setError('Using locally calculated prayer times.');
-          } catch {
-            setError('Could not calculate prayer timings for your location.');
-          }
+          localStorage.setItem('noor-prayer-location', JSON.stringify(currentLoc));
+        } catch {
+          setError('Could not load prayer timings for your current location.');
         } finally {
           setLoading(false);
         }
       },
-      (err) => {
+      (err) => { 
         console.error(err);
-        setLoading(false);
-        setError('Location permission was denied or unavailable. Showing your saved city.');
+        setLoading(false); 
+        setError('Location permission was denied or unavailable. Showing your saved city.'); 
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 15 * 60 * 1000,
-      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15 * 60 * 1000 },
     );
   };
 
-  useEffect(() => {
-    void load();
-    // Load the saved location/settings once when Home mounts.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { load(); }, []);
 
   return (
-    <PRAYER_CONTEXT.Provider
-      value={{
-        data,
-        location,
-        loading,
-        error,
-        settings,
-        refresh: () => load(),
-        setCity,
-        useCurrentLocation,
-        setPrayerSettings,
-        locationMode,
-      }}
-    >
+    <PRAYER_CONTEXT.Provider value={{ data, location, loading, error, refresh: () => load(), setCity, useCurrentLocation, locationMode }}>
       {children}
     </PRAYER_CONTEXT.Provider>
   );
@@ -444,8 +366,6 @@ function PrayerTimesSection() {
     error,
     setCity,
     useCurrentLocation,
-    settings,
-    setPrayerSettings,
   } = usePrayerContext();
 
   const timings = data?.timings ?? [];
@@ -454,9 +374,27 @@ function PrayerTimesSection() {
   const [locationResults, setLocationResults] = useState<PrayerLocation[]>([]);
   const [searchingLocation, setSearchingLocation] = useState(false);
 
-  // Adhan audio
+  // Adhan / prayer-alert settings
   const adhanAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastAdhanKeyRef = useRef<string>('');
+  const [azanEnabled, setAzanEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('noor-azan-enabled') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const [alertsEnabled, setAlertsEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('noor-prayer-alerts') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [audioReady, setAudioReady] = useState(false);
+
+  const ADHAN_AUDIO_URL =
+    'https://commons.wikimedia.org/wiki/Special:Redirect/file/Adhan.ogg';
 
   // Sync search box with selected location
   useEffect(() => {
@@ -470,6 +408,120 @@ function PrayerTimesSection() {
     }, 1000);
 
     return () => clearInterval(id);
+  }, []);
+
+  const getLocationMinutes = (date: Date) => {
+    const timeZone = data?.timezone;
+    if (!timeZone) {
+      return date.getHours() * 60 + date.getMinutes() + date.getSeconds() / 60;
+    }
+
+    try {
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).formatToParts(date);
+
+      const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? 0);
+      const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? 0);
+      const second = Number(parts.find((part) => part.type === 'second')?.value ?? 0);
+      return hour * 60 + minute + second / 60;
+    } catch {
+      return date.getHours() * 60 + date.getMinutes() + date.getSeconds() / 60;
+    }
+  };
+
+  const getLocationDateKey = (date: Date) => {
+    const timeZone = data?.timezone;
+    if (!timeZone) return date.toISOString().slice(0, 10);
+
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(date);
+
+      const year = parts.find((part) => part.type === 'year')?.value;
+      const month = parts.find((part) => part.type === 'month')?.value;
+      const day = parts.find((part) => part.type === 'day')?.value;
+      return `${year}-${month}-${day}`;
+    } catch {
+      return date.toISOString().slice(0, 10);
+    }
+  };
+
+  const enablePrayerAlerts = async () => {
+    if ('Notification' in window) {
+      try {
+        const permission = await Notification.requestPermission();
+        const enabled = permission === 'granted';
+        setAlertsEnabled(enabled);
+        localStorage.setItem('noor-prayer-alerts', String(enabled));
+        return;
+      } catch {
+        // Continue with the in-app preference even if permission cannot be requested.
+      }
+    }
+
+    setAlertsEnabled(true);
+    localStorage.setItem('noor-prayer-alerts', 'true');
+  };
+
+  const toggleAzan = () => {
+    const next = !azanEnabled;
+    setAzanEnabled(next);
+    localStorage.setItem('noor-azan-enabled', String(next));
+  };
+
+  const unlockAzanAudio = async () => {
+    const audio = adhanAudioRef.current;
+    if (!audio) return;
+
+    try {
+      audio.muted = true;
+      await audio.play();
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+      setAudioReady(true);
+    } catch {
+      audio.muted = false;
+      setAudioReady(false);
+    }
+  };
+
+  const testAzan = async () => {
+    const audio = adhanAudioRef.current;
+    if (!audio) return;
+
+    try {
+      audio.muted = false;
+      audio.currentTime = 0;
+      await audio.play();
+      setAudioReady(true);
+    } catch (error) {
+      console.warn('Azan test could not play:', error);
+      setAudioReady(false);
+    }
+  };
+
+  useEffect(() => {
+    localStorage.setItem('noor-azan-enabled', String(azanEnabled));
+  }, [azanEnabled]);
+
+  useEffect(() => {
+    const unlock = () => { void unlockAzanAudio(); };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
   }, []);
 
   /*
@@ -550,11 +602,17 @@ function PrayerTimesSection() {
   /*
    * Current + next prayer
    */
-  const prayerState = timings.length
-    ? getCurrentAndNextPrayer(timings, now, data?.timezone)
-    : { current: undefined, next: undefined, mins: 0 };
-
-  const { current: activePrayer, next: nextPrayer, mins: prayerClockMinutes } = prayerState;
+  const { current: activePrayer, next: nextPrayer } =
+    timings.length
+      ? getCurrentAndNextPrayer(
+          timings,
+          now,
+          data?.timezone
+        )
+      : {
+          current: undefined,
+          next: undefined,
+        };
 
   /*
    * Countdown
@@ -563,8 +621,7 @@ function PrayerTimesSection() {
   let totalWindow = 3600;
 
   if (activePrayer && nextPrayer) {
-    // IMPORTANT: use the prayer location's timezone, not the device timezone.
-    const nowMinutes = prayerClockMinutes;
+    const nowMinutes = getLocationMinutes(now);
 
     let nextMinutes = nextPrayer.minutes;
 
@@ -601,102 +658,49 @@ function PrayerTimesSection() {
     circ *
     (1 - Math.min(Math.max(progress, 0), 1));
 
-  const [notificationsEnabled, setNotificationsEnabled] = useState(
-    typeof window !== 'undefined' && 'Notification' in window
-      ? Notification.permission === 'granted'
-      : false,
-  );
-  const [notificationBusy, setNotificationBusy] = useState(false);
-  const [azanEnabled, setAzanEnabled] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return localStorage.getItem('noor-azan-enabled') !== 'false';
-  });
-
   /*
-   * Prayer alert engine.
-   * Notifications are permission-gated and the alert is de-duplicated per
-   * prayer/location/day/settings. Audio still obeys browser autoplay rules.
+   * Prayer-time Adhan + notification trigger.
+   * The audio is hosted remotely under CC0 so no large audio file
+   * needs to be committed to the GitHub repository.
    */
   useEffect(() => {
     if (!data || !timings.length) return;
 
-    const currentMinute = Math.floor(prayerClockMinutes);
-    const prayerNow = timings.find((prayer) =>
-      prayer.name !== 'Sunrise' && prayer.minutes === currentMinute,
-    );
+    const locationMinutes = getLocationMinutes(now);
+    const currentPrayer = timings.find((prayer) => {
+      if (prayer.name === 'Sunrise') return false;
+      return Math.floor(locationMinutes) === prayer.minutes;
+    });
 
-    if (!prayerNow) return;
+    if (!currentPrayer) return;
 
-    const todayKey = new Intl.DateTimeFormat('en-CA', {
-      timeZone: data.timezone || undefined,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(now);
+    const prayerKey = `${getLocationDateKey(now)}-${location.name}-${currentPrayer.name}`;
+    if (lastAdhanKeyRef.current === prayerKey) return;
+    lastAdhanKeyRef.current = prayerKey;
 
-    const alertKey = [
-      todayKey,
-      location.lat.toFixed(4),
-      location.lon.toFixed(4),
-      settings.calculationMethod,
-      settings.asrMethod,
-      prayerNow.name,
-    ].join('|');
-
-    if (lastAdhanKeyRef.current === alertKey) return;
-    lastAdhanKeyRef.current = alertKey;
-
-    if (notificationsEnabled && 'Notification' in window) {
-      new Notification(`${prayerNow.name} Time 🕌`, {
-        body: `It is time for ${prayerNow.name} prayer.`,
-        icon: '/favicon.png',
-        tag: `noor-${prayerNow.name.toLowerCase()}`,
-      });
+    if (alertsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(`${currentPrayer.name} — Noor`, {
+          body: `It is time for ${currentPrayer.name} prayer.`,
+          tag: `noor-${currentPrayer.name}`,
+        });
+      } catch {
+        // Some browsers restrict page-created notifications.
+      }
     }
 
-    if (azanEnabled && adhanAudioRef.current) {
+    if (azanEnabled) {
       const audio = adhanAudioRef.current;
-      audio.currentTime = 0;
-      audio.play().catch((playError) => {
-        console.warn('Azan audio needs a user interaction:', playError);
-      });
+      if (audio) {
+        audio.muted = false;
+        audio.currentTime = 0;
+        void audio.play().then(() => setAudioReady(true)).catch((playError) => {
+          console.warn('Azan could not autoplay. The user may need to tap the Test Azan button once:', playError);
+          setAudioReady(false);
+        });
+      }
     }
-  }, [
-    now,
-    timings,
-    data,
-    location.lat,
-    location.lon,
-    settings.calculationMethod,
-    settings.asrMethod,
-    prayerClockMinutes,
-    notificationsEnabled,
-    azanEnabled,
-  ]);
-
-  const enablePrayerNotifications = async () => {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      return;
-    }
-
-    setNotificationBusy(true);
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationsEnabled(permission === 'granted');
-    } finally {
-      setNotificationBusy(false);
-    }
-  };
-
-  const selectedMethodLabel =
-    CALCULATION_METHOD_OPTIONS.find((method) => method.id === settings.calculationMethod)?.label
-      ?? settings.calculationMethod;
-
-  const selectedAsrLabel =
-    ASR_METHOD_OPTIONS.find((method) => method.id === settings.asrMethod)?.label
-      ?? settings.asrMethod;
-
-
+  }, [now, timings, data, location.name, azanEnabled, alertsEnabled]);
 
   return (
     <section
@@ -774,7 +778,7 @@ function PrayerTimesSection() {
                       onClick={useCurrentLocation}
                       className="text-[11px] font-medium text-noor-gold hover:underline transition-all"
                     >
-                      <span className="inline-flex items-center gap-1"><LocateFixed size={11} /> Use my location</span>
+                      Use my location
                     </button>
 
                     <div className="relative">
@@ -819,99 +823,6 @@ function PrayerTimesSection() {
 
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <div className="flex items-center gap-1 text-noor-muted text-[10px]">
-                      <Settings2 size={11} className="text-noor-gold" />
-                      Prayer settings
-                    </div>
-
-                    <select
-                      value={settings.calculationMethod}
-                      onChange={(e) =>
-                        setPrayerSettings({
-                          calculationMethod: e.target.value as PrayerSettings['calculationMethod'],
-                        })
-                      }
-                      className="bg-[#072018] text-[10px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2 py-1 focus:border-noor-gold/50 max-w-[190px]"
-                      aria-label="Prayer calculation method"
-                    >
-                      {CALCULATION_METHOD_OPTIONS.map((method) => (
-                        <option key={method.id} value={method.id}>
-                          {method.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={settings.asrMethod}
-                      onChange={(e) =>
-                        setPrayerSettings({
-                          asrMethod: e.target.value as PrayerSettings['asrMethod'],
-                        })
-                      }
-                      className="bg-[#072018] text-[10px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2 py-1 focus:border-noor-gold/50"
-                      aria-label="Asr calculation method"
-                    >
-                      {ASR_METHOD_OPTIONS.map((method) => (
-                        <option key={method.id} value={method.id}>
-                          Asr: {method.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 text-[9px] text-noor-muted">
-                    <CheckCircle2 size={10} className="text-noor-gold" />
-                    Calculated on this device · {selectedMethodLabel} · Asr {selectedAsrLabel}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={enablePrayerNotifications}
-                      disabled={notificationBusy || notificationsEnabled}
-                      className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition-all disabled:cursor-default"
-                      style={{
-                        borderColor: notificationsEnabled
-                          ? 'rgba(24,185,138,0.35)'
-                          : 'rgba(232,189,75,0.28)',
-                        background: notificationsEnabled
-                          ? 'rgba(24,185,138,0.08)'
-                          : 'rgba(232,189,75,0.07)',
-                        color: notificationsEnabled ? '#6DE0BA' : '#E8BD4B',
-                      }}
-                    >
-                      {notificationsEnabled ? <BellRing size={12} /> : <Bell size={12} />}
-                      {notificationBusy
-                        ? 'Enabling…'
-                        : notificationsEnabled
-                          ? 'Prayer alerts on'
-                          : 'Enable prayer alerts'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setAzanEnabled((value) => {
-                        const next = !value;
-                        localStorage.setItem('noor-azan-enabled', String(next));
-                        return next;
-                      })}
-                      className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition-all"
-                      style={{
-                        borderColor: azanEnabled
-                          ? 'rgba(232,189,75,0.28)'
-                          : 'rgba(26,64,53,0.65)',
-                        background: azanEnabled
-                          ? 'rgba(232,189,75,0.07)'
-                          : 'rgba(6,24,18,0.35)',
-                        color: azanEnabled ? '#E8BD4B' : '#8FA69E',
-                      }}
-                    >
-                      <Volume2 size={12} />
-                      Azan {azanEnabled ? 'on' : 'off'}
-                    </button>
-                  </div>
-
                   <Link
                     to="/calendar"
                     className="mt-0.5 inline-flex items-center gap-1 text-xs text-noor-gold hover:underline"
@@ -919,6 +830,55 @@ function PrayerTimesSection() {
                     View Calendar
                     <ArrowRight size={11} />
                   </Link>
+
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void enablePrayerAlerts();
+                        void unlockAzanAudio();
+                      }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-colors"
+                      style={{
+                        background: alertsEnabled ? 'rgba(24,185,138,0.14)' : 'rgba(6,24,18,0.55)',
+                        color: alertsEnabled ? '#5FE0B2' : '#A9B8B1',
+                        border: `1px solid ${alertsEnabled ? 'rgba(24,185,138,0.4)' : 'rgba(26,64,53,0.7)'}`,
+                      }}
+                    >
+                      <Bell size={12} />
+                      {alertsEnabled ? 'Prayer alerts on' : 'Enable prayer alerts'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleAzan();
+                        void unlockAzanAudio();
+                      }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-colors"
+                      style={{
+                        background: azanEnabled ? 'rgba(232,189,75,0.12)' : 'rgba(6,24,18,0.55)',
+                        color: azanEnabled ? '#E8BD4B' : '#A9B8B1',
+                        border: `1px solid ${azanEnabled ? 'rgba(232,189,75,0.4)' : 'rgba(26,64,53,0.7)'}`,
+                      }}
+                    >
+                      <Volume2 size={12} />
+                      {azanEnabled ? 'Azan on' : 'Azan off'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void testAzan()}
+                      className="text-[10px] text-noor-muted hover:text-noor-gold transition-colors underline underline-offset-2"
+                      title="Play a short test of the configured Adhan audio"
+                    >
+                      Test Azan
+                    </button>
+                  </div>
+
+                  <p className="text-[9px] text-noor-muted/80 mt-0.5">
+                    {audioReady ? '✓ Audio ready on this device' : 'Tap Test Azan once to allow audio playback'}
+                  </p>
 
                 </div>
 
@@ -1009,18 +969,6 @@ function PrayerTimesSection() {
                         >
                           {prayer.name}
                         </span>
-
-                        {isActive && (
-                          <span className="rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-noor-gold bg-noor-gold/10 border border-noor-gold/20">
-                            Now
-                          </span>
-                        )}
-
-                        {nextPrayer?.name === prayer.name && !isActive && (
-                          <span className="rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-noor-ivory/70 bg-white/5 border border-white/10">
-                            Next
-                          </span>
-                        )}
 
                         <span
                           className={`text-xs sm:text-sm font-semibold ${
@@ -1215,12 +1163,11 @@ function PrayerTimesSection() {
 
         </div>
 
-        {/* Hidden audio element for Adhan */}
-
+        {/* Remote CC0 Adhan audio — no GitHub audio upload required. */}
         <audio
           ref={adhanAudioRef}
           preload="auto"
-          src="/audio/adhan.mp3"
+          src={ADHAN_AUDIO_URL}
         />
 
       </div>
