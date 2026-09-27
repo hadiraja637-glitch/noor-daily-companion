@@ -3,12 +3,25 @@ import { Link } from 'react-router';
 import {
   BookOpen, MessageSquare, Heart, Compass, CalendarDays, DollarSign,
   RotateCcw, FileText, ArrowRight, Share2, MapPin,
-  Plus, Minus, RefreshCw, Clock, Star, Sparkles, Check
+  Plus, Minus, RefreshCw, Clock, Star, Sparkles, Check, Settings2
 } from 'lucide-react';
 import { STORIES } from './Stories';
 import {
-  CITY_OPTIONS, DEFAULT_LOCATION, fetchPrayerData, getCurrentAndNextPrayer,
-  getCityFromCoordinates, type PrayerData, type PrayerLocation,
+  CITY_OPTIONS,
+  DEFAULT_LOCATION,
+  fetchPrayerData,
+  getCurrentAndNextPrayer,
+  getCityFromCoordinates,
+  getPrayerSettings,
+  updatePrayerSettings,
+  buildLocalPrayerData,
+  CALCULATION_METHOD_OPTIONS,
+  ASR_METHOD_OPTIONS,
+  getSavedLocation,
+  saveLocation,
+  type PrayerData,
+  type PrayerLocation,
+  type PrayerSettings,
 } from '../services/prayer';
 import { searchGlobalLocations } from '../services/globalLocations';
 import { getDailyHadith } from '../data/dailyHadith';
@@ -108,22 +121,18 @@ const PRAYER_CONTEXT = React.createContext<null | {
   location: PrayerLocation;
   loading: boolean;
   error: string;
+  settings: PrayerSettings;
   refresh: () => Promise<void>;
   setCity: (city: PrayerLocation) => Promise<void>;
   useCurrentLocation: () => void;
+  setPrayerSettings: (patch: Partial<PrayerSettings>) => void;
   locationMode: 'city' | 'current';
 }>(null);
 
 function PrayerProvider({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useState<PrayerLocation>(() => {
-    try {
-      const saved = localStorage.getItem('noor-prayer-location');
-      return saved ? JSON.parse(saved) : DEFAULT_LOCATION;
-    } catch {
-      return DEFAULT_LOCATION;
-    }
-  });
+  const [location, setLocation] = useState<PrayerLocation>(() => getSavedLocation());
   const [locationMode, setLocationMode] = useState<'city' | 'current'>('city');
+  const [settings, setSettings] = useState<PrayerSettings>(() => getPrayerSettings());
   const [data, setData] = useState<PrayerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -131,38 +140,71 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
   const load = async (nextLocation: PrayerLocation = location) => {
     setLoading(true);
     setError('');
+
+    // Calculate immediately on-device. The network is not required for prayer times.
     try {
-      const next = await fetchPrayerData(nextLocation);
-      setData(next);
-      localStorage.setItem('noor-prayer-location', JSON.stringify(nextLocation));
-    } catch {
-      setError('Prayer timings could not be refreshed right now. Showing default location.');
-      try {
-        const fallback = await fetchPrayerData(DEFAULT_LOCATION);
-        setData(fallback);
-      } catch {
-        setData(null);
-      }
+      const local = buildLocalPrayerData(nextLocation, settings);
+      setData(local);
+      setLocation(local.location);
+      saveLocation(local.location);
+    } catch (localError) {
+      console.error('Local prayer calculation failed:', localError);
+      setError('Prayer timings could not be calculated right now.');
+      setData(null);
+      setLoading(false);
+      return;
     } finally {
       setLoading(false);
+    }
+
+    // Refresh only optional Hijri/timezone metadata in the background.
+    try {
+      const enriched = await fetchPrayerData(nextLocation, settings);
+      setData(enriched);
+      setLocation(enriched.location);
+      saveLocation(enriched.location);
+    } catch (metadataError) {
+      console.warn('Prayer metadata refresh skipped:', metadataError);
     }
   };
 
   const setCity = async (city: PrayerLocation) => {
     setLocation(city);
     setLocationMode('city');
-    setLoading(true);
     setError('');
+
+    // Show locally calculated times immediately.
     try {
-      const next = await fetchPrayerData(city);
-      setData(next);
-      localStorage.setItem('noor-prayer-location', JSON.stringify(city));
-    } catch {
-      setError('Could not load timings for that city. Please try again.');
-      await load(city);
-    } finally {
-      setLoading(false);
+      const local = buildLocalPrayerData(city, settings);
+      setData(local);
+      setLocation(local.location);
+      saveLocation(local.location);
+    } catch (localError) {
+      console.error('Local city calculation failed:', localError);
+      setError('Could not calculate timings for that city.');
+      return;
     }
+
+    // Enrich timezone/Hijri metadata in the background when online.
+    try {
+      const enriched = await fetchPrayerData(city, settings);
+      setData(enriched);
+      setLocation(enriched.location);
+      saveLocation(enriched.location);
+    } catch (metadataError) {
+      console.warn('City metadata refresh skipped:', metadataError);
+    }
+  };
+
+  const setPrayerSettings = (patch: Partial<PrayerSettings>) => {
+    const nextSettings = updatePrayerSettings(patch);
+    setSettings(nextSettings);
+
+    // Recalculate immediately on-device. No page reload and no API required.
+    setData((previous) => {
+      if (!previous) return previous;
+      return buildLocalPrayerData(previous.location, nextSettings);
+    });
   };
 
   const useCurrentLocation = () => {
@@ -170,6 +212,7 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
       setError('Location services are not available in this browser.');
       return;
     }
+
     setLoading(true);
     setError('');
 
@@ -178,49 +221,83 @@ function PrayerProvider({ children }: { children: React.ReactNode }) {
         try {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-          
-          // Safe city fetch with fallback
-          let cityName = 'Current Location';
-          try {
-            const fetchedName = await getCityFromCoordinates(lat, lon);
-            if (fetchedName) cityName = fetchedName;
-          } catch {
-            // Fallback if reverse geocoding fails
-            cityName = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-          }
-          
-          const currentLoc: PrayerLocation = {
-            name: cityName,
-            country: cityName.split(',')[1]?.trim() || '',
-            lat: lat,
-            lon: lon,
+
+          let currentLoc = await getCityFromCoordinates(lat, lon);
+          currentLoc = {
+            ...currentLoc,
+            lat,
+            lon,
+            timezone:
+              Intl.DateTimeFormat().resolvedOptions().timeZone,
           };
-          
+
           setLocation(currentLoc);
           setLocationMode('current');
-          
-          const next = await fetchPrayerData(currentLoc);
+
+          const next = await fetchPrayerData(currentLoc, settings);
           setData(next);
-          localStorage.setItem('noor-prayer-location', JSON.stringify(currentLoc));
-        } catch {
-          setError('Could not load prayer timings for your current location.');
+          setLocation(next.location);
+          saveLocation(next.location);
+        } catch (locationError) {
+          console.error('Current location prayer load failed:', locationError);
+
+          try {
+            const fallback = buildLocalPrayerData(
+              {
+                name: 'Current Location',
+                lat: pos.coords.latitude,
+                lon: pos.coords.longitude,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              },
+              settings,
+            );
+
+            setData(fallback);
+            setLocation(fallback.location);
+            setLocationMode('current');
+            saveLocation(fallback.location);
+            setError('Using locally calculated prayer times.');
+          } catch {
+            setError('Could not calculate prayer timings for your location.');
+          }
         } finally {
           setLoading(false);
         }
       },
-      (err) => { 
+      (err) => {
         console.error(err);
-        setLoading(false); 
-        setError('Location permission was denied or unavailable. Showing your saved city.'); 
+        setLoading(false);
+        setError('Location permission was denied or unavailable. Showing your saved city.');
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15 * 60 * 1000 },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 15 * 60 * 1000,
+      },
     );
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+    // Load the saved location/settings once when Home mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <PRAYER_CONTEXT.Provider value={{ data, location, loading, error, refresh: () => load(), setCity, useCurrentLocation, locationMode }}>
+    <PRAYER_CONTEXT.Provider
+      value={{
+        data,
+        location,
+        loading,
+        error,
+        settings,
+        refresh: () => load(),
+        setCity,
+        useCurrentLocation,
+        setPrayerSettings,
+        locationMode,
+      }}
+    >
       {children}
     </PRAYER_CONTEXT.Provider>
   );
@@ -366,6 +443,8 @@ function PrayerTimesSection() {
     error,
     setCity,
     useCurrentLocation,
+    settings,
+    setPrayerSettings,
   } = usePrayerContext();
 
   const timings = data?.timings ?? [];
@@ -707,6 +786,47 @@ function PrayerTimesSection() {
 
                     </div>
 
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <div className="flex items-center gap-1 text-noor-muted text-[10px]">
+                      <Settings2 size={11} className="text-noor-gold" />
+                      Prayer settings
+                    </div>
+
+                    <select
+                      value={settings.calculationMethod}
+                      onChange={(e) =>
+                        setPrayerSettings({
+                          calculationMethod: e.target.value as PrayerSettings['calculationMethod'],
+                        })
+                      }
+                      className="bg-[#072018] text-[10px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2 py-1 focus:border-noor-gold/50 max-w-[190px]"
+                      aria-label="Prayer calculation method"
+                    >
+                      {CALCULATION_METHOD_OPTIONS.map((method) => (
+                        <option key={method.id} value={method.id}>
+                          {method.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={settings.asrMethod}
+                      onChange={(e) =>
+                        setPrayerSettings({
+                          asrMethod: e.target.value as PrayerSettings['asrMethod'],
+                        })
+                      }
+                      className="bg-[#072018] text-[10px] text-noor-ivory outline-none border border-noor-border rounded-lg px-2 py-1 focus:border-noor-gold/50"
+                      aria-label="Asr calculation method"
+                    >
+                      {ASR_METHOD_OPTIONS.map((method) => (
+                        <option key={method.id} value={method.id}>
+                          Asr: {method.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <Link
