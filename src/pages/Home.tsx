@@ -927,14 +927,19 @@ function PrayerTimesSection() {
                         }}
                         aria-pressed={azanEnabled}
                       >
-                        <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                        <span className="relative flex h-4 w-4 items-center justify-center">
                           {azanPlaying && (
                             <>
-                              <span className="absolute inset-0 rounded-full bg-blue-400/25 animate-ping" />
-                              <span className="absolute -inset-1 rounded-full border border-blue-400/30 animate-pulse" />
+                              <span className="absolute inset-0 rounded-full bg-blue-400/20 animate-ping" />
+                              <span className="absolute -inset-1.5 rounded-full border border-blue-400/25 animate-pulse" />
+                              <span className="absolute -inset-2.5 rounded-full border border-blue-400/15 animate-[ping_1.8s_ease-out_infinite]" />
+                              <span className="absolute -right-2 h-px w-2 bg-blue-300/80 origin-left rotate-[-25deg]" />
+                              <span className="absolute -right-2 h-px w-2 bg-blue-300/70 origin-left rotate-[25deg]" />
+                              <span className="absolute -left-2 h-px w-2 bg-blue-300/70 origin-right rotate-[25deg]" />
+                              <span className="absolute -left-2 h-px w-2 bg-blue-300/60 origin-right rotate-[-25deg]" />
                             </>
                           )}
-                          <Volume2 size={12} className={azanPlaying ? 'relative text-blue-300' : 'relative'} />
+                          <Volume2 size={13} className={azanPlaying ? 'relative text-blue-300 drop-shadow-[0_0_6px_rgba(96,165,250,0.9)]' : 'relative'} />
                         </span>
                         Azan {azanEnabled ? 'on' : 'off'}
                       </button>
