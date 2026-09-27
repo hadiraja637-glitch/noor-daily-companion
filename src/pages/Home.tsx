@@ -628,7 +628,23 @@ function PrayerTimesSection() {
     }
   };
 
+  const stopAzan = () => {
+    const audio = adhanAudioRef.current;
+    if (!audio) return;
+
+    audio.pause();
+    audio.currentTime = 0;
+    setAzanPlaying(false);
+    setAzanTesting(false);
+  };
+
   const testAzan = async () => {
+    // The same button works as a real play/stop control.
+    if (azanPlaying || azanTesting) {
+      stopAzan();
+      return;
+    }
+
     setAzanTesting(true);
     const started = await playAzan();
     if (!started) setAzanTesting(false);
@@ -910,11 +926,18 @@ function PrayerTimesSection() {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => setAzanEnabled((value) => {
-                          const next = !value;
+                        onClick={() => {
+                          const next = !azanEnabled;
                           localStorage.setItem('noor-azan-enabled', String(next));
-                          return next;
-                        })}
+
+                          // Turning Azan off must immediately stop any Azan
+                          // that is currently playing (including Test Azan).
+                          if (!next) {
+                            stopAzan();
+                          }
+
+                          setAzanEnabled(next);
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition-all"
                         style={{
                           borderColor: azanEnabled
@@ -948,11 +971,10 @@ function PrayerTimesSection() {
                         <button
                           type="button"
                           onClick={() => void testAzan()}
-                          disabled={azanTesting || azanPlaying}
                           className="inline-flex items-center gap-1 rounded-lg border border-blue-400/20 bg-blue-500/5 px-2 py-1.5 text-[10px] font-medium text-blue-300 transition-all hover:bg-blue-500/10 disabled:opacity-50"
-                          aria-label="Test Azan audio"
+                          aria-label={azanPlaying ? 'Stop Azan audio' : 'Test Azan audio'}
                         >
-                          {azanPlaying ? 'Playing…' : azanTesting ? 'Starting…' : 'Test Azan'}
+                          {azanPlaying ? 'Stop Azan' : azanTesting ? 'Starting…' : 'Test Azan'}
                         </button>
                       )}
                     </div>
