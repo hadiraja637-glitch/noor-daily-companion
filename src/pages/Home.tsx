@@ -629,14 +629,27 @@ function PrayerTimesSection() {
   };
 
   const stopAzan = () => {
+    // Always clear UI state, even if the audio element is temporarily unavailable.
+    setAzanPlaying(false);
+    setAzanTesting(false);
+
     const audio = adhanAudioRef.current;
     if (!audio) return;
 
     audio.pause();
-    audio.currentTime = 0;
-    setAzanPlaying(false);
-    setAzanTesting(false);
+    try {
+      audio.currentTime = 0;
+    } catch {
+      // Ignore reset errors; pause + UI state are still applied.
+    }
   };
+
+  // Turning Azan off is a hard stop: it must stop both scheduled and test playback.
+  useEffect(() => {
+    if (!azanEnabled) {
+      stopAzan();
+    }
+  }, [azanEnabled]);
 
   const testAzan = async () => {
     // The same button works as a real play/stop control.
@@ -930,13 +943,10 @@ function PrayerTimesSection() {
                           const next = !azanEnabled;
                           localStorage.setItem('noor-azan-enabled', String(next));
 
-                          // Turning Azan off must immediately stop any Azan
-                          // that is currently playing (including Test Azan).
-                          if (!next) {
-                            stopAzan();
-                          }
-
+                          // Set the preference first. The effect below also performs
+                          // a hard stop, so this cannot leave stale playback/rays.
                           setAzanEnabled(next);
+                          if (!next) stopAzan();
                         }}
                         className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition-all"
                         style={{
@@ -951,7 +961,7 @@ function PrayerTimesSection() {
                         aria-pressed={azanEnabled}
                       >
                         <span className="relative flex h-4 w-4 items-center justify-center">
-                          {azanPlaying && (
+                          {azanEnabled && azanPlaying && (
                             <>
                               <span className="absolute inset-0 rounded-full bg-blue-400/20 animate-ping" />
                               <span className="absolute -inset-1.5 rounded-full border border-blue-400/25 animate-pulse" />
