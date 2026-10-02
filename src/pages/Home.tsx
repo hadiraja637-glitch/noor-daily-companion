@@ -354,18 +354,18 @@ function Hero() {
         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-10 w-full">
           <div className="flex-1 max-w-2xl">
             <FadeIn delay={0.05}>
-              <p className="text-noor-muted text-[10px] sm:text-xs tracking-[0.25em] uppercase mb-3 sm:mb-5">
+              <p className="text-noor-muted text-[10px] sm:text-xs tracking-[0.22em] uppercase mb-3 sm:mb-5 font-medium leading-relaxed">
                 GUIDANCE • PRAYER • BETTER YOU
               </p>
             </FadeIn>
             <FadeIn delay={0.15}>
-              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-semibold leading-[1.1] text-noor-ivory mb-3 sm:mb-4">
+              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-semibold leading-[1.08] tracking-[-0.02em] text-noor-ivory mb-3 sm:mb-4">
                 A Brighter Day <br />
                 <span className="text-noor-gold italic">with Allah</span>
               </h1>
             </FadeIn>
             <FadeIn delay={0.25}>
-              <p className="text-noor-muted text-xs sm:text-base leading-relaxed mb-5 max-w-md">
+              <p className="text-noor-muted text-xs sm:text-base leading-6 sm:leading-7 mb-5 max-w-md font-medium">
                 Qur'an in your heart, guidance in your life,<br className="hidden sm:block" />
                 and barakah in every step.
               </p>
@@ -374,14 +374,14 @@ function Hero() {
               <div className="flex flex-wrap gap-2.5 sm:gap-3">
                 <Link
                   to="/quran"
-                  className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all hover:scale-105"
+                  className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.01em] transition-all hover:scale-105"
                   style={{ background: '#E8BD4B', color: '#061812' }}
                 >
                   Read Qur'an <ArrowRight size={14} />
                 </Link>
                 <Link
                   to="/stories"
-                  className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium border border-noor-ivory/30 text-noor-ivory hover:border-noor-gold/60 hover:text-noor-gold transition-all"
+                  className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.01em] border border-noor-ivory/30 text-noor-ivory hover:border-noor-gold/60 hover:text-noor-gold transition-all"
                 >
                   Explore Islamic Stories
                 </Link>
@@ -407,7 +407,7 @@ function Hero() {
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <MapPin size={13} className="text-noor-gold" />
-                <span className="text-noor-ivory text-xs font-medium truncate">{loading ? 'Loading location…' : location.name}</span>
+                <span className="font-display text-noor-ivory text-xs font-semibold truncate">{loading ? 'Loading location…' : location.name}</span>
               </div>
               <Link
                 to="/calendar"
@@ -449,6 +449,7 @@ function PrayerTimesSection() {
   } = usePrayerContext();
 
   const timings = data?.timings ?? [];
+  const locationInputRef = useRef<HTMLInputElement | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [inputValue, setInputValue] = useState(location.name);
   const [locationResults, setLocationResults] = useState<PrayerLocation[]>([]);
@@ -781,7 +782,7 @@ function PrayerTimesSection() {
                       className="text-noor-gold"
                     />
 
-                    <h2 className="font-display text-noor-ivory text-lg sm:text-xl font-semibold">
+                    <h2 className="font-display text-noor-ivory text-lg sm:text-xl font-semibold tracking-[0.005em]">
                       Today's Prayer Times
                     </h2>
 
@@ -815,6 +816,18 @@ function PrayerTimesSection() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    <p className="w-full text-[9px] sm:text-[10px] text-noor-muted">
+                      Showing prayer times for{' '}
+                      <span className="text-noor-ivory/90 font-medium">{location.name}</span>
+                      {' · '}
+                      <button
+                        type="button"
+                        onClick={() => locationInputRef.current?.focus()}
+                        className="text-noor-gold hover:underline font-medium"
+                      >
+                        Change
+                      </button>
+                    </p>
 
                     <button
                       type="button"
@@ -827,6 +840,7 @@ function PrayerTimesSection() {
                     <div className="relative">
 
                       <input
+                        ref={locationInputRef}
                         type="text"
                         list="noor-global-locations"
                         value={inputValue}
@@ -1353,10 +1367,10 @@ function FeatureCards() {
                   <f.icon size={15} className="text-noor-gold" />
                 </div>
                 <div className="text-center">
-                  <p className="text-noor-ivory text-[11px] sm:text-xs font-medium group-hover:text-noor-gold transition-colors leading-tight">
+                  <p className="font-display text-noor-ivory text-[11px] sm:text-xs font-semibold tracking-[0.01em] group-hover:text-noor-gold transition-colors leading-tight">
                     {f.label}
                   </p>
-                  <p className="text-noor-muted text-[9px] sm:text-[10px] leading-tight mt-0.5 hidden sm:block">{f.sub}</p>
+                  <p className="text-noor-muted text-[9px] sm:text-[10px] font-medium leading-snug mt-0.5 hidden sm:block">{f.sub}</p>
                 </div>
               </Link>
             </FadeIn>
@@ -1388,7 +1402,7 @@ function IslamicStories() {
                 </h2>
               </div>
 
-              <p className="text-noor-muted text-xs sm:text-sm max-w-xl leading-relaxed">
+              <p className="text-noor-muted text-xs sm:text-sm max-w-xl leading-6 font-medium">
                 Lessons from the lives of the Prophets, Sahabah and righteous people.
               </p>
             </div>
@@ -1467,7 +1481,7 @@ function IslamicStories() {
                       style={{ background: '#18B98A' }}
                     />
 
-                    <span className="text-noor-accent text-[10px] sm:text-xs font-medium truncate">
+                    <span className="font-display text-noor-accent text-[10px] sm:text-xs font-semibold tracking-[0.01em] truncate">
                       {story.lesson}
                     </span>
                   </div>
@@ -1476,7 +1490,7 @@ function IslamicStories() {
                     {story.title}
                   </h3>
 
-                  <p className="text-noor-muted text-xs sm:text-sm leading-relaxed line-clamp-3">
+                  <p className="text-noor-muted text-xs sm:text-sm leading-6 font-medium line-clamp-3">
                     {story.excerpt}
                   </p>
 
