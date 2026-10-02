@@ -763,7 +763,7 @@ function PrayerTimesSection() {
           <div className="xl:col-span-2">
 
             <div
-              className="rounded-2xl p-4 sm:p-6 h-full flex flex-col justify-between"
+              className="rounded-2xl p-4 sm:p-5 lg:p-6 h-full flex flex-col justify-between"
               style={{
                 background: '#103329',
                 border:
@@ -771,7 +771,7 @@ function PrayerTimesSection() {
               }}
             >
 
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
+              <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4 lg:gap-6 mb-5">
 
                 <div>
 
@@ -782,7 +782,7 @@ function PrayerTimesSection() {
                       className="text-noor-gold"
                     />
 
-                    <h2 className="font-display text-noor-ivory text-lg sm:text-xl font-semibold tracking-[0.005em]">
+                    <h2 className="font-display text-noor-ivory text-lg sm:text-xl font-semibold tracking-[0.005em] lg:whitespace-nowrap">
                       Today's Prayer Times
                     </h2>
 
@@ -800,7 +800,7 @@ function PrayerTimesSection() {
 
                 </div>
 
-                <div className="flex flex-col items-start sm:items-end gap-1.5">
+                <div className="flex flex-col items-start lg:items-end gap-1.5 min-w-0">
 
                   <div className="flex items-center gap-1.5 text-noor-ivory text-xs font-medium">
 
@@ -815,7 +815,7 @@ function PrayerTimesSection() {
 
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end w-full">
                     <p className="w-full text-[9px] sm:text-[10px] text-noor-muted">
                       Showing prayer times for{' '}
                       <span className="text-noor-ivory/90 font-medium">{location.name}</span>
@@ -880,7 +880,7 @@ function PrayerTimesSection() {
 
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-2 pt-1 lg:justify-end w-full">
                     <div className="flex items-center gap-1 text-noor-muted text-[10px]">
                       <Settings2 size={11} className="text-noor-gold" />
                       Prayer settings
@@ -921,12 +921,12 @@ function PrayerTimesSection() {
                     </select>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-[9px] text-noor-muted">
+                  <div className="flex items-center gap-1.5 text-[9px] text-noor-muted lg:justify-end w-full">
                     <CheckCircle2 size={10} className="text-noor-gold" />
                     Calculated on this device · {selectedMethodLabel} · Asr {selectedAsrLabel}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-2 pt-1 lg:justify-end w-full">
                     <button
                       type="button"
                       onClick={enablePrayerNotifications}
@@ -1006,7 +1006,7 @@ function PrayerTimesSection() {
 
                   <Link
                     to="/calendar"
-                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-noor-gold hover:underline"
+                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-noor-gold hover:underline lg:self-end"
                   >
                     View Calendar
                     <ArrowRight size={11} />
@@ -1018,9 +1018,9 @@ function PrayerTimesSection() {
 
               {/* Prayer Cards */}
 
-              <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4">
 
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 flex-1 w-full">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 flex-1 w-full min-w-0">
 
                   {(timings.length
                     ? timings
@@ -1132,7 +1132,7 @@ function PrayerTimesSection() {
 
                 {/* Countdown */}
 
-                <div className="flex-shrink-0 flex flex-col items-center mt-2 sm:mt-0">
+                <div className="w-full lg:w-auto flex-shrink-0 flex flex-col items-center mt-1 lg:mt-0">
 
                   <div className="relative w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
 
