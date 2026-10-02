@@ -67,6 +67,116 @@ export const DEFAULT_PRAYER_SETTINGS: PrayerSettings = {
   asrMethod: 'Hanafi',
 };
 
+const LOCATION_CONFIRMED_KEY = 'noor-prayer-location-confirmed-v1';
+
+export interface SmartPrayerDefaults {
+  location: PrayerLocation;
+  settings: PrayerSettings;
+  timezone: string;
+}
+
+const SMART_TIMEZONE_DEFAULTS: Array<{
+  match: (timeZone: string) => boolean;
+  location: PrayerLocation;
+  calculationMethod: CalculationMethodId;
+}> = [
+  {
+    match: (tz) => tz === 'Asia/Riyadh' || tz === 'Asia/Jeddah',
+    location: { name: 'Riyadh, Saudi Arabia', country: 'Saudi Arabia', lat: 24.7136, lon: 46.6753 },
+    calculationMethod: 'UmmAlQura',
+  },
+  {
+    match: (tz) => tz === 'Asia/Dubai',
+    location: { name: 'Dubai, United Arab Emirates', country: 'United Arab Emirates', lat: 25.2048, lon: 55.2708 },
+    calculationMethod: 'Dubai',
+  },
+  {
+    match: (tz) => tz === 'Asia/Qatar',
+    location: { name: 'Doha, Qatar', country: 'Qatar', lat: 25.2854, lon: 51.5310 },
+    calculationMethod: 'Qatar',
+  },
+  {
+    match: (tz) => tz === 'Asia/Kuwait',
+    location: { name: 'Kuwait City, Kuwait', country: 'Kuwait', lat: 29.3759, lon: 47.9774 },
+    calculationMethod: 'Kuwait',
+  },
+  {
+    match: (tz) => tz === 'Asia/Singapore',
+    location: { name: 'Singapore', country: 'Singapore', lat: 1.3521, lon: 103.8198 },
+    calculationMethod: 'Singapore',
+  },
+  {
+    match: (tz) => tz === 'Asia/Tehran',
+    location: { name: 'Tehran, Iran', country: 'Iran', lat: 35.6892, lon: 51.3890 },
+    calculationMethod: 'Tehran',
+  },
+  {
+    match: (tz) => tz === 'Africa/Cairo',
+    location: { name: 'Cairo, Egypt', country: 'Egypt', lat: 30.0444, lon: 31.2357 },
+    calculationMethod: 'Egyptian',
+  },
+  {
+    match: (tz) => tz === 'America/New_York' || tz === 'America/Toronto',
+    location: { name: 'New York, United States', country: 'United States', lat: 40.7128, lon: -74.0060 },
+    calculationMethod: 'ISNA',
+  },
+  {
+    match: (tz) => tz === 'America/Chicago',
+    location: { name: 'Chicago, United States', country: 'United States', lat: 41.8781, lon: -87.6298 },
+    calculationMethod: 'ISNA',
+  },
+  {
+    match: (tz) => tz === 'America/Denver',
+    location: { name: 'Denver, United States', country: 'United States', lat: 39.7392, lon: -104.9903 },
+    calculationMethod: 'ISNA',
+  },
+  {
+    match: (tz) => tz === 'America/Los_Angeles' || tz === 'America/Vancouver',
+    location: { name: 'Los Angeles, United States', country: 'United States', lat: 34.0522, lon: -118.2437 },
+    calculationMethod: 'ISNA',
+  },
+  {
+    match: (tz) => tz === 'Europe/London',
+    location: { name: 'London, United Kingdom', country: 'United Kingdom', lat: 51.5074, lon: -0.1278 },
+    calculationMethod: 'MWL',
+  },
+  {
+    match: (tz) => tz === 'Europe/Paris',
+    location: { name: 'Paris, France', country: 'France', lat: 48.8566, lon: 2.3522 },
+    calculationMethod: 'MWL',
+  },
+  {
+    match: (tz) => tz === 'Europe/Berlin',
+    location: { name: 'Berlin, Germany', country: 'Germany', lat: 52.5200, lon: 13.4050 },
+    calculationMethod: 'MWL',
+  },
+];
+
+export function getSmartPrayerDefaults(timeZone?: string): SmartPrayerDefaults {
+  const resolvedTimeZone =
+    timeZone ||
+    (isBrowser() ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC');
+
+  const match = SMART_TIMEZONE_DEFAULTS.find((item) => item.match(resolvedTimeZone));
+
+  if (!match) {
+    return {
+      timezone: resolvedTimeZone,
+      location: { ...DEFAULT_LOCATION, timezone: resolvedTimeZone },
+      settings: { ...DEFAULT_PRAYER_SETTINGS },
+    };
+  }
+
+  return {
+    timezone: resolvedTimeZone,
+    location: { ...match.location, timezone: resolvedTimeZone },
+    settings: {
+      calculationMethod: match.calculationMethod,
+      asrMethod: DEFAULT_PRAYER_SETTINGS.asrMethod,
+    },
+  };
+}
+
 export const CITY_OPTIONS: PrayerLocation[] = [
   DEFAULT_LOCATION,
   { name: 'Lahore, Pakistan', country: 'Pakistan', lat: 31.5204, lon: 74.3587 },
@@ -118,7 +228,7 @@ export function getPrayerSettings(): PrayerSettings {
 
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return DEFAULT_PRAYER_SETTINGS;
+    if (!raw) return getSmartPrayerDefaults().settings;
     const parsed = JSON.parse(raw);
 
     const method = CALCULATION_METHOD_OPTIONS.some((x) => x.id === parsed?.calculationMethod)
@@ -328,6 +438,24 @@ export function buildLocalPrayerData(
  * Optional metadata refresh. Prayer times are ALWAYS calculated locally first.
  * If the API is unavailable, cached/default date metadata is retained.
  */
+function getAladhanMethodId(method: CalculationMethodId): string {
+  const ids: Record<CalculationMethodId, string> = {
+    MWL: '3',
+    ISNA: '2',
+    Egyptian: '5',
+    UmmAlQura: '4',
+    Karachi: '1',
+    Tehran: '7',
+    Dubai: '16',
+    Qatar: '10',
+    Kuwait: '9',
+    Singapore: '11',
+    MoonsightingCommittee: '15',
+  };
+
+  return ids[method];
+}
+
 export async function fetchPrayerData(
   location: PrayerLocation,
   settings: PrayerSettings = getPrayerSettings(),
@@ -338,7 +466,7 @@ export async function fetchPrayerData(
     const url = new URL(`https://api.aladhan.com/v1/timings/${dateParam()}`);
     url.searchParams.set('latitude', String(location.lat));
     url.searchParams.set('longitude', String(location.lon));
-    url.searchParams.set('method', '3');
+    url.searchParams.set('method', getAladhanMethodId(settings.calculationMethod));
     url.searchParams.set('school', settings.asrMethod === 'Hanafi' ? '1' : '0');
     url.searchParams.set('iso8601', 'false');
 
@@ -472,12 +600,30 @@ export function getCurrentAndNextPrayer(
 
 export function getSavedLocation(): PrayerLocation {
   if (!isBrowser()) return DEFAULT_LOCATION;
+
   try {
     const raw = localStorage.getItem(LOCATION_KEY);
-    if (!raw) return DEFAULT_LOCATION;
-    return JSON.parse(raw) as PrayerLocation;
+
+    if (!raw) {
+      return getSmartPrayerDefaults().location;
+    }
+
+    const saved = JSON.parse(raw) as PrayerLocation;
+    const confirmed = localStorage.getItem(LOCATION_CONFIRMED_KEY) === 'true';
+
+    // Older Noor installs may have Islamabad saved only because it was the
+    // previous hard-coded default. Let the device timezone improve that first visit.
+    if (
+      !confirmed &&
+      saved?.lat === DEFAULT_LOCATION.lat &&
+      saved?.lon === DEFAULT_LOCATION.lon
+    ) {
+      return getSmartPrayerDefaults().location;
+    }
+
+    return saved;
   } catch {
-    return DEFAULT_LOCATION;
+    return getSmartPrayerDefaults().location;
   }
 }
 
@@ -485,6 +631,7 @@ export function saveLocation(location: PrayerLocation) {
   if (!isBrowser()) return;
   try {
     localStorage.setItem(LOCATION_KEY, JSON.stringify(location));
+    localStorage.setItem(LOCATION_CONFIRMED_KEY, 'true');
   } catch {
     // Ignore storage errors.
   }
