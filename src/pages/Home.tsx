@@ -359,34 +359,32 @@ function Hero() {
               </p>
             </FadeIn>
             <FadeIn delay={0.15}>
-              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-[-0.02em] text-noor-ivory mb-3 sm:mb-4">
-               Find Inner Peace <br />
-               <span className="text-noor-gold font-serif italic font-normal tracking-wide drop-shadow-md inline-block py-1">
-                 with the Qur'an
-                 </span>
-               </h1>
+              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-semibold leading-[1.08] tracking-[-0.02em] text-noor-ivory mb-3 sm:mb-4">
+                A Brighter Day <br />
+                <span className="text-noor-gold">with Allah</span>
+              </h1>
             </FadeIn>
             <FadeIn delay={0.25}>
-              <p className="text-noor-ivory/85 text-xs sm:text-base leading-6 sm:leading-7 mb-6 max-w-lg font-normal tracking-wide">
-                 Illumine your heart with divine guidance, timeless wisdom, <br className="hidden sm:block" />
-                 and tranquility in every single breath.
-               </p>
+              <p className="text-noor-muted text-xs sm:text-base leading-6 sm:leading-7 mb-5 max-w-md font-medium">
+                Qur'an in your heart, guidance in your life,<br className="hidden sm:block" />
+                 and barakah in every step.
+              </p>
             </FadeIn>
             <FadeIn delay={0.35}>
               <div className="flex flex-wrap gap-2.5 sm:gap-3">
-                <Link 
-                 to="/quran" 
-                 className="flex items-center gap-2.5 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-bold tracking-[0.02em] transition-all hover:scale-105 shadow-lg" 
-                 style={{ background: '#E8BD4B', color: '#061812' }}
-              >
-                Open Holy Qur'an <ArrowRight size={15} />
-          </Link>
-        <Link 
-          to="/stories" 
-          className="flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-medium tracking-[0.01em] border border-noor-gold/40 text-noor-ivory bg-black/20 backdrop-blur-sm hover:border-noor-gold hover:text-noor-gold transition-all"
-        >
-          Explore Islamic Stories
-        </Link>
+                <Link
+                  to="/quran"
+                  className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.01em] transition-all hover:scale-105"
+                  style={{ background: '#E8BD4B', color: '#061812' }}
+                >
+                  Read Qur'an <ArrowRight size={14} />
+                </Link>
+                <Link
+                  to="/stories"
+                  className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.01em] border border-noor-ivory/30 text-noor-ivory hover:border-noor-gold/60 hover:text-noor-gold transition-all"
+                >
+                  Explore Islamic Stories
+                </Link>
               </div>
             </FadeIn>
           </div>
